@@ -1338,44 +1338,7 @@ body.font-xl .card-title { font-size: calc(var(--base-font) + 1px); }
 .sidebar-width-toggle:hover { background: var(--text2); color: white; }
 .sidebar { position: relative; }
 
-/* ── Job title hover popover (anchored, not floating) ── */
-.card-title-wrap {
-  position: relative;
-  display: inline-block;
-  max-width: 100%;
-}
-.card-title-wrap .card-title {
-  cursor: default;
-  text-decoration-line: underline;
-  text-decoration-style: dotted;
-  text-decoration-color: var(--border);
-  text-underline-offset: 3px;
-}
-.card-preview-tooltip {
-  display: none;
-  position: absolute;
-  top: calc(100% + 6px);
-  left: 0;
-  z-index: 200;
-  background: white;
-  border: 1.5px solid var(--border);
-  border-radius: var(--radius);
-  box-shadow: 0 8px 28px rgba(0,0,0,.13);
-  padding: 14px 16px;
-  width: 380px;
-  max-width: 90vw;
-  max-height: 320px;
-  overflow-y: auto;
-  pointer-events: none;
-  font-size: 13px;
-  line-height: 1.6;
-}
-.card-title-wrap:hover .card-preview-tooltip { display: block; }
-.preview-title { font-family: 'Lora', serif; font-size: 15px; font-weight: 700; margin-bottom: 4px; color: var(--text); }
-.preview-meta { font-size: 12px; font-weight: 600; color: var(--text2); margin-bottom: 10px; display:flex; flex-wrap:wrap; gap:6px; }
-.preview-desc { font-size: 12px; color: var(--text2); margin-bottom: 8px; line-height: 1.65; }
-.preview-quals { font-size: 11px; color: var(--muted); padding-left: 16px; margin: 0; }
-.preview-quals li { margin-bottom: 2px; }
+/* hover preview removed */
 .pipeline-select {
   padding: 4px 8px;
   border-radius: 6px;
@@ -1483,9 +1446,10 @@ body.font-xl .card-title { font-size: calc(var(--base-font) + 1px); }
 /* ── View toggle ── */
 .view-toggle { display:flex; gap:3px; }
 .view-btn {
-  width:30px; height:30px; border-radius:6px; border:1.5px solid var(--border);
-  background:white; cursor:pointer; font-size:14px; display:flex;
-  align-items:center; justify-content:center; transition:all .15s; color:var(--muted);
+  height:30px; padding:0 10px; border-radius:6px; border:1.5px solid var(--border);
+  background:white; cursor:pointer; font-size:12px; font-weight:700;
+  display:flex; align-items:center; justify-content:center;
+  transition:all .15s; color:var(--muted); font-family:'Nunito',sans-serif;
 }
 .view-btn.active { background:var(--text); color:white; border-color:var(--text); }
 .view-btn:hover:not(.active) { background:var(--surface2); }
@@ -1597,7 +1561,6 @@ body.font-xl .card-title { font-size: calc(var(--base-font) + 1px); }
         <button class="font-btn font-btn-lg" id="fbtn-xl" onclick="setFontSize('xl')" title="Extra large text">A</button>
       </div>
       <button class="h-btn" onclick="openModal('help-modal')" title="Help & Guide">❓ Help</button>
-      <button class="h-btn" id="export-btn" onclick="exportCSV()" style="display:none">📊 Export CSV</button>
       <button class="h-btn" onclick="showSettings()">⚙️ Settings</button>
       <button class="h-btn danger" onclick="logout()">Sign Out</button>
     </div>
@@ -1909,12 +1872,69 @@ function doLogin() {
     currentUser = selectedUser;
     document.getElementById('login-screen').style.display = 'none';
     document.getElementById('app').style.display = 'block';
+
+    // Track last visit + recalculate isNew based on login time
+    if (currentUser !== 'admin') {
+      const cd = CONFIG.candidates[currentUser];
+      const prevVisit = cd.lastVisit || 0;
+      // Mark jobs added since last visit as isNew
+      (cd.jobs||[]).forEach(j => {
+        j.isNew = (j._addedAt||0) > prevVisit;
+      });
+      cd.lastVisit = Date.now();
+      saveConfig();
+    }
+
     initApp();
+
+    // Show login summary after panel renders
+    if (currentUser !== 'admin') {
+      setTimeout(() => showLoginSummary(currentUser), 400);
+    }
   } else {
     document.getElementById('login-error').style.display = 'block';
     [0,1,2,3].forEach(i => document.getElementById('p'+i).value = '');
     document.getElementById('p0').focus();
   }
+}
+
+function showLoginSummary(c) {
+  const cd = CONFIG.candidates[c];
+  const jobs = (cd.jobs||[]).filter(j=>!j.dismissed);
+  const newJobs = jobs.filter(j=>j.isNew);
+  const msgs = [];
+
+  // New jobs since last visit
+  if (newJobs.length > 0) {
+    msgs.push(`🆕 ${newJobs.length} new job${newJobs.length>1?'s':''} added since your last visit`);
+  }
+
+  // Stage reminders — jobs stuck in a stage for 5+ days
+  const stageLabels = { applied:'📤 Applied', interview:'📅 Interview', offer:'🎉 Offer' };
+  jobs.forEach(j => {
+    if (!j.stage || j.stage === 'none' || j.stage === 'researching' || j.stage === 'declined') return;
+    const ts = j.stageHistory?.[j.stage];
+    if (!ts) return;
+    const days = Math.floor((Date.now() - ts) / (1000*60*60*24));
+    if (days >= 5) {
+      msgs.push(`${stageLabels[j.stage]||j.stage}: "${j.title}" — ${days} days, any update?`);
+    }
+  });
+
+  if (!msgs.length) return;
+
+  // Show as a dismissable banner at top of main content
+  const main = document.getElementById('main-content');
+  if (!main) return;
+  const banner = document.createElement('div');
+  banner.id = 'login-summary-banner';
+  banner.style.cssText = 'background:var(--gold-lt);border:1.5px solid var(--gold);border-radius:10px;padding:12px 16px;margin-bottom:16px;position:relative;';
+  banner.innerHTML = `
+    <button onclick="this.parentElement.remove()" style="position:absolute;top:8px;right:10px;background:none;border:none;cursor:pointer;font-size:16px;color:var(--muted);">✕</button>
+    <div style="font-size:12px;font-weight:800;color:#7a5500;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;">Welcome back, ${cd.name}</div>
+    ${msgs.map(m=>`<div style="font-size:13px;color:var(--text2);margin-bottom:4px;">• ${m}</div>`).join('')}
+  `;
+  main.insertBefore(banner, main.firstChild);
 }
 
 function logout() {
@@ -1951,14 +1971,12 @@ function initApp() {
   if (isAdmin) {
     badge.innerHTML = `<span style="background:var(--admin-lt);color:var(--admin);padding:4px 12px;border-radius:20px;font-size:12px;font-weight:700;">⚙️ Admin View</span>`;
     document.getElementById('admin-tabs').style.display = 'flex';
-    document.getElementById('export-btn').style.display = 'flex';
     if (appBody) appBody.style.gridTemplateColumns = '340px 1fr';
     switchPanel('overview');
   } else {
     const c = CONFIG.candidates[currentUser];
     badge.innerHTML = `<span style="background:${c.lt};color:${c.colorHex};padding:4px 12px;border-radius:20px;font-size:12px;font-weight:700;">${c.name}</span>`;
     document.getElementById('admin-tabs').style.display = 'none';
-    document.getElementById('export-btn').style.display = 'none';
     const sw = CONFIG.uiPrefs?.sidebarWidth || 300;
     if (appBody) appBody.style.gridTemplateColumns = `${sw}px 1fr`;
     switchPanel(currentUser);
@@ -2167,6 +2185,7 @@ function renderAdminSidebar() {
             <div style="flex:1;font-size:12px;font-weight:700;color:${isActive?'var(--text)':'var(--muted)'};">${cd.name}</div>
             <button onclick="editCandidate('${c}')" style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:5px;border:1.5px solid var(--border);background:white;color:var(--text2);cursor:pointer;">✏️ Edit</button>
             <button onclick="toggleCandidateActive('${c}')" style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:5px;border:1.5px solid ${isActive?'var(--red)':'var(--green)'};background:white;color:${isActive?'var(--red)':'var(--green)'};cursor:pointer;">${isActive?'Hide':'Show'}</button>
+            <button onclick="resetJobs('${c}')" title="Reset all jobs for ${cd.name}" style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:5px;border:1.5px solid var(--gold);background:white;color:#92600a;cursor:pointer;">🔄 Reset</button>
           </div>`;
         }).join('')}
         <button onclick="showAddCandidateForm()" style="width:100%;margin-top:10px;padding:7px;border-radius:8px;border:1.5px dashed var(--border);background:white;color:var(--text2);font-size:12px;font-weight:700;cursor:pointer;">+ Add New User</button>
@@ -2219,6 +2238,7 @@ function renderAdminSidebar() {
 
       <div style="display:flex;flex-direction:column;gap:8px;">
         <button class="export-btn" style="width:100%;padding:8px;font-size:12px;" onclick="exportCSV()">📊 Export CSV</button>
+        <button class="cancel-btn" style="width:100%;padding:8px;font-size:12px;color:#92600a;border-color:var(--gold);background:var(--gold-lt);" onclick="resetAllJobs()">🔄 Reset All Jobs (Testing)</button>
         <button class="cancel-btn" style="width:100%;padding:8px;font-size:12px;color:var(--red);border-color:var(--red);" onclick="if(confirm('Clear ALL data for all candidates? This cannot be undone.'))clearAllData()">🗑 Clear All Data</button>
       </div>
     </div>`;
@@ -2537,7 +2557,10 @@ function buildSidebar(c, cd, isAdmin) {
       </div>
       <div class="stat-row">
         <span class="stat-key">🔎 Last Searched</span>
-        <span class="stat-val" id="stat-lastsearch-${c}">${cd.lastSearched ? new Date(cd.lastSearched).toLocaleDateString('en-US',{month:'short',day:'numeric'}) : 'Never'}</span>
+        <span style="display:flex;align-items:center;gap:6px;">
+          <span class="stat-val" id="stat-lastsearch-${c}">${cd.lastSearched ? new Date(cd.lastSearched).toLocaleDateString('en-US',{month:'short',day:'numeric'}) : 'Never'}</span>
+          <button onclick="aiSearch('${c}')" title="Search again for new jobs" style="font-size:11px;padding:2px 7px;border-radius:5px;border:1px solid var(--border);background:var(--surface2);color:var(--muted);cursor:pointer;font-weight:700;">🔄</button>
+        </span>
       </div>
       ${dismissedJobs > 0 ? `
       <div class="stat-row stat-clickable" onclick="showDismissedModal('${c}')" title="View dismissed jobs">
@@ -2591,16 +2614,28 @@ function buildMainContent(c, cd, isAdmin) {
       <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
         <div class="filter-row" id="filters-${c}">
           <button class="fbt on" onclick="filterJobs('${c}','all',this)">All</button>
+          <button class="fbt" onclick="filterJobs('${c}','unreviewed',this)">To Review</button>
           <button class="fbt" onclick="filterJobs('${c}','remote',this)">Remote</button>
           <button class="fbt" onclick="filterJobs('${c}','hybrid',this)">Hybrid</button>
           <button class="fbt" onclick="filterJobs('${c}','travel',this)">Travel</button>
-          <button class="fbt" onclick="filterJobs('${c}','new',this)">🆕 New</button>
           <button class="fbt star-on" onclick="filterJobs('${c}','starred',this)" style="background:white;color:var(--text2);border-color:var(--border)">⭐ Starred</button>
           <button class="fbt" onclick="filterJobs('${c}','applied',this)" style="background:white;color:var(--text2)">✅ Applied</button>
         </div>
-        <div class="view-toggle">
-          <button class="view-btn active" id="view-list-${c}" onclick="setView('${c}','list',this)" title="List view">☰</button>
-          <button class="view-btn" id="view-kanban-${c}" onclick="setView('${c}','kanban',this)" title="Pipeline view">⊞</button>
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+          <div style="display:flex;align-items:center;gap:4px;">
+            <select id="sort-select-${c}" onchange="sortJobs('${c}',false)" style="padding:5px 10px;border-radius:8px;border:1.5px solid var(--border);font-family:'Nunito',sans-serif;font-size:12px;font-weight:600;cursor:pointer;background:white;color:var(--text2);">
+              <option value="default">Sort: Default</option>
+              <option value="match">Best Match</option>
+              <option value="newest">Newest First</option>
+              <option value="salary">Salary</option>
+              <option value="company">Company A–Z</option>
+            </select>
+            <button id="sort-dir-${c}" onclick="sortJobs('${c}',true)" title="Flip sort direction" style="padding:5px 8px;border-radius:8px;border:1.5px solid var(--border);background:white;font-size:13px;cursor:pointer;font-weight:700;color:var(--text2);">↓</button>
+          </div>
+          <div class="view-toggle">
+            <button class="view-btn active" id="view-list-${c}" onclick="setView('${c}','list',this)" title="List view">☰ List</button>
+            <button class="view-btn" id="view-tracker-${c}" onclick="setView('${c}','tracker',this)" title="Job Tracker — see all your progress stages">📋 Job Tracker</button>
+          </div>
         </div>
       </div>
     </div>
@@ -3005,6 +3040,7 @@ async function aiSearch(c) {
 
     newJobs.forEach(j => {
       j._id = `${c}-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
+      j._addedAt = Date.now();
       j.isNew = true;
     });
 
@@ -3072,7 +3108,7 @@ function buildUserPrompt(c, cd) {
   };
   return `Search the web now for current job openings using searches like: ${queryMap[c] || cd.searchAreas}
 
-Find exactly 12 REAL, currently open job postings spread across different companies and industries. Use web search to verify they exist.
+Find exactly 20 REAL, currently open job postings spread across different companies and industries. Use web search to verify they exist.
 
 Return ONLY this JSON array structure (no markdown, no text before or after):
 [
@@ -3087,6 +3123,7 @@ Return ONLY this JSON array structure (no markdown, no text before or after):
     "qualifications": ["requirement 1", "requirement 2", "requirement 3", "requirement 4"],
     "benefits": "key benefits and perks",
     "applyUrl": "https://direct-link-to-job-posting",
+    "datePosted": "e.g. 2 days ago or Mar 15 2026 — include if visible on the posting",
     "source": "LinkedIn / Indeed / Company careers page",
     "isNew": true,
     "tags": ["Remote", "Industry", "Role type"]
@@ -3106,7 +3143,7 @@ function renderJobCards(c, filter='all', page=0) {
   const metaEl = document.getElementById('results-meta-'+c);
   const countEl = document.getElementById('result-count-'+c);
   const newEl = document.getElementById('result-new-'+c);
-  const PAGE_SIZE = 10;
+  const PAGE_SIZE = 20;
 
   let jobs = (cd.jobs||[]).filter(j => !j.dismissed);
   const allUnfiltered = [...jobs];
@@ -3116,6 +3153,7 @@ function renderJobCards(c, filter='all', page=0) {
   else if (filter === 'hybrid') jobs = jobs.filter(j => (j.workType||'').toLowerCase() === 'hybrid');
   else if (filter === 'travel') jobs = jobs.filter(j => (j.workType||'').toLowerCase() === 'travel');
   else if (filter === 'new') jobs = jobs.filter(j => j.isNew);
+  else if (filter === 'unreviewed') jobs = jobs.filter(j => !j.starred && !j.applied && (!j.stage || j.stage === 'none'));
   else if (filter === 'starred') jobs = jobs.filter(j => j.starred);
   else if (filter === 'applied') jobs = jobs.filter(j => j.applied);
   else if (filter === 'pipeline') jobs = jobs.filter(j => j.stage && j.stage !== 'none');
@@ -3207,24 +3245,11 @@ function buildCard(j, c, cd) {
   <div class="card-body">
     <div class="card-row1">
       <div class="card-title-block">
-        <div class="card-title-wrap">
-          <div class="card-title">${j.title}</div>
-          <div class="card-preview-tooltip">
-            <div class="preview-title">${j.title}</div>
-            <div class="preview-meta">
-              <span>${j.company||''}</span>
-              ${j.location?`<span>📍 ${j.location}</span>`:''}
-              ${j.workType?`<span>· ${j.workType}</span>`:''}
-              ${j.salary?`<span>· ${j.salary}</span>`:''}
-            </div>
-            ${j.description?`<div class="preview-desc">${j.description}</div>`:''}
-            ${(j.qualifications||[]).length?`<ul class="preview-quals">${(j.qualifications||[]).slice(0,4).map(q=>`<li>${q}</li>`).join('')}</ul>`:''}
-            ${j.benefits?`<div style="font-size:11px;color:var(--muted);margin-top:6px;"><strong>Benefits:</strong> ${j.benefits}</div>`:''}
-          </div>
-        </div>
+        <div class="card-title">${j.title}</div>
         <div class="card-company">
           ${j.company}
           ${j.location ? `<span class="card-location">📍 ${j.location}</span>` : ''}
+          ${j.datePosted ? `<span class="card-location">🕐 ${j.datePosted}</span>` : ''}
           ${j.userAdded ? `<span class="jb jb-user">✓ Self-Added</span>` : ''}
           ${j.applied ? `<span class="jb jb-applied">✅ Applied</span>` : ''}
         </div>
@@ -3252,7 +3277,7 @@ function buildCard(j, c, cd) {
         </a>
         <select class="pipeline-select stage-${(j.stage||'none')}" 
                 onchange="setStage('${c}','${j._id}',this)"
-                title="Track your progress on this job">
+                title="Track your progress · click 📋 Job Tracker to see your board">
           <option value="none" ${!j.stage||j.stage==='none'?'selected':''}>— Track progress</option>
           <option value="researching" ${j.stage==='researching'?'selected':''}>🔍 Researching</option>
           <option value="applied"     ${j.stage==='applied'?'selected':''}>📤 Applied</option>
@@ -3277,11 +3302,30 @@ function buildCard(j, c, cd) {
       </div>
     </div>
 
+    ${j.stageHistory && Object.keys(j.stageHistory).length ? `
+    <div style="background:white;border-radius:8px;padding:10px 12px;border:1px solid var(--border);margin-bottom:10px;">
+      <div class="detail-box-label" style="margin-bottom:8px;">📅 Stage Timeline</div>
+      <div style="display:flex;flex-direction:column;gap:4px;">
+        ${['researching','applied','interview','offer','declined']
+          .filter(s => j.stageHistory[s])
+          .map(s => {
+            const labels = {researching:'🔍 Researching',applied:'📤 Applied',interview:'📅 Interview',offer:'🎉 Offer',declined:'✕ Declined'};
+            const date = new Date(j.stageHistory[s]).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+            const daysAgo = Math.floor((Date.now()-j.stageHistory[s])/(1000*60*60*24));
+            return `<div style="display:flex;justify-content:space-between;font-size:12px;">
+              <span style="font-weight:600">${labels[s]}</span>
+              <span style="color:var(--muted)">${date} · ${daysAgo===0?'today':daysAgo===1?'1 day ago':daysAgo+' days ago'}</span>
+            </div>`;
+          }).join('')}
+      </div>
+    </div>` : ''}
+
     <!-- AI Tools -->
     <div class="ai-tools-row">
-      <button class="ai-tool-btn" onclick="generateCoverLetter('${c}','${j._id}')" id="cl-btn-${safeId}">✏️ Cover Letter Draft</button>
-      <button class="ai-tool-btn" onclick="generateInterviewPrep('${c}','${j._id}')" id="ip-btn-${safeId}">🎯 Interview Prep</button>
-      <button class="ai-tool-btn" onclick="generateResumeTips('${c}','${j._id}')" id="rt-btn-${safeId}">📋 Resume Tips</button>
+      <button class="ai-tool-btn" onclick="generateCoverLetter('${c}','${safeId}')" id="cl-btn-${safeId}">✏️ Cover Letter Draft</button>
+      <button class="ai-tool-btn" onclick="generateInterviewPrep('${c}','${safeId}')" id="ip-btn-${safeId}">🎯 Interview Prep</button>
+      <button class="ai-tool-btn" onclick="generateResumeTips('${c}','${safeId}')" id="rt-btn-${safeId}">📋 Resume Tips</button>
+      <button class="ai-tool-btn" onclick="runAiCardTool('${c}','${safeId}','salary')" id="sal-btn-${safeId}">💰 Salary Research</button>
     </div>
     <div id="ai-tool-output-${safeId}" style="display:none;"></div>
 
@@ -3301,21 +3345,23 @@ function buildCard(j, c, cd) {
 // ═══════════════════════════════════════════════════════════════
 //  AI CARD TOOLS — Cover letter, Interview prep, Resume tips
 // ═══════════════════════════════════════════════════════════════
-async function runAiCardTool(c, id, type) {
+async function runAiCardTool(c, safeId, type) {
   const cd = CONFIG.candidates[c];
-  const j = (cd?.jobs||[]).find(x=>x._id===id);
-  if (!j) return;
-  const safeId = id.replace(/[^a-z0-9]/gi,'_');
+  // Look up job by safeId match instead of raw _id to avoid special char issues
+  const j = (cd?.jobs||[]).find(x => (x._id||'').replace(/[^a-z0-9]/gi,'_') === safeId);
+  if (!j) { toast('Could not find job — try refreshing'); return; }
+
   const output = document.getElementById('ai-tool-output-'+safeId);
-  const btnId = { cover:'cl-btn', interview:'ip-btn', resume:'rt-btn' }[type]+'-'+safeId;
+  const btnId = { cover:'cl-btn', interview:'ip-btn', resume:'rt-btn', salary:'sal-btn' }[type]+'-'+safeId;
   const btn = document.getElementById(btnId);
   if (!output || !btn) return;
 
-  const labels = { cover:'✏️ Cover Letter Draft', interview:'🎯 Interview Prep Notes', resume:'📋 Resume Tailoring Tips' };
+  const labels = { cover:'✏️ Cover Letter Draft', interview:'🎯 Interview Prep Notes', resume:'📋 Resume Tailoring Tips', salary:'💰 Salary Research' };
   const disclaimers = {
     cover: 'This is a starting point only — rewrite in your own voice before sending. AI-generated letters are easy to spot.',
     interview: 'Practice these out loud. Your real answers will be better than anything written here.',
-    resume: 'These are suggestions to consider — only make changes that are genuinely true about you.'
+    resume: 'These are suggestions to consider — only make changes that are genuinely true about you.',
+    salary: 'Salary data is approximate. Use this as a starting reference — not a guarantee. Always research current market rates before negotiating.'
   };
 
   const prompts = {
@@ -3355,7 +3401,23 @@ Job: ${j.title} at ${j.company}
 Requirements: ${(j.qualifications||[]).join(', ')}
 Description: ${j.description}
 
-Focus on: which skills to emphasize, what language from the job posting to mirror, what to reorder or highlight. Be specific and actionable. Number each suggestion.`
+Focus on: which skills to emphasize, what language from the job posting to mirror, what to reorder or highlight. Be specific and actionable. Number each suggestion.`,
+
+    salary: `Provide salary research for this role. Be specific and practical.
+
+Role: ${j.title}
+Company: ${j.company}
+Location: ${j.location||'Remote / United States'}
+Listed salary: ${j.salary||'Not specified'}
+
+Provide:
+1. Typical salary range for this role and location in 2025-2026
+2. What factors push toward the high end (experience, skills, company size)
+3. What to anchor at in negotiation and why
+4. Any red flags if the listed salary seems low
+5. One sentence on total comp beyond base (equity, bonus, benefits typical for this type of role)
+
+Be direct and specific with numbers.`
   };
 
   btn.disabled = true;
@@ -3369,7 +3431,7 @@ Focus on: which skills to emphasize, what language from the job posting to mirro
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         model: 'claude-haiku-4-5-20251001',
-        max_tokens: 600,
+        max_tokens: 700,
         messages: [{ role: 'user', content: prompts[type] }]
       })
     });
@@ -3382,19 +3444,19 @@ Focus on: which skills to emphasize, what language from the job posting to mirro
           ${labels[type]}
           <button onclick="document.getElementById('ai-tool-output-${safeId}').style.display='none'" style="font-size:10px;padding:2px 6px;border-radius:4px;border:1px solid var(--border);background:white;cursor:pointer;">✕</button>
         </div>
-        ${text||'No output generated.'}
+        ${(text||'No output generated.').replace(/\n/g,'<br>')}
         <div class="ai-tool-disclaimer">⚠️ ${disclaimers[type]}</div>
       </div>`;
   } catch(e) {
-    output.innerHTML = `<div class="ai-tool-output" style="color:var(--red)">Error: ${e.message}</div>`;
+    output.innerHTML = `<div class="ai-tool-output" style="color:var(--red)">Error: ${e.message}. Check your Cloudflare Worker is running.</div>`;
   }
   btn.disabled = false;
-  btn.textContent = { cover:'✏️ Cover Letter Draft', interview:'🎯 Interview Prep', resume:'📋 Resume Tips' }[type];
+  btn.textContent = { cover:'✏️ Cover Letter Draft', interview:'🎯 Interview Prep', resume:'📋 Resume Tips', salary:'💰 Salary Research' }[type];
 }
 
-function generateCoverLetter(c, id) { runAiCardTool(c, id, 'cover'); }
-function generateInterviewPrep(c, id) { runAiCardTool(c, id, 'interview'); }
-function generateResumeTips(c, id) { runAiCardTool(c, id, 'resume'); }
+function generateCoverLetter(c, safeId) { runAiCardTool(c, safeId, 'cover'); }
+function generateInterviewPrep(c, safeId) { runAiCardTool(c, safeId, 'interview'); }
+function generateResumeTips(c, safeId) { runAiCardTool(c, safeId, 'resume'); }
 
 function toggleCardDetail(safeId) {
   const el = document.getElementById('cdetail-'+safeId);
@@ -3467,18 +3529,25 @@ function saveNote(c, id, val, safeId) {
 function setStage(c, id, select) {
   const j = CONFIG.candidates[c].jobs.find(x=>x._id===id);
   if (!j) return;
-  j.stage = select.value;
-  // Update select color class
-  select.className = `pipeline-select stage-${select.value}`;
-  // Sync applied flag with pipeline
-  if (select.value === 'applied' || select.value === 'interview' || select.value === 'offer') {
-    j.applied = true;
-  } else if (select.value === 'none' || select.value === 'researching') {
-    j.applied = false;
+  const newStage = select.value;
+  j.stage = newStage;
+  select.className = `pipeline-select stage-${newStage}`;
+  // Record timestamp for this stage
+  if (newStage !== 'none') {
+    if (!j.stageHistory) j.stageHistory = {};
+    j.stageHistory[newStage] = Date.now();
   }
+  // Sync applied flag
+  if (['applied','interview','offer'].includes(newStage)) j.applied = true;
+  else if (['none','researching'].includes(newStage)) j.applied = false;
   saveConfig();
   updateSidebarStats(c);
   updateLoginCounts();
+  // Show timestamp toast
+  if (newStage !== 'none') {
+    const labels = { researching:'🔍 Researching', applied:'📤 Applied', interview:'📅 Interview scheduled', offer:'🎉 Offer received', declined:'✕ Declined' };
+    toast(labels[newStage] + ' — ' + new Date().toLocaleDateString('en-US',{month:'short',day:'numeric'}));
+  }
 }
 
 function clearNewBadges(c) {
@@ -3782,8 +3851,8 @@ function setView(c, view, btn) {
   viewState[c] = view;
   // Update toggle buttons
   document.getElementById('view-list-'+c)?.classList.toggle('active', view==='list');
-  document.getElementById('view-kanban-'+c)?.classList.toggle('active', view==='kanban');
-  if (view === 'kanban') {
+  document.getElementById('view-tracker-'+c)?.classList.toggle('active', view==='tracker');
+  if (view === 'tracker') {
     renderKanban(c);
   } else {
     const ps = pageState[c] || {};
@@ -3828,7 +3897,7 @@ function renderKanban(c) {
 
   container.innerHTML = `<div class="kanban-board">${cols.join('')}</div>
     <div style="font-size:11px;color:var(--muted);text-align:center;padding:8px 0;">
-      Click any card to view it in list view · Update stage using the "Track progress" dropdown on each job card
+      Click any card to jump to it in list view · Update stage using the "Track progress" dropdown on each card
     </div>`;
 }
 
@@ -3846,15 +3915,76 @@ function jumpToJob(c, id) {
   }, 200);
 }
 
+// Track sort direction per candidate
+const sortDir = {};
+
+function sortJobs(c, flip=false) {
+  const sel = document.getElementById('sort-select-'+c);
+  const dirBtn = document.getElementById('sort-dir-'+c);
+  const sort = sel?.value || 'default';
+
+  if (!sortDir[c]) sortDir[c] = { asc: false };
+
+  // Flip direction if button clicked or same sort reselected
+  if (flip) sortDir[c].asc = !sortDir[c].asc;
+
+  const asc = sortDir[c].asc;
+
+  // Update direction button
+  if (dirBtn) dirBtn.textContent = sort === 'default' ? '↕' : (asc ? '↑' : '↓');
+
+  const cd = CONFIG.candidates[c];
+  const jobs = cd.jobs;
+  const matchOrder = { 'Strong Match': 0, 'Good Match': 1, 'Growth Opportunity': 2 };
+  const parseSalary = s => {
+    const m = (s||'').match(/\$?([\d,.]+)K?/);
+    return m ? parseFloat(m[1].replace(/,/g,'')) * ((s||'').toUpperCase().includes('K') ? 1000 : 1) : 0;
+  };
+
+  if (sort === 'default') {
+    // Restore original order (newest added first)
+    jobs.sort((a,b) => (b._addedAt||0) - (a._addedAt||0));
+    if (dirBtn) dirBtn.textContent = '↕';
+  } else if (sort === 'match') {
+    jobs.sort((a,b) => asc
+      ? (matchOrder[b.matchScore]??3) - (matchOrder[a.matchScore]??3)
+      : (matchOrder[a.matchScore]??3) - (matchOrder[b.matchScore]??3));
+  } else if (sort === 'newest') {
+    jobs.sort((a,b) => asc
+      ? (a._addedAt||0) - (b._addedAt||0)
+      : (b._addedAt||0) - (a._addedAt||0));
+  } else if (sort === 'salary') {
+    jobs.sort((a,b) => asc
+      ? parseSalary(a.salary) - parseSalary(b.salary)
+      : parseSalary(b.salary) - parseSalary(a.salary));
+  } else if (sort === 'company') {
+    jobs.sort((a,b) => asc
+      ? (b.company||'').localeCompare(a.company||'')
+      : (a.company||'').localeCompare(b.company||''));
+  }
+
+  saveConfig();
+  renderJobCards(c, currentFilter[c]||'all', 0);
+}
+
 function filterJobs(c, type, btn) {
   document.querySelectorAll(`#filters-${c} .fbt`).forEach(b => {
     b.classList.remove('on');
     if (b.classList.contains('star-on')) { b.style.background='white'; b.style.color='var(--text2)'; b.style.borderColor='var(--border)'; }
   });
-  btn.classList.add('on');
-  if (type === 'starred') { btn.style.background='var(--gold-lt)'; btn.style.color='#7a5500'; btn.style.borderColor='var(--gold)'; }
+  if (btn) {
+    btn.classList.add('on');
+    if (type === 'starred') { btn.style.background='var(--gold-lt)'; btn.style.color='#7a5500'; btn.style.borderColor='var(--gold)'; }
+  } else {
+    // Called from stat row — highlight matching filter button
+    const match = document.querySelector(`#filters-${c} .fbt[onclick*="'${type}'"]`);
+    if (match) {
+      match.classList.add('on');
+      if (type === 'starred') { match.style.background='var(--gold-lt)'; match.style.color='#7a5500'; match.style.borderColor='var(--gold)'; }
+    }
+  }
   currentFilter[c] = type;
-  renderJobCards(c, type);
+  renderJobCards(c, type, 0);
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -4110,6 +4240,31 @@ function clearJobs(c) {
   toast('Jobs cleared');
 }
 
+function resetJobs(c) {
+  const name = CONFIG.candidates[c].name;
+  if (!confirm(`Reset all jobs for ${name}?\n\nThis clears all jobs (including dismissed), resets last searched date, and clears stage history.\n\nTheir profile (bio, skills, targets, PIN) will be kept.`)) return;
+  CONFIG.candidates[c].jobs = [];
+  CONFIG.candidates[c].lastSearched = null;
+  CONFIG.candidates[c].lastVisit = null;
+  saveConfig();
+  updateLoginCounts();
+  renderOverview();
+  toast(`✅ ${name}'s jobs reset — clean slate`);
+}
+
+function resetAllJobs() {
+  if (!confirm('Reset ALL jobs for all candidates?\n\nThis clears every job list, dismissed items, and search history across Michael, Lisa, and Shannon.\n\nAll profiles (bio, skills, targets, PINs) will be kept.')) return;
+  activeCandidates().forEach(c => {
+    CONFIG.candidates[c].jobs = [];
+    CONFIG.candidates[c].lastSearched = null;
+    CONFIG.candidates[c].lastVisit = null;
+  });
+  saveConfig();
+  updateLoginCounts();
+  renderOverview();
+  toast('✅ All jobs reset — clean slate for everyone');
+}
+
 // ═══════════════════════════════════════════════════════════════
 //  MODAL HELPERS
 // ═══════════════════════════════════════════════════════════════
@@ -4139,11 +4294,11 @@ function toast(msg) {
 function loadFallback(c) {
   const fallbacks = {
     m: [
-      { title:'HR Director',company:'Mid-size Tech Company',location:'Remote',workType:'Remote',salary:'$120K–$150K',matchScore:'Strong Match',description:'Leads HR strategy, payroll (Paycom), compliance, and talent acquisition across a multi-state organization. Michael\'s Paycom depth and 20-year multi-site HR leadership transfer completely outside healthcare.',qualifications:['8+ years HR leadership','HRIS/Paycom expertise','Multi-state employment law','PHR or SPHR preferred'],benefits:'Medical/dental/vision, 401(k) match, remote, generous PTO',applyUrl:'https://www.linkedin.com/jobs/search/?keywords=HR+Director+remote',source:'LinkedIn',isNew:true,tags:['Remote','HR','Tech'] },
-      { title:'VP of Operations',company:'PE-backed Portfolio Company',location:'Remote',workType:'Remote',salary:'$150K–$200K',matchScore:'Strong Match',description:'Oversees multi-site operational P&L, team leadership, and compliance for a scaling organization. PE-backed companies recruit executives with proven startup-to-scale experience — exactly Michael\'s background.',qualifications:['10+ years multi-site ops leadership','P&L ownership','Process improvement mindset','Board/investor comfort'],benefits:'Executive base + bonus, equity participation, full benefits',applyUrl:'https://www.linkedin.com/jobs/search/?keywords=VP+Operations+remote',source:'LinkedIn',isNew:true,tags:['Remote','Executive','High Pay'] },
-      { title:'Chief Compliance Officer',company:'Financial Services Firm',location:'Remote',workType:'Remote',salary:'$130K–$165K',matchScore:'Strong Match',description:'Directs enterprise compliance across federal/state regulations. Michael\'s 20 years navigating Medicare/Medicaid/CoP compliance maps directly to any regulated industry — financial services, insurance, and energy face identical complexity.',qualifications:['7+ years compliance leadership','Regulated industry experience','Policy/training development','CCEP helpful'],benefits:'401(k), full benefits, bonus, flexible remote',applyUrl:'https://www.indeed.com/jobs?q=Chief+Compliance+Officer+remote',source:'Indeed',isNew:false,tags:['Compliance','Finance','Remote'] },
-      { title:'CIO / IT Director',company:'Growing Regional Business',location:'Remote or Hybrid Phoenix',workType:'Hybrid',salary:'$130K–$175K',matchScore:'Good Match',description:'Leads IT strategy, infrastructure, and vendor management for a 50–500 person organization. Michael built and managed full IT infrastructure for multiple hospice locations — identical skills for any business at similar scale.',qualifications:['IT leadership or hands-on infrastructure management','Vendor/budget management','Security awareness','Scaling technology with business growth'],benefits:'Executive benefits, equity possible, hybrid flexibility',applyUrl:'https://www.linkedin.com/jobs/search/?keywords=CIO+IT+Director+remote+Arizona',source:'LinkedIn',isNew:true,tags:['CIO','IT','Hybrid'] },
-      { title:'Director of Operations — Multi-location',company:'Franchise or Retail Group',location:'Remote or Hybrid AZ',workType:'Hybrid',salary:'$110K–$145K',matchScore:'Strong Match',description:'Oversees operations across 10-50+ locations — exactly what Michael did for years. Multi-unit franchise and retail operations require identical skills: compliance, HR, vendor management, budgets, and troubleshooting at scale.',qualifications:['Multi-site operations management','HR and compliance oversight','Budget management','Systems thinking'],benefits:'Bonus structure, car allowance, full benefits',applyUrl:'https://www.indeed.com/jobs?q=Director+Operations+multi-site',source:'Indeed',isNew:false,tags:['Operations','Multi-site','Any Industry'] }
+      { title:'HR Director',company:'Rippling',location:'Remote',workType:'Remote',salary:'$120K–$150K',matchScore:'Strong Match',description:'Leads HR strategy, payroll (Paycom), compliance, and talent acquisition across a multi-state organization. Michael\'s Paycom depth and 20-year multi-site HR leadership transfer completely outside healthcare.',qualifications:['8+ years HR leadership','HRIS/Paycom expertise','Multi-state employment law','PHR or SPHR preferred'],benefits:'Medical/dental/vision, 401(k) match, remote, generous PTO',applyUrl:'https://www.linkedin.com/jobs/search/?keywords=HR+Director+remote',source:'LinkedIn',isNew:true,tags:['Remote','HR','Tech'] },
+      { title:'VP of Operations',company:'Apex Group',location:'Remote',workType:'Remote',salary:'$150K–$200K',matchScore:'Strong Match',description:'Oversees multi-site operational P&L, team leadership, and compliance for a scaling organization. PE-backed companies recruit executives with proven startup-to-scale experience — exactly Michael\'s background.',qualifications:['10+ years multi-site ops leadership','P&L ownership','Process improvement mindset','Board/investor comfort'],benefits:'Executive base + bonus, equity participation, full benefits',applyUrl:'https://www.linkedin.com/jobs/search/?keywords=VP+Operations+remote',source:'LinkedIn',isNew:true,tags:['Remote','Executive','High Pay'] },
+      { title:'Chief Compliance Officer',company:'Fidelity Investments',location:'Remote',workType:'Remote',salary:'$130K–$165K',matchScore:'Strong Match',description:'Directs enterprise compliance across federal/state regulations. Michael\'s 20 years navigating Medicare/Medicaid/CoP compliance maps directly to any regulated industry — financial services, insurance, and energy face identical complexity.',qualifications:['7+ years compliance leadership','Regulated industry experience','Policy/training development','CCEP helpful'],benefits:'401(k), full benefits, bonus, flexible remote',applyUrl:'https://www.indeed.com/jobs?q=Chief+Compliance+Officer+remote',source:'Indeed',isNew:false,tags:['Compliance','Finance','Remote'] },
+      { title:'CIO / IT Director',company:'Nextiva',location:'Remote or Hybrid Phoenix',workType:'Hybrid',salary:'$130K–$175K',matchScore:'Good Match',description:'Leads IT strategy, infrastructure, and vendor management for a 50–500 person organization. Michael built and managed full IT infrastructure for multiple hospice locations — identical skills for any business at similar scale.',qualifications:['IT leadership or hands-on infrastructure management','Vendor/budget management','Security awareness','Scaling technology with business growth'],benefits:'Executive benefits, equity possible, hybrid flexibility',applyUrl:'https://www.linkedin.com/jobs/search/?keywords=CIO+IT+Director+remote+Arizona',source:'LinkedIn',isNew:true,tags:['CIO','IT','Hybrid'] },
+      { title:'Director of Operations — Multi-location',company:'ServiceMaster Brands',location:'Remote or Hybrid AZ',workType:'Hybrid',salary:'$110K–$145K',matchScore:'Strong Match',description:'Oversees operations across 10-50+ locations — exactly what Michael did for years. Multi-unit franchise and retail operations require identical skills: compliance, HR, vendor management, budgets, and troubleshooting at scale.',qualifications:['Multi-site operations management','HR and compliance oversight','Budget management','Systems thinking'],benefits:'Bonus structure, car allowance, full benefits',applyUrl:'https://www.indeed.com/jobs?q=Director+Operations+multi-site',source:'Indeed',isNew:false,tags:['Operations','Multi-site','Any Industry'] }
     ],
     l: [
       { title:'Case Manager RN — Work From Home',company:'CVS Health / Aetna',location:'Remote (AZ)',workType:'Remote',salary:'$54K–$117K',matchScore:'Strong Match',description:'100% remote telephonic case management for health plan members. M-F standard hours. Lisa\'s 30 years of clinical expertise and care coordination far exceeds requirements — her hospice skills transfer directly to payer-side case management.',qualifications:['Active unrestricted RN license','3+ years clinical experience','2+ years case management preferred','BSN preferred'],benefits:'401(k), affordable medical/dental/vision, EAP, no travel',applyUrl:'https://cvshealth.wd1.myworkdayjobs.com/en-US/cvs_health_careers',source:'CVS Health',isNew:true,tags:['100% Remote','RN Required','Insurance'] },
@@ -4152,8 +4307,8 @@ function loadFallback(c) {
       { title:'Telehealth Clinical Lead',company:'Teladoc / MDLive / Included Health',location:'Remote',workType:'Remote',salary:'$85K–$125K',matchScore:'Good Match',description:'Leads clinical protocols and quality oversight for a virtual care platform without managing a physical facility. Lisa\'s clinical depth, QAPI expertise, and executive leadership make her a strong candidate in the rapidly expanding telehealth sector.',qualifications:['Active RN license','Clinical leadership experience','Quality/compliance background','Virtual care comfort'],benefits:'Remote, tech company benefits, growth track',applyUrl:'https://www.linkedin.com/jobs/search/?keywords=telehealth+clinical+lead+RN+remote',source:'LinkedIn',isNew:true,tags:['Remote','Telehealth','New Industry'] }
     ],
     s: [
-      { title:'Corporate Trainer — Financial Services',company:'Bank, Insurance, or Fintech',location:'Remote',workType:'Remote',salary:'$70K–$100K',matchScore:'Strong Match',description:'Financial services firms actively recruit former teachers for training roles because classroom management, curriculum design, and engagement skills are exactly what they need — and pay is significantly higher than education.',qualifications:['Bachelor\'s degree','2+ years facilitation or teaching','Strong presentation skills','LMS experience a plus'],benefits:'Remote, 401(k), medical/dental, tuition reimbursement',applyUrl:'https://www.indeed.com/jobs?q=corporate+trainer+remote+financial+services',source:'Indeed',isNew:false,tags:['Remote','Finance','Career Change'] },
-      { title:'L&D Specialist / Learning Experience Designer',company:'Mid-size SaaS Company',location:'Remote',workType:'Remote',salary:'$75K–$105K',matchScore:'Strong Match',description:'Builds employee onboarding, product training, and L&D programs. Tech companies love former teachers — the skills are identical except the audience is employees. Shannon\'s behavioral psych background is a bonus differentiator.',qualifications:['Teaching or training background','Curriculum design skills','LMS platform comfort','Instructional design fundamentals'],benefits:'Tech benefits: equity, unlimited PTO, home office stipend',applyUrl:'https://www.linkedin.com/jobs/search/?keywords=learning+development+specialist+remote',source:'LinkedIn',isNew:true,tags:['Remote','Tech','L&D'] },
+      { title:'Corporate Trainer — Financial Services',company:'Voya Financial',location:'Remote',workType:'Remote',salary:'$70K–$100K',matchScore:'Strong Match',description:'Financial services firms actively recruit former teachers for training roles because classroom management, curriculum design, and engagement skills are exactly what they need — and pay is significantly higher than education.',qualifications:['Bachelor\'s degree','2+ years facilitation or teaching','Strong presentation skills','LMS experience a plus'],benefits:'Remote, 401(k), medical/dental, tuition reimbursement',applyUrl:'https://www.indeed.com/jobs?q=corporate+trainer+remote+financial+services',source:'Indeed',isNew:false,tags:['Remote','Finance','Career Change'] },
+      { title:'L&D Specialist / Learning Experience Designer',company:'Workiva',location:'Remote',workType:'Remote',salary:'$75K–$105K',matchScore:'Strong Match',description:'Builds employee onboarding, product training, and L&D programs. Tech companies love former teachers — the skills are identical except the audience is employees. Shannon\'s behavioral psych background is a bonus differentiator.',qualifications:['Teaching or training background','Curriculum design skills','LMS platform comfort','Instructional design fundamentals'],benefits:'Tech benefits: equity, unlimited PTO, home office stipend',applyUrl:'https://www.linkedin.com/jobs/search/?keywords=learning+development+specialist+remote',source:'LinkedIn',isNew:true,tags:['Remote','Tech','L&D'] },
       { title:'Sr. Implementation Consultant, Clinical',company:'Homecare Homebase (HCHB)',location:'Remote + Weekly Travel',workType:'Travel',salary:'$75K–$100K + Per Diem',matchScore:'Strong Match',description:'Mon-Fri travel to client sites delivering EHR training to home health staff. Shannon\'s teaching background + hospice social work knowledge = rare combination. Per diem adds substantial income on top of base salary.',qualifications:['Healthcare or training experience','Willing to travel Mon-Fri weekly','Strong facilitation skills','Hospice/home health knowledge preferred'],benefits:'All travel covered, daily per diem, full benefits',applyUrl:'https://hchb.com/about-us/careers/',source:'HCHB',isNew:true,tags:['Travel','EHR','High Total Comp'] },
       { title:'Instructional Designer',company:'Mayo Clinic',location:'Remote (US)',workType:'Remote',salary:'$70K–$100K',matchScore:'Good Match',description:'Creates eLearning modules, facilitator guides, and job aids using adult learning principles. Shannon\'s curriculum development and lesson planning skills translate directly. Bridge: learn Articulate Storyline/Rise to build a portfolio quickly.',qualifications:['Bachelor\'s in education or psychology','Curriculum development experience','Articulate Storyline/Rise preferred','Adult learning theory understanding'],benefits:'Full Mayo Clinic benefits, 100% remote, stable employer',applyUrl:'https://jobs.mayoclinic.org/',source:'Mayo Clinic',isNew:false,tags:['Remote','eLearning','Portfolio Needed'] }
     ]
