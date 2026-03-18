@@ -1,0 +1,2945 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Career Hub</title>
+<link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;600;700&family=Nunito:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+/* ═══════════════════════════════════════════════
+   DESIGN TOKENS
+═══════════════════════════════════════════════ */
+:root {
+  --bg: #f7f6f2;
+  --surface: #ffffff;
+  --surface2: #f0efe9;
+  --border: #e0ddd5;
+  --text: #1c1c1c;
+  --text2: #444;
+  --muted: #888;
+
+  --michael: #1a4b8c;
+  --michael-lt: #eaf0fb;
+  --lisa: #6b2d6b;
+  --lisa-lt: #f5edf5;
+  --shannon: #1e7a4e;
+  --shannon-lt: #e8f5ee;
+  --admin: #b45309;
+  --admin-lt: #fef3e2;
+
+  --gold: #d4a017;
+  --gold-lt: #fdf6e3;
+  --red: #c0392b;
+  --red-lt: #fdf0ee;
+  --green: #1e7a4e;
+  --green-lt: #e8f5ee;
+
+  --radius: 12px;
+  --shadow: 0 2px 10px rgba(0,0,0,.07);
+  --shadow-lg: 0 8px 32px rgba(0,0,0,.12);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Nunito', sans-serif;
+  font-weight: 400;
+  line-height: 1.6;
+  font-size: 15px;
+}
+
+/* ═══════════════════════════════════════════════
+   LOGIN SCREEN
+═══════════════════════════════════════════════ */
+#login-screen {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #1a4b8c 0%, #6b2d6b 50%, #1e7a4e 100%);
+  padding: 20px;
+}
+
+.login-card {
+  background: white;
+  border-radius: 20px;
+  padding: 48px 40px;
+  width: 100%;
+  max-width: 440px;
+  box-shadow: 0 24px 80px rgba(0,0,0,.3);
+  text-align: center;
+}
+
+.login-logo {
+  font-family: 'Lora', serif;
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 6px;
+}
+
+.login-sub {
+  font-size: 13px;
+  color: var(--muted);
+  margin-bottom: 36px;
+}
+
+.user-selector {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 24px;
+}
+
+.user-btn {
+  padding: 14px 10px;
+  border-radius: 10px;
+  border: 2px solid var(--border);
+  background: var(--surface);
+  cursor: pointer;
+  font-family: 'Nunito', sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text2);
+  transition: all .15s;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.user-btn:hover { transform: translateY(-2px); box-shadow: var(--shadow); }
+.user-btn.selected { border-width: 2px; color: white; }
+.user-btn[data-u="m"].selected { background: var(--michael); border-color: var(--michael); }
+.user-btn[data-u="l"].selected { background: var(--lisa); border-color: var(--lisa); }
+.user-btn[data-u="s"].selected { background: var(--shannon); border-color: var(--shannon); }
+.user-btn[data-u="admin"].selected { background: var(--admin); border-color: var(--admin); }
+
+.user-avatar {
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  font-size: 14px;
+  font-weight: 800;
+  display: flex; align-items: center; justify-content: center;
+  color: white;
+}
+
+.user-btn[data-u="m"] .user-avatar { background: var(--michael); }
+.user-btn[data-u="l"] .user-avatar { background: var(--lisa); }
+.user-btn[data-u="s"] .user-avatar { background: var(--shannon); }
+.user-btn[data-u="admin"] .user-avatar { background: var(--admin); }
+.user-btn.selected .user-avatar { background: rgba(255,255,255,.3); }
+
+.pin-section { margin-top: 4px; }
+
+.pin-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--muted);
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  margin-bottom: 10px;
+  text-align: left;
+}
+
+.pin-inputs {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  margin-bottom: 20px;
+}
+
+.pin-input {
+  width: 56px; height: 64px;
+  border: 2px solid var(--border);
+  border-radius: 12px;
+  font-size: 24px;
+  font-weight: 700;
+  text-align: center;
+  font-family: 'Lora', serif;
+  color: var(--text);
+  outline: none;
+  transition: border-color .15s;
+  background: var(--surface2);
+}
+
+.pin-input:focus { border-color: var(--michael); background: white; }
+
+.login-btn {
+  width: 100%;
+  padding: 14px;
+  border-radius: 10px;
+  border: none;
+  font-family: 'Nunito', sans-serif;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all .2s;
+  background: var(--michael);
+  color: white;
+}
+
+.login-btn:hover { opacity: .9; transform: translateY(-1px); }
+.login-btn[data-c="l"] { background: var(--lisa); }
+.login-btn[data-c="s"] { background: var(--shannon); }
+.login-btn[data-c="admin"] { background: var(--admin); }
+
+.login-error {
+  color: var(--red);
+  font-size: 13px;
+  font-weight: 600;
+  margin-top: 10px;
+  display: none;
+}
+
+.login-hint {
+  margin-top: 20px;
+  font-size: 11px;
+  color: var(--muted);
+  line-height: 1.6;
+  border-top: 1px solid var(--border);
+  padding-top: 16px;
+}
+
+/* ═══════════════════════════════════════════════
+   APP SHELL
+═══════════════════════════════════════════════ */
+#app { display: none; }
+
+header {
+  background: white;
+  border-bottom: 2px solid var(--border);
+  padding: 14px 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  position: sticky;
+  top: 0;
+  z-index: 200;
+  box-shadow: var(--shadow);
+}
+
+.header-left { display: flex; align-items: center; gap: 14px; }
+
+.h-logo {
+  font-family: 'Lora', serif;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.h-user-badge {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 5px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.header-right { display: flex; align-items: center; gap: 10px; }
+
+.h-btn {
+  padding: 7px 14px;
+  border-radius: 8px;
+  border: 1.5px solid var(--border);
+  background: white;
+  font-family: 'Nunito', sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  color: var(--text2);
+  transition: all .15s;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.h-btn:hover { background: var(--surface2); }
+.h-btn.danger { color: var(--red); border-color: #f5c6c1; }
+.h-btn.danger:hover { background: var(--red-lt); }
+
+/* ═══════════════════════════════════════════════
+   ADMIN TABS
+═══════════════════════════════════════════════ */
+.admin-tabs {
+  background: white;
+  border-bottom: 2px solid var(--border);
+  display: flex;
+  padding: 0 28px;
+  overflow-x: auto;
+}
+
+.atab {
+  padding: 12px 22px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  color: var(--muted);
+  border-bottom: 3px solid transparent;
+  margin-bottom: -2px;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: color .15s;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+
+.atab:hover { color: var(--text2); }
+.atab[data-p="m"].active { color: var(--michael); border-bottom-color: var(--michael); }
+.atab[data-p="l"].active { color: var(--lisa); border-bottom-color: var(--lisa); }
+.atab[data-p="s"].active { color: var(--shannon); border-bottom-color: var(--shannon); }
+.atab[data-p="overview"].active { color: var(--admin); border-bottom-color: var(--admin); }
+
+/* ═══════════════════════════════════════════════
+   TWO-COLUMN LAYOUT
+═══════════════════════════════════════════════ */
+.app-body {
+  display: grid;
+  grid-template-columns: 300px 1fr;
+  height: calc(100vh - 106px);
+  overflow: hidden;
+}
+
+.sidebar {
+  background: white;
+  border-right: 2px solid var(--border);
+  overflow-y: auto;
+  padding: 20px 16px;
+}
+
+.main-content {
+  overflow-y: auto;
+  padding: 24px 28px;
+}
+
+/* ═══════════════════════════════════════════════
+   PROFILE PANEL (sidebar)
+═══════════════════════════════════════════════ */
+.profile-section { margin-bottom: 20px; }
+
+.profile-name {
+  font-family: 'Lora', serif;
+  font-size: 22px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 2px;
+}
+
+.edit-icon {
+  font-size: 14px;
+  cursor: pointer;
+  opacity: .4;
+  transition: opacity .15s;
+}
+.edit-icon:hover { opacity: 1; }
+
+.profile-role {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 12px;
+}
+
+.profile-bio {
+  font-size: 13px;
+  color: var(--text2);
+  line-height: 1.65;
+  margin-bottom: 16px;
+}
+
+.editable-bio {
+  width: 100%;
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-family: 'Nunito', sans-serif;
+  font-size: 13px;
+  color: var(--text2);
+  resize: vertical;
+  min-height: 90px;
+  outline: none;
+  display: none;
+  margin-bottom: 8px;
+}
+
+.editable-bio.visible { display: block; }
+
+.section-label {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 8px;
+  margin-top: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.skills-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-bottom: 6px;
+}
+
+.skill-tag {
+  padding: 3px 10px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  background: var(--surface2);
+  color: var(--text2);
+  border: 1.5px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.skill-remove {
+  cursor: pointer;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1;
+}
+
+.skill-remove:hover { color: var(--red); }
+
+.skill-add-row {
+  display: flex;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.skill-input {
+  flex: 1;
+  border: 1.5px solid var(--border);
+  border-radius: 7px;
+  padding: 5px 9px;
+  font-family: 'Nunito', sans-serif;
+  font-size: 12px;
+  outline: none;
+}
+
+.skill-input:focus { border-color: #aaa; }
+
+.add-skill-btn {
+  padding: 5px 10px;
+  border-radius: 7px;
+  border: none;
+  font-size: 16px;
+  cursor: pointer;
+  color: white;
+  line-height: 1;
+}
+
+.stat-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+}
+
+.stat-row:last-child { border-bottom: none; }
+.stat-key { color: var(--muted); font-size: 12px; }
+.stat-val { font-weight: 700; font-size: 12px; }
+
+/* Search + action buttons */
+.action-section { margin-top: 16px; display: flex; flex-direction: column; gap: 8px; }
+
+.sidebar-btn {
+  width: 100%;
+  padding: 11px;
+  border-radius: 10px;
+  border: none;
+  font-family: 'Nunito', sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all .2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+}
+
+.sidebar-btn:disabled { opacity: .5; cursor: not-allowed; }
+.btn-primary-m { background: var(--michael); color: white; }
+.btn-primary-l { background: var(--lisa); color: white; }
+.btn-primary-s { background: var(--shannon); color: white; }
+.btn-primary-m:hover:not(:disabled) { background: #153d75; }
+.btn-primary-l:hover:not(:disabled) { background: #5a245a; }
+.btn-primary-s:hover:not(:disabled) { background: #185f3c; }
+.btn-secondary { background: white; color: var(--text2); border: 1.5px solid var(--border); }
+.btn-secondary:hover { background: var(--surface2); }
+.btn-gold { background: var(--gold-lt); color: #7a5500; border: 1.5px solid #e8c840; }
+.btn-green { background: var(--green-lt); color: var(--green); border: 1.5px solid #a0d8b8; }
+
+/* Resume section */
+.resume-box {
+  background: var(--surface2);
+  border: 1.5px dashed var(--border);
+  border-radius: 10px;
+  padding: 14px;
+  text-align: center;
+  cursor: pointer;
+  transition: all .15s;
+}
+
+.resume-box:hover { border-color: #aaa; background: white; }
+.resume-icon { font-size: 24px; margin-bottom: 5px; }
+.resume-text { font-size: 12px; color: var(--muted); font-weight: 600; }
+
+/* ═══════════════════════════════════════════════
+   MAIN CONTENT AREA
+═══════════════════════════════════════════════ */
+.content-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 18px;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.content-title {
+  font-family: 'Lora', serif;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.filter-row {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.fbt {
+  padding: 5px 13px;
+  border-radius: 20px;
+  border: 1.5px solid var(--border);
+  background: white;
+  color: var(--text2);
+  font-size: 12px;
+  font-weight: 600;
+  font-family: 'Nunito', sans-serif;
+  cursor: pointer;
+  transition: all .15s;
+}
+
+.fbt:hover { background: var(--surface2); }
+.fbt.on { background: var(--text); color: white; border-color: var(--text); }
+.fbt.star-on { background: var(--gold-lt); color: #7a5500; border-color: var(--gold); }
+
+/* Add Job Banner */
+.add-job-banner {
+  background: white;
+  border: 2px dashed var(--border);
+  border-radius: var(--radius);
+  padding: 20px 24px;
+  margin-bottom: 20px;
+  display: none;
+}
+
+.add-job-banner.open { display: block; }
+
+.banner-title {
+  font-weight: 700;
+  font-size: 15px;
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.close-btn {
+  font-size: 18px;
+  cursor: pointer;
+  color: var(--muted);
+  line-height: 1;
+}
+
+.close-btn:hover { color: var(--text); }
+
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.form-group { display: flex; flex-direction: column; gap: 5px; }
+.form-group.full { grid-column: 1 / -1; }
+
+.form-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.form-input, .form-select, .form-textarea {
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-family: 'Nunito', sans-serif;
+  font-size: 13px;
+  color: var(--text);
+  outline: none;
+  background: white;
+  transition: border-color .15s;
+}
+
+.form-input:focus, .form-select:focus, .form-textarea:focus { border-color: #888; }
+.form-textarea { resize: vertical; min-height: 80px; }
+
+.url-paste-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+  align-items: flex-end;
+}
+
+.url-paste-row .form-input { flex: 1; }
+
+.or-divider {
+  text-align: center;
+  font-size: 12px;
+  color: var(--muted);
+  font-weight: 700;
+  margin: 12px 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.or-divider::before, .or-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+.form-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 14px;
+  justify-content: flex-end;
+}
+
+.submit-btn {
+  padding: 9px 20px;
+  border-radius: 8px;
+  border: none;
+  font-family: 'Nunito', sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all .15s;
+}
+
+.cancel-btn {
+  padding: 9px 16px;
+  border-radius: 8px;
+  border: 1.5px solid var(--border);
+  background: white;
+  font-family: 'Nunito', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  color: var(--text2);
+}
+
+/* ═══════════════════════════════════════════════
+   JOB CARDS
+═══════════════════════════════════════════════ */
+.results-meta {
+  font-size: 13px;
+  color: var(--muted);
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.result-count { font-weight: 700; color: var(--text2); }
+
+.cards { display: flex; flex-direction: column; gap: 12px; }
+
+.job-card {
+  background: white;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+  transition: box-shadow .2s, transform .15s, border-color .2s;
+  position: relative;
+}
+
+.job-card:hover { box-shadow: var(--shadow-lg); transform: translateY(-1px); }
+.job-card.starred { border-color: var(--gold); background: var(--gold-lt); }
+.job-card.applied { border-color: var(--green); }
+.job-card.dismissed { display: none; }
+.job-card.user-added { border-left: 4px solid var(--green); }
+
+.card-top-stripe { height: 4px; }
+
+.card-body { padding: 16px 18px; }
+
+.card-row1 {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.card-title-block { flex: 1; min-width: 0; }
+
+.card-title {
+  font-family: 'Lora', serif;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.3;
+  color: var(--text);
+  margin-bottom: 3px;
+}
+
+.card-company {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text2);
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex-wrap: wrap;
+}
+
+.card-location { font-size: 12px; color: var(--muted); }
+
+.card-actions { display: flex; gap: 5px; flex-shrink: 0; }
+
+.ca-btn {
+  width: 32px; height: 32px;
+  border-radius: 7px;
+  border: 1.5px solid var(--border);
+  background: white;
+  cursor: pointer;
+  font-size: 15px;
+  display: flex; align-items: center; justify-content: center;
+  transition: all .15s;
+}
+
+.ca-btn:hover { transform: scale(1.1); }
+.ca-btn.star:hover, .ca-btn.star.on { background: var(--gold-lt); border-color: var(--gold); }
+.ca-btn.applied-btn:hover, .ca-btn.applied-btn.on { background: var(--green-lt); border-color: var(--green); }
+.ca-btn.dismiss:hover { background: var(--red-lt); border-color: var(--red); }
+.ca-btn.del:hover { background: var(--red-lt); border-color: var(--red); color: var(--red); }
+
+.badge-row { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 10px; }
+
+.jb {
+  padding: 2px 8px;
+  border-radius: 5px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.jb-remote { background: #e0eeff; color: #1a4b8c; }
+.jb-hybrid { background: #fff3e0; color: #b45309; }
+.jb-travel { background: #f0e8ff; color: #5c2d91; }
+.jb-onsite { background: #fce4ec; color: #880e4f; }
+.jb-new    { background: #e8f5e9; color: #1e7a4e; }
+.jb-salary { background: #f3e5f5; color: #6a1b9a; }
+.jb-strong { background: #e0f2f1; color: #00695c; }
+.jb-good   { background: #fff8e1; color: #f57f17; }
+.jb-user   { background: #e8f5e9; color: #1e7a4e; }
+.jb-applied { background: #e8f5e9; color: #1e7a4e; border: 1px solid #a0d8b8; }
+
+.card-desc {
+  font-size: 13px;
+  color: var(--text2);
+  line-height: 1.65;
+  margin-bottom: 12px;
+}
+
+.card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.card-footer-left { display: flex; gap: 7px; align-items: center; flex-wrap: wrap; }
+
+.apply-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 7px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  font-family: 'Nunito', sans-serif;
+  text-decoration: none;
+  color: white;
+  transition: opacity .15s;
+}
+
+.apply-link:hover { opacity: .85; }
+
+.toggle-btn {
+  padding: 6px 12px;
+  border-radius: 8px;
+  border: 1.5px solid var(--border);
+  background: white;
+  font-family: 'Nunito', sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  color: var(--text2);
+  transition: all .15s;
+}
+
+.toggle-btn:hover { background: var(--surface2); }
+
+.card-source { font-size: 11px; color: var(--muted); }
+
+/* Card expanded detail */
+.card-detail {
+  display: none;
+  border-top: 1px solid var(--border);
+  padding: 16px 18px;
+  background: var(--surface2);
+}
+
+.card-detail.open { display: block; }
+
+.detail-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.detail-box {
+  background: white;
+  border-radius: 8px;
+  padding: 12px;
+  border: 1px solid var(--border);
+}
+
+.detail-box-label {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 6px;
+}
+
+.detail-box-text {
+  font-size: 12.5px;
+  color: var(--text2);
+  line-height: 1.65;
+}
+
+.detail-box-text ul { padding-left: 14px; }
+.detail-box-text li { margin-bottom: 2px; }
+
+.notes-label {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 6px;
+}
+
+.card-notes {
+  width: 100%;
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-family: 'Nunito', sans-serif;
+  font-size: 13px;
+  color: var(--text2);
+  resize: vertical;
+  min-height: 60px;
+  outline: none;
+  background: white;
+}
+
+/* ═══════════════════════════════════════════════
+   EMPTY / LOADING STATES
+═══════════════════════════════════════════════ */
+.empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--muted);
+}
+
+.empty-icon { font-size: 44px; margin-bottom: 14px; }
+.empty-title { font-size: 16px; font-weight: 700; color: var(--text2); margin-bottom: 6px; }
+.empty-sub { font-size: 14px; }
+
+.loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 60px;
+  gap: 12px;
+}
+
+.spinner {
+  width: 36px; height: 36px;
+  border: 3px solid var(--border);
+  border-radius: 50%;
+  animation: spin .7s linear infinite;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ═══════════════════════════════════════════════
+   ADMIN OVERVIEW PANEL
+═══════════════════════════════════════════════ */
+.overview-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.overview-card {
+  background: white;
+  border-radius: var(--radius);
+  padding: 20px;
+  border: 1.5px solid var(--border);
+  box-shadow: var(--shadow);
+}
+
+.ov-name {
+  font-family: 'Lora', serif;
+  font-size: 16px;
+  font-weight: 700;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ov-stats { display: flex; flex-direction: column; gap: 6px; }
+
+.ov-stat {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+}
+
+.ov-stat-key { color: var(--muted); }
+.ov-stat-val { font-weight: 700; }
+
+.admin-actions {
+  background: white;
+  border-radius: var(--radius);
+  padding: 20px;
+  border: 1.5px solid var(--border);
+  margin-bottom: 20px;
+}
+
+.admin-actions h3 {
+  font-size: 14px;
+  font-weight: 700;
+  margin-bottom: 12px;
+  color: var(--text2);
+}
+
+.admin-btn-grid { display: flex; gap: 8px; flex-wrap: wrap; }
+
+/* PIN management */
+.pin-manage {
+  background: var(--admin-lt);
+  border: 1.5px solid #f6c96b;
+  border-radius: var(--radius);
+  padding: 16px 20px;
+  margin-bottom: 16px;
+}
+
+.pin-manage h3 {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--admin);
+  margin-bottom: 10px;
+}
+
+.pin-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+
+.pin-item { display: flex; flex-direction: column; gap: 4px; }
+.pin-item label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; color: var(--muted); }
+.pin-item input {
+  border: 1.5px solid var(--border);
+  border-radius: 7px;
+  padding: 6px 10px;
+  font-family: 'Lora', serif;
+  font-size: 15px;
+  font-weight: 700;
+  text-align: center;
+  width: 100%;
+  outline: none;
+  letter-spacing: .2em;
+}
+
+/* Export button */
+.export-btn {
+  padding: 8px 16px;
+  border-radius: 8px;
+  background: var(--admin-lt);
+  border: 1.5px solid #f6c96b;
+  color: var(--admin);
+  font-family: 'Nunito', sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all .15s;
+}
+
+.export-btn:hover { background: #fed8a0; }
+
+/* ═══════════════════════════════════════════════
+   MODAL
+═══════════════════════════════════════════════ */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.5);
+  z-index: 500;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.modal-overlay.open { display: flex; }
+
+.modal {
+  background: white;
+  border-radius: 16px;
+  padding: 28px;
+  width: 100%;
+  max-width: 560px;
+  box-shadow: 0 32px 80px rgba(0,0,0,.3);
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.modal-title {
+  font-family: 'Lora', serif;
+  font-size: 18px;
+  font-weight: 700;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+/* Toast */
+.toast {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background: var(--text);
+  color: white;
+  padding: 12px 20px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  z-index: 1000;
+  box-shadow: var(--shadow-lg);
+  animation: slideUp .3s ease;
+  display: none;
+}
+
+@keyframes slideUp {
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+/* ═══════════════════════════════════════════════
+   RESPONSIVE
+═══════════════════════════════════════════════ */
+@media (max-width: 768px) {
+  .app-body { grid-template-columns: 1fr; height: auto; overflow: visible; }
+  .sidebar { position: relative; }
+  .main-content { padding: 16px; }
+  .form-grid { grid-template-columns: 1fr; }
+  .detail-grid { grid-template-columns: 1fr; }
+  .overview-grid { grid-template-columns: 1fr; }
+  .pin-grid { grid-template-columns: 1fr 1fr; }
+  header { padding: 12px 16px; }
+  .admin-tabs { padding: 0 16px; }
+}
+
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 5px; }
+
+/* Notification dot */
+.notif-dot {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px; height: 18px;
+  border-radius: 50%;
+  font-size: 10px;
+  font-weight: 800;
+  color: white;
+  margin-left: 4px;
+}
+
+/* ═══════════════════════════════════════════════
+   TOOLTIPS
+═══════════════════════════════════════════════ */
+.tip {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px; height: 16px;
+  border-radius: 50%;
+  background: var(--surface2);
+  border: 1.5px solid var(--border);
+  font-size: 10px;
+  font-weight: 800;
+  color: var(--muted);
+  cursor: help;
+  flex-shrink: 0;
+  margin-left: 4px;
+  vertical-align: middle;
+}
+
+.tip:hover { background: var(--text); color: white; border-color: var(--text); }
+
+.tip-bubble {
+  display: none;
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--text);
+  color: white;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.5;
+  padding: 8px 12px;
+  border-radius: 8px;
+  width: 220px;
+  text-align: left;
+  z-index: 999;
+  box-shadow: var(--shadow-lg);
+  pointer-events: none;
+  font-family: 'Nunito', sans-serif;
+}
+
+.tip-bubble::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 6px solid transparent;
+  border-top-color: var(--text);
+}
+
+.tip:hover .tip-bubble { display: block; }
+
+/* Help modal sections */
+.help-section { margin-bottom: 22px; }
+.help-section:last-child { margin-bottom: 0; }
+.help-section-title {
+  font-weight: 800;
+  font-size: 13px;
+  color: var(--text);
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.help-item {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+}
+.help-item:last-child { border-bottom: none; }
+.help-item-icon { font-size: 16px; flex-shrink: 0; margin-top: 1px; }
+.help-item-text { color: var(--text2); line-height: 1.5; }
+.help-item-text strong { color: var(--text); }
+</style>
+.search-progress-box {
+  background: white;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px 24px;
+  margin-bottom: 20px;
+  box-shadow: var(--shadow);
+}
+
+.search-progress-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.search-progress-title {
+  font-weight: 700;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.search-live-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--green);
+  animation: pulse-dot 1.2s ease-in-out infinite;
+}
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: .4; transform: scale(.8); }
+}
+
+.search-progress-count {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.progress-track {
+  background: var(--surface2);
+  border-radius: 20px;
+  height: 8px;
+  overflow: hidden;
+  margin-bottom: 10px;
+}
+
+.progress-fill {
+  height: 100%;
+  border-radius: 20px;
+  transition: width .6s ease;
+  background: linear-gradient(90deg, currentColor 0%, currentColor 100%);
+}
+
+.search-rounds {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+}
+
+.search-round-chip {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+  border: 1.5px solid var(--border);
+  background: white;
+  color: var(--muted);
+  transition: all .3s;
+}
+
+.search-round-chip.running {
+  border-color: currentColor;
+  color: inherit;
+  background: inherit;
+  animation: chip-pulse .8s ease-in-out infinite alternate;
+}
+
+.search-round-chip.done {
+  opacity: .6;
+}
+
+@keyframes chip-pulse {
+  from { opacity: .7; }
+  to { opacity: 1; }
+}
+
+/* Live result stream */
+.live-result-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+  animation: slideInCard .3s ease;
+}
+
+@keyframes slideInCard {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.live-result-icon {
+  font-size: 18px;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.live-result-text { flex: 1; min-width: 0; }
+.live-result-title { font-size: 13px; font-weight: 700; color: var(--text); }
+.live-result-company { font-size: 12px; color: var(--muted); }
+
+/* Airtable sync indicator */
+.sync-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.sync-ok { background: var(--green-lt); color: var(--green); border: 1px solid #a0d8b8; }
+.sync-off { background: var(--surface2); color: var(--muted); border: 1px solid var(--border); }
+.sync-err { background: var(--red-lt); color: var(--red); border: 1px solid #f5c6c1; }
+
+/* Search done summary */
+.search-done-box {
+  background: var(--green-lt);
+  border: 1.5px solid #a0d8b8;
+  border-radius: var(--radius);
+  padding: 14px 18px;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.search-done-text { font-size: 13px; font-weight: 600; color: var(--green); }
+.search-more-btn {
+  padding: 6px 14px;
+  border-radius: 8px;
+  border: 1.5px solid var(--green);
+  background: white;
+  color: var(--green);
+  font-family: 'Nunito', sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all .15s;
+}
+.search-more-btn:hover { background: var(--green-lt); }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════
+     LOGIN SCREEN
+═══════════════════════════════════════════════ -->
+<div id="login-screen">
+  <div class="login-card">
+    <div class="login-logo">💼 Career Hub</div>
+    <div class="login-sub">Select your profile to continue</div>
+
+    <div class="user-selector">
+      <div class="user-btn" data-u="m" onclick="selectUser('m')">
+        <div class="user-avatar">M</div>
+        Michael
+      </div>
+      <div class="user-btn" data-u="l" onclick="selectUser('l')">
+        <div class="user-avatar">L</div>
+        Lisa
+      </div>
+      <div class="user-btn" data-u="s" onclick="selectUser('s')">
+        <div class="user-avatar">S</div>
+        Shannon
+      </div>
+      <div class="user-btn" data-u="admin" onclick="selectUser('admin')">
+        <div class="user-avatar">⚙</div>
+        Admin
+      </div>
+    </div>
+
+    <div class="pin-section">
+      <div class="pin-label">Enter PIN</div>
+      <div class="pin-inputs">
+        <input class="pin-input" maxlength="1" type="password" id="p0" oninput="pinNext(0)" onkeydown="pinBack(event,0)">
+        <input class="pin-input" maxlength="1" type="password" id="p1" oninput="pinNext(1)" onkeydown="pinBack(event,1)">
+        <input class="pin-input" maxlength="1" type="password" id="p2" oninput="pinNext(2)" onkeydown="pinBack(event,2)">
+        <input class="pin-input" maxlength="1" type="password" id="p3" oninput="pinNext(3)" onkeydown="pinBack(event,3)">
+      </div>
+      <button class="login-btn" id="login-btn" onclick="doLogin()">Sign In</button>
+      <div class="login-error" id="login-error">Incorrect PIN. Try again.</div>
+    </div>
+
+    <div class="login-hint">
+      Each person only sees their own jobs and profile.<br>
+      Admin can view and edit everything.<br>
+      <strong>Default PINs:</strong> Michael: 1111 · Lisa: 2222 · Shannon: 3333 · Admin: 0000
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════
+     MAIN APP
+═══════════════════════════════════════════════ -->
+<div id="app">
+
+  <header>
+    <div class="header-left">
+      <div class="h-logo">💼 Career Hub</div>
+      <div class="h-user-badge" id="h-badge"></div>
+    </div>
+    <div class="header-right">
+      <button class="h-btn" onclick="openModal('help-modal')" title="Help & Guide">❓ Help</button>
+      <button class="h-btn" id="export-btn" onclick="exportCSV()" style="display:none">📊 Export CSV</button>
+      <button class="h-btn" onclick="showSettings()">⚙️ Settings</button>
+      <button class="h-btn danger" onclick="logout()">Sign Out</button>
+    </div>
+  </header>
+
+  <!-- Admin tabs (admin only) -->
+  <div class="admin-tabs" id="admin-tabs" style="display:none">
+    <div class="atab active" data-p="overview" onclick="switchPanel('overview')">📊 Overview</div>
+    <div class="atab" data-p="m" onclick="switchPanel('m')">
+      Michael <span class="notif-dot" style="background:var(--michael)" id="ntab-m">0</span>
+    </div>
+    <div class="atab" data-p="l" onclick="switchPanel('l')">
+      Lisa <span class="notif-dot" style="background:var(--lisa)" id="ntab-l">0</span>
+    </div>
+    <div class="atab" data-p="s" onclick="switchPanel('s')">
+      Shannon <span class="notif-dot" style="background:var(--shannon)" id="ntab-s">0</span>
+    </div>
+  </div>
+
+  <!-- App body -->
+  <div class="app-body" id="app-body">
+
+    <!-- SIDEBAR -->
+    <div class="sidebar" id="sidebar">
+      <!-- Filled by JS -->
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <div class="main-content" id="main-content">
+      <!-- Filled by JS -->
+    </div>
+
+  </div>
+</div>
+
+<!-- Settings Modal -->
+<div class="modal-overlay" id="settings-modal">
+  <div class="modal">
+    <div class="modal-title">
+      ⚙️ Settings
+      <span class="close-btn" onclick="closeModal('settings-modal')">✕</span>
+    </div>
+    <div id="settings-body"><!-- filled by JS --></div>
+  </div>
+</div>
+
+<!-- Resume Modal -->
+<div class="modal-overlay" id="resume-modal">
+  <div class="modal">
+    <div class="modal-title">
+      📄 Import Resume
+      <span class="close-btn" onclick="closeModal('resume-modal')">✕</span>
+    </div>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:14px;">
+      Paste your resume text below. The AI will extract key skills and update your profile.
+    </p>
+    <textarea class="form-textarea" id="resume-text" style="min-height:180px;width:100%;margin-bottom:12px;" placeholder="Paste resume text here..."></textarea>
+    <button class="submit-btn" id="resume-parse-btn" style="width:100%;padding:12px;" onclick="parseResume()">
+      🤖 Parse Resume & Update Profile
+    </button>
+  </div>
+</div>
+
+<!-- Help Modal -->
+<div class="modal-overlay" id="help-modal">
+  <div class="modal" style="max-width:620px;">
+    <div class="modal-title">
+      ❓ How to Use Career Hub
+      <span class="close-btn" onclick="closeModal('help-modal')">✕</span>
+    </div>
+
+    <div class="help-section">
+      <div class="help-section-title">🔐 Signing In</div>
+      <div class="help-item">
+        <div class="help-item-icon">👤</div>
+        <div class="help-item-text"><strong>Select your name</strong> on the login screen, enter your 4-digit PIN, and hit Sign In. Each person only sees their own jobs — no one else's.</div>
+      </div>
+      <div class="help-item">
+        <div class="help-item-icon">⚙️</div>
+        <div class="help-item-text"><strong>Admin login</strong> can see all three candidates, edit everyone's profiles, change PINs, and export data. Use Settings → Change PINs to update any PIN.</div>
+      </div>
+    </div>
+
+    <div class="help-section">
+      <div class="help-section-title">🔍 Finding Jobs</div>
+      <div class="help-item">
+        <div class="help-item-icon">🔍</div>
+        <div class="help-item-text"><strong>Search for New Jobs</strong> — click this button and wait 10–20 seconds. The AI searches live job boards and returns 10–15 real current openings tailored to your profile. Each search may return different results, so you can run it multiple times to build up your list.</div>
+      </div>
+      <div class="help-item">
+        <div class="help-item-icon">➕</div>
+        <div class="help-item-text"><strong>Add a Job You Found</strong> — paste any job URL (LinkedIn, Indeed, company site) and click "Fetch Details" to auto-fill the form. Or fill it in manually. Great for jobs you spot yourself anywhere online.</div>
+      </div>
+      <div class="help-item">
+        <div class="help-item-icon">🔎</div>
+        <div class="help-item-text"><strong>Filters</strong> at the top let you narrow down by Remote, Hybrid, Travel, New (added this session), Starred, or Applied. Click any filter — click again or click "All" to reset.</div>
+      </div>
+    </div>
+
+    <div class="help-section">
+      <div class="help-section-title">📋 Managing Jobs</div>
+      <div class="help-item">
+        <div class="help-item-icon">⭐</div>
+        <div class="help-item-text"><strong>Star a job</strong> to save it as a priority. Starred jobs are highlighted in gold and show up under the ⭐ Starred filter. Use this for roles you definitely want to apply to.</div>
+      </div>
+      <div class="help-item">
+        <div class="help-item-icon">✅</div>
+        <div class="help-item-text"><strong>Mark Applied</strong> after you send in your resume. The card turns green and it shows in the ✅ Applied filter so you can track where you've applied.</div>
+      </div>
+      <div class="help-item">
+        <div class="help-item-icon">✕</div>
+        <div class="help-item-text"><strong>Dismiss</strong> a job you're not interested in — it slides out of the list. Dismissed jobs don't come back unless you clear and re-search.</div>
+      </div>
+      <div class="help-item">
+        <div class="help-item-icon">▾</div>
+        <div class="help-item-text"><strong>Details</strong> button on each card expands to show qualifications, benefits, and a private notes field. Notes are only visible to you (and Admin).</div>
+      </div>
+    </div>
+
+    <div class="help-section">
+      <div class="help-section-title">✏️ Editing Your Profile</div>
+      <div class="help-item">
+        <div class="help-item-icon">✏️</div>
+        <div class="help-item-text"><strong>Edit your bio</strong> by clicking the pencil icon next to your name. Click outside the text box to save. Your bio is used by the AI when searching for jobs — keeping it accurate helps find better matches.</div>
+      </div>
+      <div class="help-item">
+        <div class="help-item-icon">🏷️</div>
+        <div class="help-item-text"><strong>Skills & Keywords</strong> — type a skill and press Enter (or click +) to add it. Click × on any skill to remove it. The more accurate your skills list, the better the AI job matches.</div>
+      </div>
+      <div class="help-item">
+        <div class="help-item-icon">🎯</div>
+        <div class="help-item-text"><strong>Search Targets</strong> — the text below your skills tells the AI what roles and industries to look for. Click "Edit search targets" to customize it. You can be as broad or specific as you like.</div>
+      </div>
+    </div>
+
+    <div class="help-section">
+      <div class="help-section-title">📄 Resume Import</div>
+      <div class="help-item">
+        <div class="help-item-icon">📄</div>
+        <div class="help-item-text"><strong>Import Resume</strong> — paste your resume text and the AI will extract your skills and rewrite your profile summary automatically. This is a great way to get your profile set up quickly. You can edit anything it generates.</div>
+      </div>
+    </div>
+
+    <div class="help-section">
+      <div class="help-section-title">💾 Saving & Syncing</div>
+      <div class="help-item">
+        <div class="help-item-icon">💾</div>
+        <div class="help-item-text"><strong>Auto-save</strong> — everything saves automatically to your browser. You don't need to click save anywhere.</div>
+      </div>
+      <div class="help-item">
+        <div class="help-item-icon">⚡</div>
+        <div class="help-item-text"><strong>Airtable sync</strong> (optional) — if Admin has connected Airtable in Settings, your jobs automatically back up to the cloud so they're accessible on any device. If not connected, data stays in this browser only.</div>
+      </div>
+      <div class="help-item">
+        <div class="help-item-icon">📊</div>
+        <div class="help-item-text"><strong>Export CSV</strong> (Admin only) — downloads all jobs across all three candidates as a spreadsheet you can open in Excel or Google Sheets.</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════
+//  CONFIGURATION — Edit PINs and candidate defaults here
+// ═══════════════════════════════════════════════════════════════
+let CONFIG = {
+  pins: { m: '1111', l: '2222', s: '3333', admin: '0000' },
+  airtable: { apiKey: '', baseId: '', enabled: false },
+  candidates: {
+    m: {
+      name: 'Michael',
+      color: 'var(--michael)',
+      colorHex: '#1a4b8c',
+      lt: 'var(--michael-lt)',
+      role: 'Operations · HR · IT · 20+ Years Experience',
+      bio: '20+ years founding and running complex multi-site businesses. Built everything from scratch: HR, payroll (deep Paycom expertise), IT infrastructure, compliance, vendor management, and board-level leadership. Looking to pivot into corporate roles in ANY industry — tech, finance, logistics, real estate, consulting. Remote strongly preferred; hybrid only if $130K+; on-site only if $150K+.',
+      skills: ['HR Leadership','Paycom / HRIS','IT Infrastructure','CIO-level','Compliance','Multi-site Ops','P&L Ownership','Business Startup','Vendor Management','Board Relations','Medicare CoP','Team Building'],
+      prefs: { remote: true, hybrid: true, minSalary: 130000, location: 'Phoenix, AZ' },
+      searchAreas: 'HR Director / CHRO, VP Operations, CIO / IT Director, Chief Compliance Officer, COO — ANY industry (tech, finance, SaaS, logistics, real estate, retail, consulting, manufacturing)',
+      jobs: []
+    },
+    l: {
+      name: 'Lisa',
+      color: 'var(--lisa)',
+      colorHex: '#6b2d6b',
+      lt: 'var(--lisa-lt)',
+      role: 'RN · Executive Director · 30+ Years',
+      bio: '30+ years as a Registered Nurse and Executive Director. Clinical expertise, QAPI, Medicare/Medicaid compliance, clinical education, and case management — all built in hospice but fully transferable to insurance/managed care, telehealth, consulting, and health tech. Strongly prefers 100% remote, lower-stress work without daily facility management.',
+      skills: ['RN License (AZ)','Case Management','Clinical Strategy','QAPI','Medicare/Medicaid','Clinical Education','Compliance','Utilization Management','HR Leadership','Team Development'],
+      prefs: { remote: true, hybrid: false, minSalary: 80000, location: 'Phoenix, AZ' },
+      searchAreas: 'Remote Case Manager RN, Utilization Management RN, Clinical Consultant, Telehealth Clinical Lead, Joint Commission Surveyor, Clinical Informatics Nurse — at insurance companies, telehealth, or consulting firms',
+      jobs: []
+    },
+    s: {
+      name: 'Shannon',
+      color: 'var(--shannon)',
+      colorHex: '#1e7a4e',
+      lt: 'var(--shannon-lt)',
+      role: 'BS Psychology · Teacher · L&D Career Pivot',
+      bio: 'Current middle school teacher, former hospice social worker, BS in Psychology. Teaching, curriculum design, adult learning theory, and behavioral science skills transfer into any corporate training, L&D, or instructional design role across ANY industry — tech, finance, retail, healthcare, or consulting. Open to heavy travel for high compensation. Prefers remote otherwise.',
+      skills: ['Facilitation / Teaching','Curriculum Development','Instructional Design','Adult Learning Theory','Behavioral Psychology','Change Management','Hospice Domain','Social Work','eLearning Interest'],
+      prefs: { remote: true, hybrid: true, travel: true, minSalary: 70000, location: 'Phoenix, AZ (open to relocation)' },
+      searchAreas: 'Corporate Trainer, L&D Specialist, Instructional Designer, EMR/EHR Implementation Trainer, Learning Consultant (travel), eLearning Developer — ANY industry (tech, finance, healthcare IT, consulting)',
+      jobs: []
+    }
+  }
+};
+
+// Persist config to localStorage
+function saveConfig() {
+  localStorage.setItem('portalConfig', JSON.stringify(CONFIG));
+}
+
+function loadConfig() {
+  const saved = localStorage.getItem('portalConfig');
+  if (saved) {
+    try {
+      const parsed = JSON.parse(saved);
+      if (parsed.pins) CONFIG.pins = { ...CONFIG.pins, ...parsed.pins };
+      if (parsed.airtable) CONFIG.airtable = { ...CONFIG.airtable, ...parsed.airtable };
+      Object.keys(CONFIG.candidates).forEach(c => {
+        if (parsed.candidates?.[c]) {
+          CONFIG.candidates[c] = { ...CONFIG.candidates[c], ...parsed.candidates[c] };
+        }
+      });
+    } catch(e) {}
+  }
+}
+
+loadConfig();
+
+// ═══════════════════════════════════════════════════════════════
+//  AUTH
+// ═══════════════════════════════════════════════════════════════
+let currentUser = null;
+let selectedUser = null;
+
+function selectUser(u) {
+  selectedUser = u;
+  document.querySelectorAll('.user-btn').forEach(b => b.classList.remove('selected'));
+  document.querySelector(`.user-btn[data-u="${u}"]`).classList.add('selected');
+  document.getElementById('login-btn').setAttribute('data-c', u);
+  // Clear PIN inputs
+  [0,1,2,3].forEach(i => document.getElementById('p'+i).value = '');
+  document.getElementById('p0').focus();
+  document.getElementById('login-error').style.display = 'none';
+}
+
+function pinNext(idx) {
+  const val = document.getElementById('p'+idx).value;
+  if (val && idx < 3) document.getElementById('p'+(idx+1)).focus();
+  if (idx === 3 && val) doLogin();
+}
+
+function pinBack(e, idx) {
+  if (e.key === 'Backspace' && !document.getElementById('p'+idx).value && idx > 0) {
+    document.getElementById('p'+(idx-1)).focus();
+  }
+}
+
+function getPin() {
+  return [0,1,2,3].map(i => document.getElementById('p'+i).value).join('');
+}
+
+function doLogin() {
+  if (!selectedUser) { toast('Please select a profile first'); return; }
+  const pin = getPin();
+  if (pin === CONFIG.pins[selectedUser]) {
+    currentUser = selectedUser;
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    initApp();
+  } else {
+    document.getElementById('login-error').style.display = 'block';
+    [0,1,2,3].forEach(i => document.getElementById('p'+i).value = '');
+    document.getElementById('p0').focus();
+  }
+}
+
+function logout() {
+  currentUser = null;
+  selectedUser = null;
+  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('app').style.display = 'none';
+  document.querySelectorAll('.user-btn').forEach(b => b.classList.remove('selected'));
+  [0,1,2,3].forEach(i => document.getElementById('p'+i).value = '');
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  APP INIT
+// ═══════════════════════════════════════════════════════════════
+let activePanel = null;
+
+function initApp() {
+  const isAdmin = currentUser === 'admin';
+  const badge = document.getElementById('h-badge');
+
+  if (isAdmin) {
+    badge.innerHTML = `<span style="background:var(--admin-lt);color:var(--admin);padding:4px 12px;border-radius:20px;font-size:12px;font-weight:700;">⚙️ Admin View</span>`;
+    document.getElementById('admin-tabs').style.display = 'flex';
+    document.getElementById('export-btn').style.display = 'flex';
+    switchPanel('overview');
+  } else {
+    const c = CONFIG.candidates[currentUser];
+    badge.innerHTML = `<span style="background:${c.lt};color:${c.colorHex};padding:4px 12px;border-radius:20px;font-size:12px;font-weight:700;">${c.name}</span>`;
+    document.getElementById('admin-tabs').style.display = 'none';
+    document.getElementById('export-btn').style.display = 'none';
+    switchPanel(currentUser);
+  }
+  // Update sync badges after render
+  setTimeout(updateSyncBadges, 100);
+}
+
+function switchPanel(panel) {
+  activePanel = panel;
+  // Update admin tab highlights
+  document.querySelectorAll('.atab').forEach(t => t.classList.remove('active'));
+  const activeTab = document.querySelector(`.atab[data-p="${panel}"]`);
+  if (activeTab) activeTab.classList.add('active');
+
+  if (panel === 'overview') {
+    renderOverview();
+  } else {
+    renderCandidatePanel(panel);
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  OVERVIEW (Admin only)
+// ═══════════════════════════════════════════════════════════════
+function renderOverview() {
+  document.getElementById('sidebar').innerHTML = renderPinManager();
+  document.getElementById('main-content').innerHTML = `
+    <div class="content-header">
+      <div class="content-title" style="color:var(--admin)">⚙️ Admin Overview</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+        <span id="admin-sync-badge" class="sync-badge ${CONFIG.airtable?.enabled ? 'sync-ok' : 'sync-off'}">${CONFIG.airtable?.enabled ? '⚡ Airtable connected' : '⚡ No cloud sync'}</span>
+        ${CONFIG.airtable?.enabled ? `<button class="export-btn" onclick="syncAllToAirtable()">↑ Sync to Airtable</button>` : ''}
+        <button class="export-btn" onclick="exportCSV()">📊 Export CSV</button>
+        <button class="h-btn" onclick="showSettings()">⚙️ Airtable Setup</button>
+      </div>
+    </div>
+
+    <div class="admin-actions">
+      <h3>Quick Actions</h3>
+      <div class="admin-btn-grid">
+        <button class="sidebar-btn btn-primary-m" style="width:auto;padding:9px 16px" onclick="switchPanel('m')">📋 View Michael</button>
+        <button class="sidebar-btn btn-primary-l" style="width:auto;padding:9px 16px" onclick="switchPanel('l')">📋 View Lisa</button>
+        <button class="sidebar-btn btn-primary-s" style="width:auto;padding:9px 16px" onclick="switchPanel('s')">📋 View Shannon</button>
+      </div>
+    </div>
+
+    <div class="overview-grid">
+      ${['m','l','s'].map(c => {
+        const cd = CONFIG.candidates[c];
+        const jobs = cd.jobs.filter(j => !j.dismissed);
+        const starred = jobs.filter(j => j.starred).length;
+        const applied = jobs.filter(j => j.applied).length;
+        const userAdded = jobs.filter(j => j.userAdded).length;
+        return `
+        <div class="overview-card">
+          <div class="ov-name" style="color:${cd.colorHex}">
+            <div style="width:32px;height:32px;border-radius:50%;background:${cd.colorHex};color:white;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;">${cd.name[0]}</div>
+            ${cd.name}
+          </div>
+          <div class="ov-stats">
+            <div class="ov-stat"><span class="ov-stat-key">Total Jobs</span><span class="ov-stat-val">${jobs.length}</span></div>
+            <div class="ov-stat"><span class="ov-stat-key">⭐ Starred</span><span class="ov-stat-val">${starred}</span></div>
+            <div class="ov-stat"><span class="ov-stat-key">✅ Applied</span><span class="ov-stat-val">${applied}</span></div>
+            <div class="ov-stat"><span class="ov-stat-key">🔗 Self-Added</span><span class="ov-stat-val">${userAdded}</span></div>
+          </div>
+          <button class="sidebar-btn" style="width:100%;margin-top:12px;padding:8px;font-size:12px;background:${cd.colorHex};color:white;border:none;border-radius:8px;cursor:pointer;font-family:Nunito,sans-serif;font-weight:700" onclick="switchPanel('${c}')">View ${cd.name}'s Jobs →</button>
+        </div>`;
+      }).join('')}
+    </div>
+
+    <div style="background:white;border-radius:var(--radius);padding:20px;border:1.5px solid var(--border);">
+      <h3 style="font-size:14px;font-weight:700;margin-bottom:12px;color:var(--text2)">⭐ All Starred Jobs</h3>
+      ${['m','l','s'].flatMap(c => {
+        const cd = CONFIG.candidates[c];
+        return (cd.jobs||[]).filter(j=>j.starred && !j.dismissed).map(j => `
+          <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);">
+            <span style="background:${cd.colorHex};color:white;padding:2px 8px;border-radius:5px;font-size:11px;font-weight:700">${cd.name}</span>
+            <span style="font-size:13px;font-weight:600;flex:1">${j.title}</span>
+            <span style="font-size:12px;color:var(--muted)">${j.company}</span>
+            ${j.applyUrl ? `<a href="${j.applyUrl}" target="_blank" style="font-size:11px;color:${cd.colorHex};font-weight:700">Apply ↗</a>` : ''}
+          </div>`);
+      }).join('') || '<div style="color:var(--muted);font-size:13px">No starred jobs yet</div>'}
+    </div>`;
+}
+
+function renderPinManager() {
+  return `
+    <div style="padding:4px 0">
+      <div style="font-family:Lora,serif;font-size:16px;font-weight:700;margin-bottom:16px;color:var(--admin)">⚙️ Admin Tools</div>
+      <div class="pin-manage">
+        <h3>🔐 Change PINs</h3>
+        <div class="pin-grid">
+          ${[['m','Michael'],['l','Lisa'],['s','Shannon'],['admin','Admin']].map(([u,n]) => `
+            <div class="pin-item">
+              <label>${n}</label>
+              <input type="text" maxlength="4" value="${CONFIG.pins[u]}" id="pin-${u}" style="letter-spacing:.2em" oninput="updatePin('${u}',this.value)">
+            </div>`).join('')}
+        </div>
+        <div style="font-size:11px;color:var(--muted);margin-top:8px">Changes save automatically and take effect on next login.</div>
+      </div>
+    </div>`;
+}
+
+function updatePin(u, val) {
+  CONFIG.pins[u] = val;
+  saveConfig();
+  toast('PIN updated for ' + CONFIG.candidates[u]?.name || u);
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  CANDIDATE PANEL
+// ═══════════════════════════════════════════════════════════════
+function renderCandidatePanel(c) {
+  const cd = CONFIG.candidates[c];
+  const isAdmin = currentUser === 'admin';
+
+  // Update tab notif
+  const count = (cd.jobs||[]).filter(j=>!j.dismissed).length;
+  const tabEl = document.getElementById('ntab-'+c);
+  if (tabEl) tabEl.textContent = count;
+
+  // SIDEBAR
+  document.getElementById('sidebar').innerHTML = buildSidebar(c, cd, isAdmin);
+
+  // MAIN
+  document.getElementById('main-content').innerHTML = buildMainContent(c, cd, isAdmin);
+
+  // Bind skills input
+  document.getElementById('skill-new-'+c)?.addEventListener('keydown', e => {
+    if (e.key === 'Enter') addSkill(c, document.getElementById('skill-new-'+c).value);
+  });
+}
+
+function buildSidebar(c, cd, isAdmin) {
+  const colorHex = cd.colorHex;
+  const skills = (cd.skills||[]).map(s => `
+    <span class="skill-tag">
+      ${s}
+      <span class="skill-remove" onclick="removeSkill('${c}','${s}')" title="Remove">×</span>
+    </span>`).join('');
+
+  return `
+    <div class="profile-section">
+      <div class="profile-name" style="color:${colorHex}">
+        ${cd.name}
+        <span class="edit-icon" onclick="toggleBioEdit('${c}')" title="Edit bio">✏️</span>
+      </div>
+      <div class="profile-role">${cd.role}</div>
+      <div class="profile-bio" id="bio-display-${c}">${cd.bio}</div>
+      <textarea class="editable-bio" id="bio-edit-${c}" onblur="saveBio('${c}',this.value)">${cd.bio}</textarea>
+
+      <div class="section-label">
+        Skills & Keywords
+        <span class="tip">?<span class="tip-bubble">Add any skills or keywords here. The AI uses these when searching for jobs — the more accurate, the better your matches. Click × to remove any skill.</span></span>
+      </div>
+      <div class="skills-container" id="skills-${c}">${skills}</div>
+      <div class="skill-add-row">
+        <input class="skill-input" id="skill-new-${c}" placeholder="Add a skill..." maxlength="30">
+        <button class="add-skill-btn" style="background:${colorHex}" onclick="addSkill('${c}', document.getElementById('skill-new-${c}').value)">+</button>
+      </div>
+
+      <div class="section-label">
+        Search Targets
+        <span class="tip">?<span class="tip-bubble">Tells the AI what roles and industries to look for. Click "Edit search targets" below to customize. Broader targets = more variety; specific targets = more focused results.</span></span>
+      </div>
+      <div style="font-size:12px;color:var(--text2);line-height:1.6;background:${cd.lt};padding:10px 12px;border-radius:8px;margin-bottom:4px;">
+        <div id="targets-display-${c}">${cd.searchAreas}</div>
+        <textarea class="editable-bio" id="targets-edit-${c}" style="background:white;margin-top:6px;" onblur="saveTargets('${c}',this.value)">${cd.searchAreas}</textarea>
+      </div>
+      <button class="skill-remove" style="font-size:12px;color:var(--muted);cursor:pointer;background:none;border:none;padding:0;margin-top:2px" onclick="toggleTargetEdit('${c}')">✏️ Edit search targets</button>
+
+      <div class="section-label">Stats</div>
+      <div class="stat-row"><span class="stat-key">Total Jobs</span><span class="stat-val" id="stat-total-${c}">${(cd.jobs||[]).filter(j=>!j.dismissed).length}</span></div>
+      <div class="stat-row"><span class="stat-key">⭐ Starred</span><span class="stat-val" id="stat-starred-${c}">${(cd.jobs||[]).filter(j=>j.starred).length}</span></div>
+      <div class="stat-row"><span class="stat-key">✅ Applied</span><span class="stat-val" id="stat-applied-${c}">${(cd.jobs||[]).filter(j=>j.applied).length}</span></div>
+      <div class="stat-row"><span class="stat-key">🔗 Self-Added</span><span class="stat-val">${(cd.jobs||[]).filter(j=>j.userAdded).length}</span></div>
+    </div>
+
+    <div class="action-section">
+      <button class="sidebar-btn" style="background:${colorHex};color:white;border:none" id="ai-search-btn-${c}" onclick="aiSearch('${c}')">
+        🔍 Search for New Jobs
+      </button>
+      <div style="font-size:11px;color:var(--muted);text-align:center;margin-top:-4px;display:flex;align-items:center;justify-content:center;gap:4px;">
+        Finds 10–15 live openings · ~15 sec
+        <span class="tip">?<span class="tip-bubble">Searches real job boards using AI. Results update every time you click — each search may surface different openings. Run it multiple times to build a bigger list.</span></span>
+      </div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-top:2px">
+        <span id="sync-badge-${c}" class="sync-badge sync-off">⚡ Local only</span>
+      </div>
+      <button class="sidebar-btn btn-secondary" onclick="toggleAddJob('${c}')">
+        ➕ Add a Job You Found
+        <span class="tip" style="background:var(--border);border-color:var(--muted)">?<span class="tip-bubble">Paste any job URL from LinkedIn, Indeed, or a company website. We'll try to fill in the details automatically — or you can type them in manually.</span></span>
+      </button>
+      <button class="sidebar-btn btn-secondary" onclick="openResumeModal('${c}')">
+        📄 Import Resume
+        <span class="tip" style="background:var(--border);border-color:var(--muted)">?<span class="tip-bubble">Paste your resume text and AI will extract your skills and update your profile summary. Helps the job search find better matches for you.</span></span>
+      </button>
+      ${isAdmin ? `<button class="sidebar-btn btn-secondary" onclick="clearJobs('${c}')">🗑 Clear All Jobs</button>` : ''}
+    </div>`;
+}
+
+function buildMainContent(c, cd, isAdmin) {
+  return `
+    <div class="content-header">
+      <div class="content-title" style="color:${cd.colorHex}">Jobs for ${cd.name}</div>
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+        <div class="filter-row" id="filters-${c}">
+          <button class="fbt on" onclick="filterJobs('${c}','all',this)">All</button>
+          <button class="fbt" onclick="filterJobs('${c}','remote',this)">Remote</button>
+          <button class="fbt" onclick="filterJobs('${c}','hybrid',this)">Hybrid</button>
+          <button class="fbt" onclick="filterJobs('${c}','travel',this)">Travel</button>
+          <button class="fbt" onclick="filterJobs('${c}','new',this)">🆕 New</button>
+          <button class="fbt star-on" onclick="filterJobs('${c}','starred',this)" style="background:white;color:var(--text2);border-color:var(--border)">⭐ Starred</button>
+          <button class="fbt" onclick="filterJobs('${c}','applied',this)" style="background:white;color:var(--text2)">✅ Applied</button>
+        </div>
+        <span class="tip" style="margin-left:2px">?<span class="tip-bubble">Filter your job list. Click a filter to narrow results. Click "All" to show everything again. Starred = jobs you saved. Applied = jobs you've sent a resume to.</span></span>
+      </div>
+    </div>
+
+    <!-- Add Job Banner -->
+    <div class="add-job-banner" id="add-job-banner-${c}">
+      <div class="banner-title">
+        ➕ Add a Job Posting
+        <span class="close-btn" onclick="toggleAddJob('${c}')">✕</span>
+      </div>
+
+      <div class="form-group full">
+        <div class="form-label">Paste Job URL (we'll try to fill in the details)</div>
+        <div class="url-paste-row">
+          <input class="form-input" id="job-url-${c}" placeholder="https://..." type="url">
+          <button class="submit-btn" style="background:${cd.colorHex};color:white;white-space:nowrap" onclick="scrapeUrl('${c}')">🔗 Fetch Details</button>
+        </div>
+      </div>
+
+      <div class="or-divider">or fill in manually</div>
+
+      <div class="form-grid">
+        <div class="form-group">
+          <div class="form-label">Job Title *</div>
+          <input class="form-input" id="jf-title-${c}" placeholder="e.g. HR Director">
+        </div>
+        <div class="form-group">
+          <div class="form-label">Company *</div>
+          <input class="form-input" id="jf-company-${c}" placeholder="Company name">
+        </div>
+        <div class="form-group">
+          <div class="form-label">Location</div>
+          <input class="form-input" id="jf-location-${c}" placeholder="Remote / Phoenix, AZ">
+        </div>
+        <div class="form-group">
+          <div class="form-label">Work Type</div>
+          <select class="form-select" id="jf-worktype-${c}">
+            <option value="Remote">Remote</option>
+            <option value="Hybrid">Hybrid</option>
+            <option value="On-site">On-site</option>
+            <option value="Travel">Travel</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <div class="form-label">Salary / Pay Range</div>
+          <input class="form-input" id="jf-salary-${c}" placeholder="e.g. $120K–$150K">
+        </div>
+        <div class="form-group">
+          <div class="form-label">Source / Job Board</div>
+          <input class="form-input" id="jf-source-${c}" placeholder="LinkedIn, Indeed, Company site...">
+        </div>
+        <div class="form-group full">
+          <div class="form-label">Description</div>
+          <textarea class="form-textarea" id="jf-desc-${c}" placeholder="What does the role do and why does it fit?"></textarea>
+        </div>
+        <div class="form-group full">
+          <div class="form-label">Apply URL</div>
+          <input class="form-input" id="jf-url2-${c}" placeholder="https://...">
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <button class="cancel-btn" onclick="toggleAddJob('${c}')">Cancel</button>
+        <button class="submit-btn" style="background:${cd.colorHex};color:white" onclick="addJobManual('${c}')">✓ Add to List</button>
+      </div>
+    </div>
+
+    <!-- Results -->
+    <div id="results-meta-${c}" class="results-meta" style="display:none">
+      <span class="result-count" id="result-count-${c}">0 jobs</span>
+      <span>·</span>
+      <span id="result-new-${c}">0 new</span>
+    </div>
+
+    <div id="cards-container-${c}">
+      <div class="empty-state">
+        <div class="empty-icon">🔍</div>
+        <div class="empty-title">No jobs yet</div>
+        <div class="empty-sub">Click "AI Search Jobs" to find live openings, or add one manually above.</div>
+      </div>
+    </div>`;
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  PROFILE EDITING
+// ═══════════════════════════════════════════════════════════════
+function toggleBioEdit(c) {
+  const display = document.getElementById('bio-display-'+c);
+  const edit = document.getElementById('bio-edit-'+c);
+  const showing = edit.classList.contains('visible');
+  edit.classList.toggle('visible', !showing);
+  display.style.display = showing ? '' : 'none';
+  if (!showing) edit.focus();
+}
+
+function saveBio(c, val) {
+  CONFIG.candidates[c].bio = val;
+  document.getElementById('bio-display-'+c).textContent = val;
+  document.getElementById('bio-edit-'+c).classList.remove('visible');
+  document.getElementById('bio-display-'+c).style.display = '';
+  saveConfig();
+  toast('Bio saved');
+}
+
+function toggleTargetEdit(c) {
+  const edit = document.getElementById('targets-edit-'+c);
+  const display = document.getElementById('targets-display-'+c);
+  const showing = edit.classList.contains('visible');
+  edit.classList.toggle('visible', !showing);
+  display.style.display = showing ? '' : 'none';
+  if (!showing) edit.focus();
+}
+
+function saveTargets(c, val) {
+  CONFIG.candidates[c].searchAreas = val;
+  document.getElementById('targets-display-'+c).textContent = val;
+  document.getElementById('targets-edit-'+c).classList.remove('visible');
+  document.getElementById('targets-display-'+c).style.display = '';
+  saveConfig();
+  toast('Search targets saved');
+}
+
+function addSkill(c, val) {
+  val = val?.trim();
+  if (!val) return;
+  if (!CONFIG.candidates[c].skills) CONFIG.candidates[c].skills = [];
+  if (CONFIG.candidates[c].skills.includes(val)) { toast('Skill already added'); return; }
+  CONFIG.candidates[c].skills.push(val);
+  saveConfig();
+  document.getElementById('skill-new-'+c).value = '';
+  const container = document.getElementById('skills-'+c);
+  const colorHex = CONFIG.candidates[c].colorHex;
+  const span = document.createElement('span');
+  span.className = 'skill-tag';
+  span.innerHTML = `${val}<span class="skill-remove" onclick="removeSkill('${c}','${val}')" title="Remove">×</span>`;
+  container.appendChild(span);
+  toast('Skill added');
+}
+
+function removeSkill(c, skill) {
+  CONFIG.candidates[c].skills = CONFIG.candidates[c].skills.filter(s => s !== skill);
+  saveConfig();
+  renderCandidatePanel(c);
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  AI SEARCH — Single clean search, 10-15 focused results
+// ═══════════════════════════════════════════════════════════════
+async function aiSearch(c) {
+  const cd = CONFIG.candidates[c];
+  const btn = document.getElementById('ai-search-btn-'+c);
+  const container = document.getElementById('cards-container-'+c);
+
+  // Mark all existing as not-new before this session
+  (cd.jobs||[]).forEach(j => j.isNew = false);
+
+  // Lock button, show spinner
+  btn.disabled = true;
+  btn.innerHTML = `
+    <span style="display:inline-flex;align-items:center;gap:8px;">
+      <span style="width:14px;height:14px;border:2px solid rgba(255,255,255,.3);border-top-color:white;border-radius:50%;animation:spin .7s linear infinite;display:inline-block;flex-shrink:0"></span>
+      Searching live job boards...
+    </span>`;
+
+  // Show loading state in the main panel
+  container.innerHTML = `
+    <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:56px 20px;gap:16px;text-align:center;">
+      <div class="spinner" style="border-top-color:${cd.colorHex}"></div>
+      <div>
+        <div style="font-size:15px;font-weight:700;color:var(--text2);margin-bottom:4px">Finding jobs for ${cd.name}...</div>
+        <div style="font-size:13px;color:var(--muted)">Searching across job boards and company sites. This takes 10–20 seconds.</div>
+      </div>
+    </div>`;
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 4000,
+        tools: [{ type: 'web_search_20250305', name: 'web_search' }],
+        system: buildSystemPrompt(c, cd),
+        messages: [{ role: 'user', content: buildUserPrompt(c, cd) }]
+      })
+    });
+
+    const data = await res.json();
+    if (data.error) throw new Error(data.error.message);
+
+    let raw = '';
+    for (const b of (data.content||[])) { if (b.type === 'text') raw += b.text; }
+
+    // Extract JSON array — be lenient about where it starts/ends
+    const match = raw.match(/\[[\s\S]*\]/);
+    if (!match) throw new Error('No results returned — try again');
+
+    let parsed = [];
+    try { parsed = JSON.parse(match[0]); } catch(e) { throw new Error('Could not read results — try again'); }
+
+    // Deduplicate against existing
+    const existingKeys = new Set((cd.jobs||[]).map(j => `${j.title}||${j.company}`));
+    const newJobs = parsed.filter(j => j.title && j.company && !existingKeys.has(`${j.title}||${j.company}`));
+
+    newJobs.forEach(j => {
+      j._id = `${c}-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
+      j.isNew = true;
+    });
+
+    // Prepend new jobs (newest at top)
+    if (!cd.jobs) cd.jobs = [];
+    cd.jobs = [...newJobs, ...cd.jobs];
+
+    saveConfig();
+
+    // Sync new jobs to Airtable if connected
+    if (CONFIG.airtable?.enabled && CONFIG.airtable?.apiKey && CONFIG.airtable?.baseId && newJobs.length) {
+      syncToAirtable(newJobs, c).catch(() => {});
+    }
+
+    renderJobCards(c);
+    updateSidebarStats(c);
+
+    if (newJobs.length === 0) {
+      toast(`All results already in your list. Try again tomorrow for fresh postings.`);
+    } else {
+      toast(`✅ Found ${newJobs.length} new jobs for ${cd.name}`);
+    }
+
+  } catch (err) {
+    // Show error inline but still load fallbacks so page isn't empty
+    container.innerHTML = `
+      <div style="background:var(--red-lt);border:1.5px solid #f5c6c1;border-radius:var(--radius);padding:16px 20px;margin-bottom:16px;">
+        <div style="font-size:13px;font-weight:700;color:var(--red);margin-bottom:4px">Search unavailable right now</div>
+        <div style="font-size:12px;color:var(--red);opacity:.8">${err.message}</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:8px">The AI search works when opened inside Claude.ai with web search enabled. Showing curated listings below — you can also add any job manually with the "Add a Job" button.</div>
+      </div>`;
+    loadFallback(c);
+  }
+
+  btn.disabled = false;
+  btn.innerHTML = '🔍 Search for New Jobs';
+}
+
+// What the AI is told about the candidate
+function buildSystemPrompt(c, cd) {
+  const skills = (cd.skills || []).join(', ');
+  return `You are a career search expert. Find REAL, CURRENTLY OPEN job postings. Today is March 2026.
+
+CANDIDATE: ${cd.name}
+LOCATION: ${cd.prefs?.location || 'Phoenix, AZ'} — prefers remote; open to travel for the right pay
+BACKGROUND: ${cd.bio.substring(0, 500)}
+KEY SKILLS: ${skills}
+TARGET ROLES & INDUSTRIES: ${cd.searchAreas}
+
+RULES:
+- Find jobs across ANY industry — tech, finance, logistics, retail, consulting, manufacturing, insurance. Do NOT default to healthcare-only results.
+- Each description must explain WHY this specific candidate's background qualifies, even without direct industry experience. Be explicit about the skill transfer.
+- Remote work rules: ${c === 'm' ? 'Remote strongly preferred. Hybrid only if $130K+. On-site only $150K+.' : c === 'l' ? 'Must be fully remote or minimal travel.' : 'Remote preferred; heavy travel okay for high compensation.'}
+- Return ONLY a raw JSON array. No markdown. No backticks. No explanation before or after. Start with [ and end with ].`;
+}
+
+// What the AI is asked to do
+function buildUserPrompt(c, cd) {
+  const queryMap = {
+    m: 'HR Director remote, CHRO Chief People Officer remote, VP Operations any industry remote, CIO IT Director SMB remote, Chief Compliance Officer remote, Director HR Technology Paycom, COO remote executive',
+    l: 'Case Manager RN work from home 2026, Utilization Management Nurse remote, Clinical Consultant remote registered nurse, Telehealth clinical lead RN, Joint Commission Surveyor hospice RN, Clinical Informatics Nurse remote',
+    s: 'Corporate Trainer remote 2026, L&D Specialist Learning Development remote, Instructional Designer eLearning remote, EMR EHR Implementation Trainer travel, Learning Consultant travel any industry, Curriculum Developer remote'
+  };
+  return `Search the web now for current job openings using searches like: ${queryMap[c] || cd.searchAreas}
+
+Find exactly 12 REAL, currently open job postings spread across different companies and industries. Use web search to verify they exist.
+
+Return ONLY this JSON array structure (no markdown, no text before or after):
+[
+  {
+    "title": "exact job title from posting",
+    "company": "real company name",
+    "location": "Remote or City, State",
+    "workType": "Remote",
+    "salary": "salary if listed or Competitive",
+    "matchScore": "Strong Match",
+    "description": "2-3 sentences: what the role does + specifically why this candidate's background transfers here",
+    "qualifications": ["requirement 1", "requirement 2", "requirement 3", "requirement 4"],
+    "benefits": "key benefits and perks",
+    "applyUrl": "https://direct-link-to-job-posting",
+    "source": "LinkedIn / Indeed / Company careers page",
+    "isNew": true,
+    "tags": ["Remote", "Industry", "Role type"]
+  }
+]`;
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  RENDER JOB CARDS
+// ═══════════════════════════════════════════════════════════════
+function renderJobCards(c, filter='all') {
+  const cd = CONFIG.candidates[c];
+  const container = document.getElementById('cards-container-'+c);
+  const metaEl = document.getElementById('results-meta-'+c);
+  const countEl = document.getElementById('result-count-'+c);
+  const newEl = document.getElementById('result-new-'+c);
+
+  let jobs = (cd.jobs||[]).filter(j => !j.dismissed);
+
+  // Apply filter
+  if (filter === 'remote') jobs = jobs.filter(j => (j.workType||'').toLowerCase() === 'remote');
+  else if (filter === 'hybrid') jobs = jobs.filter(j => (j.workType||'').toLowerCase() === 'hybrid');
+  else if (filter === 'travel') jobs = jobs.filter(j => (j.workType||'').toLowerCase() === 'travel');
+  else if (filter === 'new') jobs = jobs.filter(j => j.isNew);
+  else if (filter === 'starred') jobs = jobs.filter(j => j.starred);
+  else if (filter === 'applied') jobs = jobs.filter(j => j.applied);
+
+  // Update stats
+  const all = (cd.jobs||[]).filter(j=>!j.dismissed);
+  if (metaEl) metaEl.style.display = all.length ? 'flex' : 'none';
+  if (countEl) countEl.textContent = `${all.length} jobs`;
+  if (newEl) newEl.textContent = `${all.filter(j=>j.isNew).length} new`;
+
+  // Update sidebar stats
+  const statTotal = document.getElementById('stat-total-'+c);
+  const statStarred = document.getElementById('stat-starred-'+c);
+  const statApplied = document.getElementById('stat-applied-'+c);
+  if (statTotal) statTotal.textContent = all.length;
+  if (statStarred) statStarred.textContent = all.filter(j=>j.starred).length;
+  if (statApplied) statApplied.textContent = all.filter(j=>j.applied).length;
+
+  // Tab count
+  const ntab = document.getElementById('ntab-'+c);
+  if (ntab) ntab.textContent = all.length;
+
+  if (!jobs.length) {
+    container.innerHTML = `<div class="empty-state"><div class="empty-icon">${filter==='starred'?'⭐':filter==='applied'?'✅':'🔍'}</div><div class="empty-title">No ${filter==='all'?'jobs':filter+' jobs'} yet</div><div class="empty-sub">${filter==='all'?'Click AI Search Jobs or add one manually':'Change filter or add more jobs'}</div></div>`;
+    return;
+  }
+
+  container.innerHTML = `<div class="cards">${jobs.map(j => buildCard(j, c, cd)).join('')}</div>`;
+}
+
+function buildCard(j, c, cd) {
+  const safeId = (j._id||'').replace(/[^a-z0-9]/gi,'_');
+  const wtClass = { Remote:'jb-remote', Hybrid:'jb-hybrid', 'On-site':'jb-onsite', Travel:'jb-travel' }[j.workType]||'jb-hybrid';
+  const mcClass = j.matchScore==='Strong Match'?'jb-strong':j.matchScore==='Growth Opportunity'?'jb-good':'jb-good';
+  const quals = (j.qualifications||[]).map(q=>`<li>${q}</li>`).join('');
+  const tags = (j.tags||[]).map(t=>`<span class="jb jb-salary">${t}</span>`).join('');
+
+  return `
+<div class="job-card ${j.starred?'starred':''} ${j.applied?'applied':''} ${j.userAdded?'user-added':''}" 
+     id="jcard-${safeId}" 
+     data-id="${j._id}" 
+     data-worktype="${(j.workType||'').toLowerCase()}"
+     data-new="${j.isNew?'true':'false'}"
+     data-starred="${j.starred?'true':'false'}"
+     data-applied="${j.applied?'true':'false'}">
+  <div class="card-top-stripe" style="background:${cd.colorHex}${j.userAdded?';background:var(--green)':''}"></div>
+  <div class="card-body">
+    <div class="card-row1">
+      <div class="card-title-block">
+        <div class="card-title">${j.title}</div>
+        <div class="card-company">
+          ${j.company}
+          ${j.location ? `<span class="card-location">📍 ${j.location}</span>` : ''}
+          ${j.userAdded ? `<span class="jb jb-user">✓ Self-Added</span>` : ''}
+          ${j.applied ? `<span class="jb jb-applied">✅ Applied</span>` : ''}
+        </div>
+      </div>
+      <div class="card-actions">
+        <button class="ca-btn star ${j.starred?'on':''}" onclick="toggleStar('${c}','${j._id}',this)" title="⭐ Star this job to save it as a priority">⭐</button>
+        <button class="ca-btn applied-btn ${j.applied?'on':''}" onclick="toggleApplied('${c}','${j._id}',this)" title="✅ Mark as Applied — tracks that you've sent your resume">✅</button>
+        <button class="ca-btn dismiss" onclick="dismissCard('${c}','${j._id}')" title="✕ Not interested — removes this job from your list">✕</button>
+        ${j.userAdded ? `<button class="ca-btn del" onclick="deleteJob('${c}','${j._id}')" title="🗑 Permanently delete this job you added">🗑</button>` : ''}
+      </div>
+    </div>
+    <div class="badge-row">
+      <span class="jb ${wtClass}">${j.workType||'Unknown'}</span>
+      <span class="jb ${mcClass}">${j.matchScore||'Match'}</span>
+      ${j.isNew ? '<span class="jb jb-new">🆕 New</span>' : ''}
+      ${j.salary&&j.salary!=='Not listed'&&j.salary!=='Competitive' ? `<span class="jb jb-salary">💰 ${j.salary}</span>` : ''}
+      ${tags}
+    </div>
+    <div class="card-desc">${j.description||''}</div>
+    <div class="card-footer">
+      <div class="card-footer-left">
+        ${j.applyUrl ? `<a class="apply-link" style="background:${cd.colorHex}" href="${j.applyUrl}" target="_blank" rel="noopener">Apply Now ↗</a>` : ''}
+        <button class="toggle-btn" onclick="toggleCardDetail('${safeId}')">Details ▾</button>
+      </div>
+      <span class="card-source">${j.source||''}</span>
+    </div>
+  </div>
+  <div class="card-detail" id="cdetail-${safeId}">
+    <div class="detail-grid">
+      <div class="detail-box">
+        <div class="detail-box-label">Qualifications</div>
+        <div class="detail-box-text"><ul>${quals||'<li>See job listing for full requirements</li>'}</ul></div>
+      </div>
+      <div class="detail-box">
+        <div class="detail-box-label">Benefits & Pay</div>
+        <div class="detail-box-text">${j.benefits||'See listing for details.'}</div>
+      </div>
+    </div>
+    <div class="notes-label">📝 Your Notes</div>
+    <textarea class="card-notes" placeholder="Add notes, contacts, interview dates..." onchange="saveNote('${c}','${j._id}',this.value)">${j.notes||''}</textarea>
+  </div>
+</div>`;
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  CARD INTERACTIONS
+// ═══════════════════════════════════════════════════════════════
+function toggleCardDetail(safeId) {
+  const el = document.getElementById('cdetail-'+safeId);
+  const btn = el.previousElementSibling?.querySelector('.toggle-btn');
+  const open = el.classList.toggle('open');
+  if (btn) btn.textContent = open ? 'Details ▴' : 'Details ▾';
+}
+
+function toggleStar(c, id, btn) {
+  const j = CONFIG.candidates[c].jobs.find(x=>x._id===id);
+  if (!j) return;
+  j.starred = !j.starred;
+  btn.classList.toggle('on', j.starred);
+  const card = document.getElementById('jcard-'+id.replace(/[^a-z0-9]/gi,'_'));
+  if (card) { card.classList.toggle('starred', j.starred); card.dataset.starred = j.starred; }
+  saveConfig();
+  updateSidebarStats(c);
+}
+
+function toggleApplied(c, id, btn) {
+  const j = CONFIG.candidates[c].jobs.find(x=>x._id===id);
+  if (!j) return;
+  j.applied = !j.applied;
+  btn.classList.toggle('on', j.applied);
+  const card = document.getElementById('jcard-'+id.replace(/[^a-z0-9]/gi,'_'));
+  if (card) { card.classList.toggle('applied', j.applied); card.dataset.applied = j.applied; }
+  saveConfig();
+  updateSidebarStats(c);
+  toast(j.applied ? '✅ Marked as Applied!' : 'Unmarked');
+}
+
+function dismissCard(c, id) {
+  const j = CONFIG.candidates[c].jobs.find(x=>x._id===id);
+  if (!j) return;
+  j.dismissed = true;
+  const safeId = id.replace(/[^a-z0-9]/gi,'_');
+  const card = document.getElementById('jcard-'+safeId);
+  if (card) {
+    card.style.transition = 'all .3s ease';
+    card.style.opacity = '0';
+    card.style.transform = 'translateX(40px)';
+    setTimeout(() => { card.remove(); updateSidebarStats(c); }, 300);
+  }
+  saveConfig();
+  toast('Job dismissed');
+}
+
+function deleteJob(c, id) {
+  CONFIG.candidates[c].jobs = CONFIG.candidates[c].jobs.filter(j=>j._id!==id);
+  saveConfig();
+  renderJobCards(c);
+  toast('Job deleted');
+}
+
+function saveNote(c, id, val) {
+  const j = CONFIG.candidates[c].jobs.find(x=>x._id===id);
+  if (j) { j.notes = val; saveConfig(); }
+}
+
+function updateSidebarStats(c) {
+  const cd = CONFIG.candidates[c];
+  const all = (cd.jobs||[]).filter(j=>!j.dismissed);
+  const s1 = document.getElementById('stat-total-'+c);
+  const s2 = document.getElementById('stat-starred-'+c);
+  const s3 = document.getElementById('stat-applied-'+c);
+  if (s1) s1.textContent = all.length;
+  if (s2) s2.textContent = all.filter(j=>j.starred).length;
+  if (s3) s3.textContent = all.filter(j=>j.applied).length;
+  const ntab = document.getElementById('ntab-'+c);
+  if (ntab) ntab.textContent = all.length;
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  ADD JOB
+// ═══════════════════════════════════════════════════════════════
+function toggleAddJob(c) {
+  const banner = document.getElementById('add-job-banner-'+c);
+  banner.classList.toggle('open');
+}
+
+async function scrapeUrl(c) {
+  const url = document.getElementById('job-url-'+c).value.trim();
+  if (!url) { toast('Paste a URL first'); return; }
+
+  toast('🔍 Fetching job details...');
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        tools: [{ type: 'web_search_20250305', name: 'web_search' }],
+        messages: [{
+          role: 'user',
+          content: `Visit this job posting URL and extract the key details: ${url}
+
+Return ONLY a JSON object (no markdown) with these fields:
+{
+  "title": "job title",
+  "company": "company name",
+  "location": "location or Remote",
+  "workType": "Remote or Hybrid or On-site or Travel",
+  "salary": "salary if listed, else Competitive",
+  "description": "2-3 sentence description",
+  "benefits": "key benefits mentioned"
+}
+
+If you cannot access the URL, search for the job title and company to find similar info.`
+        }]
+      })
+    });
+
+    const data = await res.json();
+    let raw = '';
+    for (const b of (data.content||[])) { if (b.type==='text') raw += b.text; }
+    const m = raw.match(/\{[\s\S]*\}/);
+    if (m) {
+      const j = JSON.parse(m[0]);
+      document.getElementById('jf-title-'+c).value = j.title||'';
+      document.getElementById('jf-company-'+c).value = j.company||'';
+      document.getElementById('jf-location-'+c).value = j.location||'';
+      document.getElementById('jf-salary-'+c).value = j.salary||'';
+      document.getElementById('jf-desc-'+c).value = j.description||'';
+      document.getElementById('jf-url2-'+c).value = url;
+      const wt = document.getElementById('jf-worktype-'+c);
+      if (j.workType) wt.value = j.workType;
+      toast('✓ Job details fetched! Review and save.');
+    } else {
+      document.getElementById('jf-url2-'+c).value = url;
+      toast('Could not parse — please fill in manually');
+    }
+  } catch(e) {
+    document.getElementById('jf-url2-'+c).value = url;
+    toast('Fetch failed — fill in manually');
+  }
+}
+
+function addJobManual(c) {
+  const title = document.getElementById('jf-title-'+c).value.trim();
+  const company = document.getElementById('jf-company-'+c).value.trim();
+  if (!title || !company) { toast('Title and Company are required'); return; }
+
+  const job = {
+    _id: `${c}-user-${Date.now()}`,
+    title,
+    company,
+    location: document.getElementById('jf-location-'+c).value.trim() || 'Not listed',
+    workType: document.getElementById('jf-worktype-'+c).value,
+    salary: document.getElementById('jf-salary-'+c).value.trim() || 'Competitive',
+    description: document.getElementById('jf-desc-'+c).value.trim(),
+    applyUrl: document.getElementById('jf-url2-'+c).value.trim() || document.getElementById('job-url-'+c).value.trim(),
+    source: document.getElementById('jf-source-'+c).value.trim() || 'Self-added',
+    matchScore: 'Good Match',
+    isNew: true,
+    userAdded: true,
+    benefits: '',
+    qualifications: [],
+    tags: ['Self-Added']
+  };
+
+  if (!CONFIG.candidates[c].jobs) CONFIG.candidates[c].jobs = [];
+  CONFIG.candidates[c].jobs.unshift(job);
+  saveConfig();
+
+  // Clear form
+  ['title','company','location','salary','desc','url2','source'].forEach(f => {
+    const el = document.getElementById('jf-'+f+'-'+c);
+    if (el) el.value = '';
+  });
+  document.getElementById('job-url-'+c).value = '';
+  document.getElementById('jf-worktype-'+c).value = 'Remote';
+
+  toggleAddJob(c);
+  renderJobCards(c);
+  toast('✓ Job added!');
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  RESUME PARSING
+// ═══════════════════════════════════════════════════════════════
+let resumeTarget = null;
+
+function openResumeModal(c) {
+  resumeTarget = c;
+  document.getElementById('resume-text').value = '';
+  openModal('resume-modal');
+}
+
+async function parseResume() {
+  const text = document.getElementById('resume-text').value.trim();
+  if (!text) { toast('Paste resume text first'); return; }
+  const c = resumeTarget;
+  const cd = CONFIG.candidates[c];
+  const btn = document.getElementById('resume-parse-btn');
+  btn.disabled = true;
+  btn.textContent = '🤖 Parsing...';
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        messages: [{
+          role: 'user',
+          content: `Parse this resume and extract key information. Return ONLY JSON (no markdown):
+{
+  "skills": ["skill1","skill2",...],
+  "summary": "2-3 sentence professional summary based on this resume",
+  "topRoles": ["Target Role 1","Target Role 2","Target Role 3"]
+}
+
+Extract 10-20 strong transferable skills. Write the summary in first-person voice.
+
+RESUME:
+${text.substring(0, 3000)}`
+        }]
+      })
+    });
+
+    const data = await res.json();
+    let raw = '';
+    for (const b of (data.content||[])) { if (b.type==='text') raw += b.text; }
+    const m = raw.match(/\{[\s\S]*\}/);
+    if (m) {
+      const parsed = JSON.parse(m[0]);
+      if (parsed.skills?.length) {
+        CONFIG.candidates[c].skills = [...new Set([...parsed.skills, ...(cd.skills||[])])].slice(0,20);
+      }
+      if (parsed.summary) {
+        CONFIG.candidates[c].bio = parsed.summary + '\n\n' + cd.bio;
+      }
+      saveConfig();
+      closeModal('resume-modal');
+      renderCandidatePanel(c);
+      toast('✓ Resume parsed! Profile updated with extracted skills.');
+    } else {
+      toast('Could not parse resume — try a different format');
+    }
+  } catch(e) {
+    toast('Parse failed: ' + e.message);
+  }
+
+  btn.disabled = false;
+  btn.textContent = '🤖 Parse Resume & Update Profile';
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  FILTERS
+// ═══════════════════════════════════════════════════════════════
+let currentFilter = {};
+
+function filterJobs(c, type, btn) {
+  document.querySelectorAll(`#filters-${c} .fbt`).forEach(b => {
+    b.classList.remove('on');
+    if (b.classList.contains('star-on')) { b.style.background='white'; b.style.color='var(--text2)'; b.style.borderColor='var(--border)'; }
+  });
+  btn.classList.add('on');
+  if (type === 'starred') { btn.style.background='var(--gold-lt)'; btn.style.color='#7a5500'; btn.style.borderColor='var(--gold)'; }
+  currentFilter[c] = type;
+  renderJobCards(c, type);
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  EXPORT
+// ═══════════════════════════════════════════════════════════════
+function exportCSV() {
+  const rows = [['Candidate','Title','Company','Location','Work Type','Salary','Match Score','Starred','Applied','Notes','Apply URL','Source']];
+  ['m','l','s'].forEach(c => {
+    const cd = CONFIG.candidates[c];
+    (cd.jobs||[]).filter(j=>!j.dismissed).forEach(j => {
+      rows.push([
+        cd.name, j.title, j.company, j.location, j.workType, j.salary, j.matchScore,
+        j.starred?'Yes':'No', j.applied?'Yes':'No', j.notes||'', j.applyUrl||'', j.source||''
+      ]);
+    });
+  });
+  const csv = rows.map(r => r.map(v => `"${(v||'').replace(/"/g,'""')}"`).join(',')).join('\n');
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `career-portal-${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+  toast('CSV exported!');
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  SETTINGS
+// ═══════════════════════════════════════════════════════════════
+function showSettings() {
+  const isAdmin = currentUser === 'admin';
+  const at = CONFIG.airtable || {};
+  const atStatus = at.enabled && at.apiKey && at.baseId
+    ? `<span class="sync-badge sync-ok">✓ Airtable connected</span>`
+    : `<span class="sync-badge sync-off">Not connected</span>`;
+
+  document.getElementById('settings-body').innerHTML = `
+    ${isAdmin ? `
+    <div style="margin-bottom:20px">
+      <div style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:10px">Change PINs</div>
+      <div class="pin-grid">
+        ${[['m','Michael'],['l','Lisa'],['s','Shannon'],['admin','Admin']].map(([u,n])=>`
+          <div class="pin-item">
+            <label>${n}</label>
+            <input type="text" maxlength="4" value="${CONFIG.pins[u]}" onchange="CONFIG.pins['${u}']=this.value;saveConfig();toast('PIN updated')" style="letter-spacing:.2em;border:1.5px solid var(--border);border-radius:7px;padding:6px 10px;font-family:Lora,serif;font-size:16px;font-weight:700;text-align:center;width:100%;outline:none">
+          </div>`).join('')}
+      </div>
+    </div>
+
+    <div style="margin-bottom:20px;background:var(--admin-lt);border:1.5px solid #f6c96b;border-radius:var(--radius);padding:16px 20px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+        <div style="font-size:13px;font-weight:700;color:var(--admin)">⚡ Airtable Sync</div>
+        ${atStatus}
+      </div>
+      <p style="font-size:12px;color:var(--text2);line-height:1.6;margin-bottom:12px">
+        Connect Airtable so all three candidates sync their jobs across any device. 
+        Free Airtable account supports up to 1,000 records — plenty for this portal.
+      </p>
+      <div style="background:white;border-radius:8px;padding:12px;font-size:12px;color:var(--text2);margin-bottom:12px;border:1px solid var(--border)">
+        <strong>Setup (2 minutes):</strong><br>
+        1. Go to <a href="https://airtable.com" target="_blank" style="color:var(--admin)">airtable.com</a> → create a free account<br>
+        2. Create a new Base called "Career Portal"<br>
+        3. Add one Table called "Jobs" with these fields: <code>candidate, title, company, location, workType, salary, matchScore, description, applyUrl, source, starred, applied, notes, tags</code><br>
+        4. Go to <a href="https://airtable.com/create/tokens" target="_blank" style="color:var(--admin)">airtable.com/create/tokens</a> → create a Personal Access Token with "data.records:write" scope<br>
+        5. Paste your API Key and Base ID below
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+        <div class="form-group">
+          <div class="form-label">API Key (Personal Access Token)</div>
+          <input class="form-input" id="at-key" type="password" placeholder="pat..." value="${at.apiKey||''}" style="font-size:12px">
+        </div>
+        <div class="form-group">
+          <div class="form-label">Base ID</div>
+          <input class="form-input" id="at-base" placeholder="app..." value="${at.baseId||''}" style="font-size:12px">
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="submit-btn" style="background:var(--admin);color:white;padding:8px 16px" onclick="saveAirtable()">Save & Test Connection</button>
+        ${at.enabled ? `<button class="submit-btn" style="background:var(--green);color:white;padding:8px 16px" onclick="syncAllToAirtable()">↑ Push All Jobs Now</button>` : ''}
+        ${at.enabled ? `<button class="cancel-btn" onclick="CONFIG.airtable.enabled=false;saveConfig();showSettings()">Disconnect</button>` : ''}
+      </div>
+    </div>` : `
+    <div style="margin-bottom:20px;background:var(--surface2);border:1.5px solid var(--border);border-radius:var(--radius);padding:16px 20px;">
+      <div style="font-size:13px;font-weight:700;color:var(--text2);margin-bottom:4px">🔐 Change My PIN</div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:14px">Enter a new 4-digit PIN. You'll use it next time you log in.</div>
+      <div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;">
+        <div class="form-group" style="flex:1;min-width:120px;">
+          <div class="form-label">New PIN</div>
+          <input type="password" id="new-pin-input" maxlength="4" placeholder="••••"
+            style="width:100%;border:1.5px solid var(--border);border-radius:8px;padding:9px 12px;font-family:Lora,serif;font-size:20px;font-weight:700;letter-spacing:.25em;text-align:center;outline:none;"
+            oninput="this.value=this.value.replace(/[^0-9]/g,'')">
+        </div>
+        <div class="form-group" style="flex:1;min-width:120px;">
+          <div class="form-label">Confirm PIN</div>
+          <input type="password" id="confirm-pin-input" maxlength="4" placeholder="••••"
+            style="width:100%;border:1.5px solid var(--border);border-radius:8px;padding:9px 12px;font-family:Lora,serif;font-size:20px;font-weight:700;letter-spacing:.25em;text-align:center;outline:none;"
+            oninput="this.value=this.value.replace(/[^0-9]/g,'')">
+        </div>
+        <button class="submit-btn" style="background:var(--green);color:white;padding:10px 18px;margin-bottom:1px" onclick="changeCandidatePin()">Save PIN</button>
+      </div>
+      <div id="pin-change-msg" style="font-size:12px;margin-top:8px;display:none;font-weight:600;"></div>
+    </div>
+    <div style="margin-bottom:16px;background:var(--surface2);border-radius:8px;padding:12px;font-size:12px;color:var(--muted)">
+      <strong style="color:var(--text2)">Sync status:</strong> ${atStatus}
+    </div>`}
+
+    <div style="margin-bottom:16px">
+      <div style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:10px">Data</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button class="h-btn" onclick="exportCSV();closeModal('settings-modal')">📊 Export CSV</button>
+        ${isAdmin ? `<button class="h-btn danger" onclick="if(confirm('Clear ALL job data?')){['m','l','s'].forEach(c=>{CONFIG.candidates[c].jobs=[]});saveConfig();closeModal('settings-modal');initApp();toast('All data cleared')}">🗑 Clear All Data</button>` : ''}
+      </div>
+    </div>
+
+    <div style="background:var(--surface2);border-radius:8px;padding:12px;font-size:12px;color:var(--muted);line-height:1.7">
+      <strong style="color:var(--text2)">Storage:</strong> Jobs, notes, and profile edits save to this browser's local storage.
+      ${at.enabled ? 'Airtable sync is active — data also syncs to cloud.' : 'Connect Airtable above to sync across devices.'}
+    </div>`;
+  openModal('settings-modal');
+}
+
+function changeCandidatePin() {
+  const newPin = document.getElementById('new-pin-input')?.value?.trim();
+  const confirmPin = document.getElementById('confirm-pin-input')?.value?.trim();
+  const msgEl = document.getElementById('pin-change-msg');
+
+  const show = (msg, color) => {
+    msgEl.textContent = msg;
+    msgEl.style.color = color;
+    msgEl.style.display = 'block';
+  };
+
+  if (!newPin || newPin.length < 4) return show('PIN must be exactly 4 digits.', 'var(--red)');
+  if (!/^\d{4}$/.test(newPin)) return show('PIN must be numbers only.', 'var(--red)');
+  if (newPin !== confirmPin) return show('PINs don\'t match — try again.', 'var(--red)');
+  if (newPin === '0000') return show('That PIN is reserved for Admin. Choose a different one.', 'var(--red)');
+
+  CONFIG.pins[currentUser] = newPin;
+  saveConfig();
+  document.getElementById('new-pin-input').value = '';
+  document.getElementById('confirm-pin-input').value = '';
+  show('✓ PIN updated! Use it next time you log in.', 'var(--green)');
+  setTimeout(() => { if (msgEl) msgEl.style.display = 'none'; }, 4000);
+}
+
+async function saveAirtable() {
+  const key = document.getElementById('at-key')?.value?.trim();
+  const base = document.getElementById('at-base')?.value?.trim();
+  if (!key || !base) { toast('Enter both API key and Base ID'); return; }
+
+  toast('Testing connection...');
+  try {
+    // Test by listing tables
+    const res = await fetch(`https://api.airtable.com/v0/meta/bases/${base}/tables`, {
+      headers: { Authorization: `Bearer ${key}` }
+    });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error.message || 'Invalid credentials');
+
+    CONFIG.airtable = { apiKey: key, baseId: base, enabled: true };
+    saveConfig();
+    toast('✅ Airtable connected!');
+    updateSyncBadges();
+    showSettings();
+  } catch(e) {
+    toast('Connection failed: ' + e.message);
+  }
+}
+
+async function syncToAirtable(jobs, candidate) {
+  const at = CONFIG.airtable;
+  if (!at?.enabled || !at.apiKey || !at.baseId) return;
+  const cd = CONFIG.candidates[candidate];
+
+  const records = jobs.map(j => ({
+    fields: {
+      candidate: cd.name,
+      title: j.title||'',
+      company: j.company||'',
+      location: j.location||'',
+      workType: j.workType||'',
+      salary: j.salary||'',
+      matchScore: j.matchScore||'',
+      description: (j.description||'').substring(0, 800),
+      applyUrl: j.applyUrl||'',
+      source: j.source||'',
+      starred: j.starred ? 'Yes' : 'No',
+      applied: j.applied ? 'Yes' : 'No',
+      notes: j.notes||'',
+      tags: (j.tags||[]).join(', '),
+      portalId: j._id||''
+    }
+  }));
+
+  // Airtable accepts max 10 records per request
+  const chunks = [];
+  for (let i = 0; i < records.length; i += 10) chunks.push(records.slice(i, i+10));
+
+  for (const chunk of chunks) {
+    try {
+      await fetch(`https://api.airtable.com/v0/${at.baseId}/Jobs`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${at.apiKey}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ records: chunk })
+      });
+    } catch(e) { /* silent fail on individual chunks */ }
+  }
+}
+
+async function syncAllToAirtable() {
+  const at = CONFIG.airtable;
+  if (!at?.enabled) return;
+  toast('Syncing all jobs to Airtable...');
+  let total = 0;
+  for (const c of ['m','l','s']) {
+    const jobs = (CONFIG.candidates[c].jobs||[]).filter(j=>!j.dismissed);
+    if (jobs.length) { await syncToAirtable(jobs, c); total += jobs.length; }
+  }
+  toast(`✅ Synced ${total} jobs to Airtable`);
+}
+
+function updateSyncBadges() {
+  const at = CONFIG.airtable;
+  ['m','l','s'].forEach(c => {
+    const badge = document.getElementById('sync-badge-'+c);
+    if (!badge) return;
+    if (at?.enabled && at.apiKey && at.baseId) {
+      badge.className = 'sync-badge sync-ok';
+      badge.textContent = '⚡ Airtable synced';
+    } else {
+      badge.className = 'sync-badge sync-off';
+      badge.textContent = '⚡ Local only';
+    }
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  ADMIN: CLEAR JOBS
+// ═══════════════════════════════════════════════════════════════
+function clearJobs(c) {
+  if (!confirm(`Clear all jobs for ${CONFIG.candidates[c].name}?`)) return;
+  CONFIG.candidates[c].jobs = [];
+  saveConfig();
+  renderCandidatePanel(c);
+  toast('Jobs cleared');
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  MODAL HELPERS
+// ═══════════════════════════════════════════════════════════════
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+// Close on overlay click
+document.querySelectorAll('.modal-overlay').forEach(o => {
+  o.addEventListener('click', e => { if (e.target === o) o.classList.remove('open'); });
+});
+
+// ═══════════════════════════════════════════════════════════════
+//  TOAST
+// ═══════════════════════════════════════════════════════════════
+let toastTimer;
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.style.display = 'block';
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { el.style.display = 'none'; }, 3000);
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  FALLBACK JOBS (shown when API unavailable)
+// ═══════════════════════════════════════════════════════════════
+function loadFallback(c) {
+  const fallbacks = {
+    m: [
+      { title:'HR Director',company:'Mid-size Tech Company',location:'Remote',workType:'Remote',salary:'$120K–$150K',matchScore:'Strong Match',description:'Leads HR strategy, payroll (Paycom), compliance, and talent acquisition across a multi-state organization. Michael\'s Paycom depth and 20-year multi-site HR leadership transfer completely outside healthcare.',qualifications:['8+ years HR leadership','HRIS/Paycom expertise','Multi-state employment law','PHR or SPHR preferred'],benefits:'Medical/dental/vision, 401(k) match, remote, generous PTO',applyUrl:'https://www.linkedin.com/jobs/search/?keywords=HR+Director+remote',source:'LinkedIn',isNew:true,tags:['Remote','HR','Tech'] },
+      { title:'VP of Operations',company:'PE-backed Portfolio Company',location:'Remote',workType:'Remote',salary:'$150K–$200K',matchScore:'Strong Match',description:'Oversees multi-site operational P&L, team leadership, and compliance for a scaling organization. PE-backed companies recruit executives with proven startup-to-scale experience — exactly Michael\'s background.',qualifications:['10+ years multi-site ops leadership','P&L ownership','Process improvement mindset','Board/investor comfort'],benefits:'Executive base + bonus, equity participation, full benefits',applyUrl:'https://www.linkedin.com/jobs/search/?keywords=VP+Operations+remote',source:'LinkedIn',isNew:true,tags:['Remote','Executive','High Pay'] },
+      { title:'Chief Compliance Officer',company:'Financial Services Firm',location:'Remote',workType:'Remote',salary:'$130K–$165K',matchScore:'Strong Match',description:'Directs enterprise compliance across federal/state regulations. Michael\'s 20 years navigating Medicare/Medicaid/CoP compliance maps directly to any regulated industry — financial services, insurance, and energy face identical complexity.',qualifications:['7+ years compliance leadership','Regulated industry experience','Policy/training development','CCEP helpful'],benefits:'401(k), full benefits, bonus, flexible remote',applyUrl:'https://www.indeed.com/jobs?q=Chief+Compliance+Officer+remote',source:'Indeed',isNew:false,tags:['Compliance','Finance','Remote'] },
+      { title:'CIO / IT Director',company:'Growing Regional Business',location:'Remote or Hybrid Phoenix',workType:'Hybrid',salary:'$130K–$175K',matchScore:'Good Match',description:'Leads IT strategy, infrastructure, and vendor management for a 50–500 person organization. Michael built and managed full IT infrastructure for multiple hospice locations — identical skills for any business at similar scale.',qualifications:['IT leadership or hands-on infrastructure management','Vendor/budget management','Security awareness','Scaling technology with business growth'],benefits:'Executive benefits, equity possible, hybrid flexibility',applyUrl:'https://www.linkedin.com/jobs/search/?keywords=CIO+IT+Director+remote+Arizona',source:'LinkedIn',isNew:true,tags:['CIO','IT','Hybrid'] },
+      { title:'Director of Operations — Multi-location',company:'Franchise or Retail Group',location:'Remote or Hybrid AZ',workType:'Hybrid',salary:'$110K–$145K',matchScore:'Strong Match',description:'Oversees operations across 10-50+ locations — exactly what Michael did for years. Multi-unit franchise and retail operations require identical skills: compliance, HR, vendor management, budgets, and troubleshooting at scale.',qualifications:['Multi-site operations management','HR and compliance oversight','Budget management','Systems thinking'],benefits:'Bonus structure, car allowance, full benefits',applyUrl:'https://www.indeed.com/jobs?q=Director+Operations+multi-site',source:'Indeed',isNew:false,tags:['Operations','Multi-site','Any Industry'] }
+    ],
+    l: [
+      { title:'Case Manager RN — Work From Home',company:'CVS Health / Aetna',location:'Remote (AZ)',workType:'Remote',salary:'$54K–$117K',matchScore:'Strong Match',description:'100% remote telephonic case management for health plan members. M-F standard hours. Lisa\'s 30 years of clinical expertise and care coordination far exceeds requirements — her hospice skills transfer directly to payer-side case management.',qualifications:['Active unrestricted RN license','3+ years clinical experience','2+ years case management preferred','BSN preferred'],benefits:'401(k), affordable medical/dental/vision, EAP, no travel',applyUrl:'https://cvshealth.wd1.myworkdayjobs.com/en-US/cvs_health_careers',source:'CVS Health',isNew:true,tags:['100% Remote','RN Required','Insurance'] },
+      { title:'Utilization Management Nurse',company:'Humana',location:'Remote',workType:'Remote',salary:'$80K–$110K',matchScore:'Strong Match',description:'Reviews clinical cases for medical necessity — fully remote, M-F, no patient-facing work. Lisa\'s Medicare/Medicaid knowledge and clinical judgment are exactly what UM teams need. Provider-to-payer pivot using identical skills with dramatically less stress.',qualifications:['Active RN license','3+ years clinical experience','UM/case management preferred','Independent work style'],benefits:'Full Humana benefits, 401(k), structured hours',applyUrl:'https://careers.humana.com/',source:'Humana',isNew:false,tags:['Remote','Payer Side','Lower Stress'] },
+      { title:'Joint Commission Surveyor — Home & Hospice',company:'The Joint Commission',location:'Remote + National Travel',workType:'Hybrid',salary:'$115,000',matchScore:'Strong Match',description:'Surveys hospice and home care agencies for accreditation compliance. Lisa\'s executive director experience gives her a rare perspective — she\'s been surveyed dozens of times. TJC pays $115K flat with all travel fully covered.',qualifications:['Active RN license','5+ years hospice/home care experience','Management experience preferred','Comfortable ~75% travel'],benefits:'$115K flat, all travel covered, annual CE week, full benefits',applyUrl:'https://careers-jointcommission.icims.com/jobs/7074/',source:'Joint Commission',isNew:false,tags:['$115K','Travel','RN Required'] },
+      { title:'Telehealth Clinical Lead',company:'Teladoc / MDLive / Included Health',location:'Remote',workType:'Remote',salary:'$85K–$125K',matchScore:'Good Match',description:'Leads clinical protocols and quality oversight for a virtual care platform without managing a physical facility. Lisa\'s clinical depth, QAPI expertise, and executive leadership make her a strong candidate in the rapidly expanding telehealth sector.',qualifications:['Active RN license','Clinical leadership experience','Quality/compliance background','Virtual care comfort'],benefits:'Remote, tech company benefits, growth track',applyUrl:'https://www.linkedin.com/jobs/search/?keywords=telehealth+clinical+lead+RN+remote',source:'LinkedIn',isNew:true,tags:['Remote','Telehealth','New Industry'] }
+    ],
+    s: [
+      { title:'Corporate Trainer — Financial Services',company:'Bank, Insurance, or Fintech',location:'Remote',workType:'Remote',salary:'$70K–$100K',matchScore:'Strong Match',description:'Financial services firms actively recruit former teachers for training roles because classroom management, curriculum design, and engagement skills are exactly what they need — and pay is significantly higher than education.',qualifications:['Bachelor\'s degree','2+ years facilitation or teaching','Strong presentation skills','LMS experience a plus'],benefits:'Remote, 401(k), medical/dental, tuition reimbursement',applyUrl:'https://www.indeed.com/jobs?q=corporate+trainer+remote+financial+services',source:'Indeed',isNew:false,tags:['Remote','Finance','Career Change'] },
+      { title:'L&D Specialist / Learning Experience Designer',company:'Mid-size SaaS Company',location:'Remote',workType:'Remote',salary:'$75K–$105K',matchScore:'Strong Match',description:'Builds employee onboarding, product training, and L&D programs. Tech companies love former teachers — the skills are identical except the audience is employees. Shannon\'s behavioral psych background is a bonus differentiator.',qualifications:['Teaching or training background','Curriculum design skills','LMS platform comfort','Instructional design fundamentals'],benefits:'Tech benefits: equity, unlimited PTO, home office stipend',applyUrl:'https://www.linkedin.com/jobs/search/?keywords=learning+development+specialist+remote',source:'LinkedIn',isNew:true,tags:['Remote','Tech','L&D'] },
+      { title:'Sr. Implementation Consultant, Clinical',company:'Homecare Homebase (HCHB)',location:'Remote + Weekly Travel',workType:'Travel',salary:'$75K–$100K + Per Diem',matchScore:'Strong Match',description:'Mon-Fri travel to client sites delivering EHR training to home health staff. Shannon\'s teaching background + hospice social work knowledge = rare combination. Per diem adds substantial income on top of base salary.',qualifications:['Healthcare or training experience','Willing to travel Mon-Fri weekly','Strong facilitation skills','Hospice/home health knowledge preferred'],benefits:'All travel covered, daily per diem, full benefits',applyUrl:'https://hchb.com/about-us/careers/',source:'HCHB',isNew:true,tags:['Travel','EHR','High Total Comp'] },
+      { title:'Instructional Designer',company:'Mayo Clinic',location:'Remote (US)',workType:'Remote',salary:'$70K–$100K',matchScore:'Good Match',description:'Creates eLearning modules, facilitator guides, and job aids using adult learning principles. Shannon\'s curriculum development and lesson planning skills translate directly. Bridge: learn Articulate Storyline/Rise to build a portfolio quickly.',qualifications:['Bachelor\'s in education or psychology','Curriculum development experience','Articulate Storyline/Rise preferred','Adult learning theory understanding'],benefits:'Full Mayo Clinic benefits, 100% remote, stable employer',applyUrl:'https://jobs.mayoclinic.org/',source:'Mayo Clinic',isNew:false,tags:['Remote','eLearning','Portfolio Needed'] }
+    ]
+  };
+
+  const jobs = (fallbacks[c]||[]).map(j => ({
+    ...j,
+    _id: `${c}-fb-${Date.now()}-${Math.random().toString(36).substr(2,4)}`
+  }));
+
+  const existing = new Set((CONFIG.candidates[c].jobs||[]).map(j=>`${j.title}||${j.company}`));
+  const unique = jobs.filter(j => !existing.has(`${j.title}||${j.company}`));
+  CONFIG.candidates[c].jobs = [...unique, ...(CONFIG.candidates[c].jobs||[])];
+  saveConfig();
+  renderJobCards(c);
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  KEYBOARD
+// ═══════════════════════════════════════════════════════════════
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    document.querySelectorAll('.modal-overlay').forEach(m => m.classList.remove('open'));
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════════════════════════════
+// Auto-select first user for UX
+selectUser('m');
+</script>
+</body>
+</html>
