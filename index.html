@@ -1274,7 +1274,63 @@ header {
 .help-item-text { color: var(--text2); line-height: 1.5; }
 .help-item-text strong { color: var(--text); }
 
-/* ── Pipeline stages ── */
+/* ── Font size control ── */
+body.font-large  { font-size: 17px; }
+body.font-xl     { font-size: 19px; }
+.font-size-ctrl  { display: flex; align-items: center; gap: 3px; }
+.font-btn {
+  width: 28px; height: 28px;
+  border-radius: 6px; border: 1.5px solid var(--border);
+  background: white; cursor: pointer;
+  font-family: 'Lora', serif; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+  transition: all .15s; color: var(--text2);
+  padding: 0;
+}
+.font-btn.active { background: var(--text); color: white; border-color: var(--text); }
+.font-btn:hover:not(.active) { background: var(--surface2); }
+.font-btn-sm { font-size: 11px; }
+.font-btn-md { font-size: 13px; }
+.font-btn-lg { font-size: 16px; }
+
+/* ── Sidebar width toggle ── */
+.sidebar-width-toggle {
+  position: absolute; top: 50%; right: -14px;
+  transform: translateY(-50%);
+  width: 14px; height: 40px;
+  background: var(--border);
+  border-radius: 0 6px 6px 0;
+  cursor: ew-resize;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 9px; color: var(--muted);
+  z-index: 10; transition: background .15s;
+}
+.sidebar-width-toggle:hover { background: var(--text2); color: white; }
+.sidebar { position: relative; }
+
+/* ── Job card hover preview ── */
+.card-preview-tooltip {
+  display: none;
+  position: fixed;
+  z-index: 999;
+  background: white;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: 0 8px 32px rgba(0,0,0,.15);
+  padding: 16px 18px;
+  width: 340px;
+  max-height: 380px;
+  overflow-y: auto;
+  pointer-events: none;
+  font-size: 13px;
+  line-height: 1.6;
+}
+.card-preview-tooltip.visible { display: block; }
+.preview-title { font-family: 'Lora', serif; font-size: 15px; font-weight: 700; margin-bottom: 4px; color: var(--text); }
+.preview-company { font-size: 12px; font-weight: 600; color: var(--text2); margin-bottom: 10px; }
+.preview-desc { font-size: 12px; color: var(--text2); margin-bottom: 10px; line-height: 1.65; }
+.preview-quals { font-size: 11px; color: var(--muted); }
+.preview-quals li { margin-bottom: 2px; }
 .pipeline-select {
   padding: 4px 8px;
   border-radius: 6px;
@@ -1377,10 +1433,15 @@ header {
 
   <header>
     <div class="header-left">
-      <div class="h-logo">💼 Career Hub</div>
+      <div class="h-logo" id="h-logo">💼 Career Hub</div>
       <div class="h-user-badge" id="h-badge"></div>
     </div>
     <div class="header-right">
+      <div class="font-size-ctrl" title="Adjust text size">
+        <button class="font-btn font-btn-sm active" id="fbtn-normal" onclick="setFontSize('normal')" title="Normal text">A</button>
+        <button class="font-btn font-btn-md" id="fbtn-large" onclick="setFontSize('large')" title="Large text">A</button>
+        <button class="font-btn font-btn-lg" id="fbtn-xl" onclick="setFontSize('xl')" title="Extra large text">A</button>
+      </div>
       <button class="h-btn" onclick="openModal('help-modal')" title="Help & Guide">❓ Help</button>
       <button class="h-btn" id="export-btn" onclick="exportCSV()" style="display:none">📊 Export CSV</button>
       <button class="h-btn" onclick="showSettings()">⚙️ Settings</button>
@@ -1388,19 +1449,11 @@ header {
     </div>
   </header>
 
-  <!-- Admin tabs (admin only) -->
-  <div class="admin-tabs" id="admin-tabs" style="display:none">
-    <div class="atab active" data-p="overview" onclick="switchPanel('overview')">📊 Overview</div>
-    <div class="atab" data-p="m" onclick="switchPanel('m')">
-      Michael <span class="notif-dot" style="background:var(--michael)" id="ntab-m">0</span>
-    </div>
-    <div class="atab" data-p="l" onclick="switchPanel('l')">
-      Lisa <span class="notif-dot" style="background:var(--lisa)" id="ntab-l">0</span>
-    </div>
-    <div class="atab" data-p="s" onclick="switchPanel('s')">
-      Shannon <span class="notif-dot" style="background:var(--shannon)" id="ntab-s">0</span>
-    </div>
-  </div>
+  <!-- Admin tabs (admin only) — rendered dynamically -->
+  <div class="admin-tabs" id="admin-tabs" style="display:none"></div>
+
+  <!-- Hover preview tooltip -->
+  <div class="card-preview-tooltip" id="card-preview-tooltip"></div>
 
   <!-- App body -->
   <div class="app-body" id="app-body">
@@ -1561,12 +1614,12 @@ const WORKER_URL = 'https://career-hub-api.andy-dao-91-aaf.workers.dev';
 let CONFIG = {
   pins: { m: '1111', l: '2222', s: '3333', admin: '0000' },
   airtable: { apiKey: '', baseId: '', enabled: false },
+  site: { title: 'Career Hub', emoji: '💼' },
+  uiPrefs: { fontSize: 'normal', sidebarWidth: 300 },
   candidates: {
     m: {
-      name: 'Michael',
-      color: 'var(--michael)',
-      colorHex: '#1a4b8c',
-      lt: 'var(--michael-lt)',
+      name: 'Michael', active: true,
+      color: 'var(--michael)', colorHex: '#1a4b8c', lt: 'var(--michael-lt)',
       role: 'Operations · HR · IT · 20+ Years Experience',
       bio: '20+ years founding and running complex multi-site businesses. Built everything from scratch: HR, payroll (deep Paycom expertise), IT infrastructure, compliance, vendor management, and board-level leadership. Looking to pivot into corporate roles in ANY industry — tech, finance, logistics, real estate, consulting. Remote strongly preferred; hybrid only if $130K+; on-site only if $150K+.',
       skills: ['HR Leadership','Paycom / HRIS','IT Infrastructure','CIO-level','Compliance','Multi-site Ops','P&L Ownership','Business Startup','Vendor Management','Board Relations','Medicare CoP','Team Building'],
@@ -1575,10 +1628,8 @@ let CONFIG = {
       jobs: []
     },
     l: {
-      name: 'Lisa',
-      color: 'var(--lisa)',
-      colorHex: '#6b2d6b',
-      lt: 'var(--lisa-lt)',
+      name: 'Lisa', active: true,
+      color: 'var(--lisa)', colorHex: '#6b2d6b', lt: 'var(--lisa-lt)',
       role: 'RN · Executive Director · 30+ Years',
       bio: '30+ years as a Registered Nurse and Executive Director. Clinical expertise, QAPI, Medicare/Medicaid compliance, clinical education, and case management — all built in hospice but fully transferable to insurance/managed care, telehealth, consulting, and health tech. Strongly prefers 100% remote, lower-stress work without daily facility management.',
       skills: ['RN License (AZ)','Case Management','Clinical Strategy','QAPI','Medicare/Medicaid','Clinical Education','Compliance','Utilization Management','HR Leadership','Team Development'],
@@ -1587,10 +1638,8 @@ let CONFIG = {
       jobs: []
     },
     s: {
-      name: 'Shannon',
-      color: 'var(--shannon)',
-      colorHex: '#1e7a4e',
-      lt: 'var(--shannon-lt)',
+      name: 'Shannon', active: true,
+      color: 'var(--shannon)', colorHex: '#1e7a4e', lt: 'var(--shannon-lt)',
       role: 'BS Psychology · Teacher · L&D Career Pivot',
       bio: 'Current middle school teacher, former hospice social worker, BS in Psychology. Teaching, curriculum design, adult learning theory, and behavioral science skills transfer into any corporate training, L&D, or instructional design role across ANY industry — tech, finance, retail, healthcare, or consulting. Open to heavy travel for high compensation. Prefers remote otherwise.',
       skills: ['Facilitation / Teaching','Curriculum Development','Instructional Design','Adult Learning Theory','Behavioral Psychology','Change Management','Hospice Domain','Social Work','eLearning Interest'],
@@ -1600,6 +1649,11 @@ let CONFIG = {
     }
   }
 };
+
+// Helper: get active candidate keys
+function activeCandidates() {
+  return Object.keys(CONFIG.candidates).filter(c => CONFIG.candidates[c].active !== false);
+}
 
 // Persist config to localStorage
 function saveConfig() {
@@ -1613,11 +1667,21 @@ function loadConfig() {
       const parsed = JSON.parse(saved);
       if (parsed.pins) CONFIG.pins = { ...CONFIG.pins, ...parsed.pins };
       if (parsed.airtable) CONFIG.airtable = { ...CONFIG.airtable, ...parsed.airtable };
+      if (parsed.site) CONFIG.site = { ...CONFIG.site, ...parsed.site };
+      if (parsed.uiPrefs) CONFIG.uiPrefs = { ...CONFIG.uiPrefs, ...parsed.uiPrefs };
       Object.keys(CONFIG.candidates).forEach(c => {
         if (parsed.candidates?.[c]) {
           CONFIG.candidates[c] = { ...CONFIG.candidates[c], ...parsed.candidates[c] };
         }
       });
+      // Load any extra candidates added by admin
+      if (parsed.candidates) {
+        Object.keys(parsed.candidates).forEach(c => {
+          if (!CONFIG.candidates[c]) {
+            CONFIG.candidates[c] = parsed.candidates[c];
+          }
+        });
+      }
     } catch(e) {}
   }
 }
@@ -1648,7 +1712,7 @@ function selectUser(u) {
 }
 
 function updateLoginCounts() {
-  ['m','l','s'].forEach(c => {
+  activeCandidates().forEach(c => {
     const el = document.getElementById('lc-'+c);
     if (!el) return;
     const jobs = (CONFIG.candidates[c]?.jobs||[]).filter(j=>!j.dismissed);
@@ -1710,30 +1774,88 @@ let activePanel = null;
 function initApp() {
   const isAdmin = currentUser === 'admin';
   const badge = document.getElementById('h-badge');
+  const appBody = document.querySelector('.app-body');
+
+  // Apply site title
+  applySiteTitle();
+
+  // Apply saved font size
+  applyFontSize(CONFIG.uiPrefs?.fontSize || 'normal', false);
+
+  // Render dynamic admin tabs
+  renderAdminTabs();
 
   if (isAdmin) {
     badge.innerHTML = `<span style="background:var(--admin-lt);color:var(--admin);padding:4px 12px;border-radius:20px;font-size:12px;font-weight:700;">⚙️ Admin View</span>`;
     document.getElementById('admin-tabs').style.display = 'flex';
     document.getElementById('export-btn').style.display = 'flex';
+    if (appBody) appBody.style.gridTemplateColumns = '340px 1fr';
     switchPanel('overview');
   } else {
     const c = CONFIG.candidates[currentUser];
     badge.innerHTML = `<span style="background:${c.lt};color:${c.colorHex};padding:4px 12px;border-radius:20px;font-size:12px;font-weight:700;">${c.name}</span>`;
     document.getElementById('admin-tabs').style.display = 'none';
     document.getElementById('export-btn').style.display = 'none';
+    const sw = CONFIG.uiPrefs?.sidebarWidth || 300;
+    if (appBody) appBody.style.gridTemplateColumns = `${sw}px 1fr`;
     switchPanel(currentUser);
   }
-  // Update sync badges after render
   setTimeout(updateSyncBadges, 100);
+}
+
+function applySiteTitle() {
+  const { emoji, title } = CONFIG.site || { emoji: '💼', title: 'Career Hub' };
+  const full = `${emoji} ${title}`;
+  const logoEl = document.getElementById('h-logo');
+  const loginLogo = document.querySelector('.login-logo');
+  if (logoEl) logoEl.textContent = full;
+  if (loginLogo) loginLogo.textContent = full;
+  document.title = title;
+}
+
+function renderAdminTabs() {
+  const tabs = document.getElementById('admin-tabs');
+  if (!tabs) return;
+  const active = activeCandidates();
+  tabs.innerHTML = `
+    <div class="atab ${activePanel==='overview'?'active':''}" data-p="overview" onclick="switchPanel('overview')">📊 Overview</div>
+    ${active.map(c => {
+      const cd = CONFIG.candidates[c];
+      return `<div class="atab ${activePanel===c?'active':''}" data-p="${c}" onclick="switchPanel('${c}')" style="--tab-color:${cd.colorHex}">
+        ${cd.name} <span class="notif-dot" style="background:${cd.colorHex}" id="ntab-${c}">${(cd.jobs||[]).filter(j=>!j.dismissed).length}</span>
+      </div>`;
+    }).join('')}`;
+}
+
+function setFontSize(size) {
+  applyFontSize(size, true);
+}
+
+function applyFontSize(size, save) {
+  document.body.classList.remove('font-large', 'font-xl');
+  if (size === 'large') document.body.classList.add('font-large');
+  if (size === 'xl') document.body.classList.add('font-xl');
+  ['normal','large','xl'].forEach(s => {
+    const btn = document.getElementById('fbtn-'+s);
+    if (btn) btn.classList.toggle('active', s === size);
+  });
+  if (save) {
+    CONFIG.uiPrefs = { ...CONFIG.uiPrefs, fontSize: size };
+    saveConfig();
+  }
+}
+
+function setSidebarWidth(w) {
+  CONFIG.uiPrefs = { ...CONFIG.uiPrefs, sidebarWidth: w };
+  saveConfig();
+  const appBody = document.querySelector('.app-body');
+  if (appBody && currentUser !== 'admin') appBody.style.gridTemplateColumns = `${w}px 1fr`;
+  toast(`Sidebar width: ${w}px`);
 }
 
 function switchPanel(panel) {
   activePanel = panel;
-  // Update admin tab highlights
-  document.querySelectorAll('.atab').forEach(t => t.classList.remove('active'));
-  const activeTab = document.querySelector(`.atab[data-p="${panel}"]`);
-  if (activeTab) activeTab.classList.add('active');
-
+  renderAdminTabs();
   if (panel === 'overview') {
     renderOverview();
   } else {
@@ -1745,7 +1867,7 @@ function switchPanel(panel) {
 //  OVERVIEW (Admin only)
 // ═══════════════════════════════════════════════════════════════
 function renderOverview() {
-  document.getElementById('sidebar').innerHTML = renderPinManager();
+  document.getElementById('sidebar').innerHTML = renderAdminSidebar();
   document.getElementById('main-content').innerHTML = `
     <div class="content-header">
       <div class="content-title" style="color:var(--admin)">⚙️ Admin Overview</div>
@@ -1753,7 +1875,6 @@ function renderOverview() {
         <span id="admin-sync-badge" class="sync-badge ${CONFIG.airtable?.enabled ? 'sync-ok' : 'sync-off'}">${CONFIG.airtable?.enabled ? '⚡ Airtable connected' : '⚡ No cloud sync'}</span>
         ${CONFIG.airtable?.enabled ? `<button class="export-btn" onclick="syncAllToAirtable()">↑ Sync to Airtable</button>` : ''}
         <button class="export-btn" onclick="exportCSV()">📊 Export CSV</button>
-        <button class="h-btn" onclick="showSettings()">⚙️ Airtable Setup</button>
       </div>
     </div>
 
@@ -1767,12 +1888,13 @@ function renderOverview() {
     </div>
 
     <div class="overview-grid">
-      ${['m','l','s'].map(c => {
+      ${activeCandidates().map(c => {
         const cd = CONFIG.candidates[c];
         const jobs = cd.jobs.filter(j => !j.dismissed);
         const starred = jobs.filter(j => j.starred).length;
         const applied = jobs.filter(j => j.applied).length;
         const userAdded = jobs.filter(j => j.userAdded).length;
+        const dismissed = (cd.jobs||[]).filter(j => j.dismissed).length;
         return `
         <div class="overview-card">
           <div class="ov-name" style="color:${cd.colorHex}">
@@ -1784,15 +1906,16 @@ function renderOverview() {
             <div class="ov-stat"><span class="ov-stat-key">⭐ Starred</span><span class="ov-stat-val">${starred}</span></div>
             <div class="ov-stat"><span class="ov-stat-key">✅ Applied</span><span class="ov-stat-val">${applied}</span></div>
             <div class="ov-stat"><span class="ov-stat-key">🔗 Self-Added</span><span class="ov-stat-val">${userAdded}</span></div>
+            <div class="ov-stat"><span class="ov-stat-key">🗑 Dismissed</span><span class="ov-stat-val">${dismissed}</span></div>
           </div>
           <button class="sidebar-btn" style="width:100%;margin-top:12px;padding:8px;font-size:12px;background:${cd.colorHex};color:white;border:none;border-radius:8px;cursor:pointer;font-family:Nunito,sans-serif;font-weight:700" onclick="switchPanel('${c}')">View ${cd.name}'s Jobs →</button>
         </div>`;
       }).join('')}
     </div>
 
-    <div style="background:white;border-radius:var(--radius);padding:20px;border:1.5px solid var(--border);">
+    <div style="background:white;border-radius:var(--radius);padding:20px;border:1.5px solid var(--border);margin-bottom:16px;">
       <h3 style="font-size:14px;font-weight:700;margin-bottom:12px;color:var(--text2)">⭐ All Starred Jobs</h3>
-      ${['m','l','s'].flatMap(c => {
+      ${activeCandidates().flatMap(c => {
         const cd = CONFIG.candidates[c];
         return (cd.jobs||[]).filter(j=>j.starred && !j.dismissed).map(j => `
           <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);">
@@ -1802,23 +1925,142 @@ function renderOverview() {
             ${j.applyUrl ? `<a href="${j.applyUrl}" target="_blank" style="font-size:11px;color:${cd.colorHex};font-weight:700">Apply ↗</a>` : ''}
           </div>`);
       }).join('') || '<div style="color:var(--muted);font-size:13px">No starred jobs yet</div>'}
+    </div>
+
+    <div style="background:white;border-radius:var(--radius);padding:20px;border:1.5px solid var(--border);">
+      <h3 style="font-size:14px;font-weight:700;margin-bottom:4px;color:var(--text2)">🗑 Dismissed Jobs</h3>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:12px;">Jobs removed by candidates — click Restore to add back to their list.</div>
+      ${(() => {
+        const rows = activeCandidates().flatMap(c => {
+          const cd = CONFIG.candidates[c];
+          return (cd.jobs||[]).filter(j=>j.dismissed).map(j => `
+            <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);flex-wrap:wrap;">
+              <span style="background:${cd.colorHex};color:white;padding:2px 8px;border-radius:5px;font-size:11px;font-weight:700;flex-shrink:0">${cd.name}</span>
+              <span style="font-size:13px;font-weight:600;flex:1;min-width:120px">${j.title}</span>
+              <span style="font-size:12px;color:var(--muted);flex-shrink:0">${j.company}</span>
+              <button onclick="restoreJob('${c}','${j._id}')" 
+                style="font-size:11px;font-weight:700;padding:3px 10px;border-radius:5px;border:1.5px solid ${cd.colorHex};background:white;color:${cd.colorHex};cursor:pointer;flex-shrink:0;">
+                ↩ Restore
+              </button>
+            </div>`);
+        });
+        return rows.length ? rows.join('') : '<div style="color:var(--muted);font-size:13px">No dismissed jobs</div>';
+      })()}
     </div>`;
 }
 
-function renderPinManager() {
+function renderAdminSidebar() {
+  const at = CONFIG.airtable;
+  const site = CONFIG.site || { emoji: '💼', title: 'Career Hub' };
   return `
     <div style="padding:4px 0">
       <div style="font-family:Lora,serif;font-size:16px;font-weight:700;margin-bottom:16px;color:var(--admin)">⚙️ Admin Tools</div>
-      <div class="pin-manage">
+
+      <!-- SITE CUSTOMIZATION -->
+      <div style="background:var(--surface2);border-radius:10px;padding:12px 14px;margin-bottom:14px;">
+        <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:10px;">🎨 Site Customization</div>
+        <div style="display:flex;gap:8px;margin-bottom:8px;">
+          <div style="flex:0 0 52px;">
+            <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:3px;">Emoji</div>
+            <input id="site-emoji" value="${site.emoji}" maxlength="4"
+              style="width:100%;padding:5px 6px;border-radius:6px;border:1.5px solid var(--border);font-size:18px;text-align:center;"
+              oninput="updateSiteTitle()">
+          </div>
+          <div style="flex:1">
+            <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:3px;">Site Name</div>
+            <input id="site-title" value="${site.title}"
+              style="width:100%;padding:5px 8px;border-radius:6px;border:1.5px solid var(--border);font-size:13px;font-weight:700;"
+              oninput="updateSiteTitle()">
+          </div>
+        </div>
+        <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;">Sidebar Width</div>
+        <div style="display:flex;gap:6px;">
+          ${[['Narrow','260'],['Normal','300'],['Wide','360'],['XL','420']].map(([label,w]) => `
+            <button onclick="setSidebarWidth(${w})"
+              style="flex:1;padding:5px 2px;border-radius:6px;border:1.5px solid var(--border);background:${(CONFIG.uiPrefs?.sidebarWidth||300)==w?'var(--text)':'white'};color:${(CONFIG.uiPrefs?.sidebarWidth||300)==w?'white':'var(--text2)'};font-size:10px;font-weight:700;cursor:pointer;">
+              ${label}
+            </button>`).join('')}
+        </div>
+      </div>
+
+      <!-- CANDIDATE MANAGEMENT -->
+      <div style="background:var(--surface2);border-radius:10px;padding:12px 14px;margin-bottom:14px;">
+        <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:10px;">👥 Manage Users</div>
+        ${Object.keys(CONFIG.candidates).map(c => {
+          const cd = CONFIG.candidates[c];
+          const isActive = cd.active !== false;
+          return `
+          <div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--border);">
+            <div style="width:26px;height:26px;border-radius:50%;background:${cd.colorHex};color:white;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;flex-shrink:0;opacity:${isActive?1:.4}">${cd.name[0]}</div>
+            <div style="flex:1;font-size:12px;font-weight:700;color:${isActive?'var(--text)':'var(--muted)'};">${cd.name}</div>
+            <button onclick="editCandidate('${c}')"
+              style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:5px;border:1.5px solid var(--border);background:white;color:var(--text2);cursor:pointer;">
+              ✏️ Edit
+            </button>
+            <button onclick="toggleCandidateActive('${c}')"
+              style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:5px;border:1.5px solid ${isActive?'var(--red)':'var(--green)'};background:white;color:${isActive?'var(--red)':'var(--green)'};cursor:pointer;">
+              ${isActive ? 'Hide' : 'Show'}
+            </button>
+          </div>`;
+        }).join('')}
+        <button onclick="showAddCandidateForm()"
+          style="width:100%;margin-top:10px;padding:7px;border-radius:8px;border:1.5px dashed var(--border);background:white;color:var(--text2);font-size:12px;font-weight:700;cursor:pointer;">
+          + Add New User
+        </button>
+        <div id="add-candidate-form" style="display:none;margin-top:10px;">
+          <div style="font-size:11px;font-weight:700;color:var(--muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:.05em;">New User Details</div>
+          <input id="nc-name" placeholder="Full name" style="width:100%;padding:6px 8px;border-radius:6px;border:1.5px solid var(--border);font-size:12px;margin-bottom:6px;">
+          <input id="nc-role" placeholder="Subtitle (e.g. RN · 10+ Years)" style="width:100%;padding:6px 8px;border-radius:6px;border:1.5px solid var(--border);font-size:12px;margin-bottom:6px;">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+            <label style="font-size:11px;font-weight:700;color:var(--muted);">Color:</label>
+            <input type="color" id="nc-color" value="#1a4b8c" style="width:36px;height:28px;border:1.5px solid var(--border);border-radius:6px;cursor:pointer;padding:2px;">
+          </div>
+          <input id="nc-pin" placeholder="4-digit PIN" maxlength="4" style="width:100%;padding:6px 8px;border-radius:6px;border:1.5px solid var(--border);font-size:12px;margin-bottom:8px;">
+          <div style="display:flex;gap:6px;">
+            <button onclick="addCandidate()" style="flex:1;padding:7px;border-radius:7px;border:none;background:var(--admin);color:white;font-size:12px;font-weight:700;cursor:pointer;">Add User</button>
+            <button onclick="document.getElementById('add-candidate-form').style.display='none'" style="flex:1;padding:7px;border-radius:7px;border:1.5px solid var(--border);background:white;color:var(--muted);font-size:12px;font-weight:700;cursor:pointer;">Cancel</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- PINS -->
+      <div class="pin-manage" style="margin-bottom:14px;">
         <h3>🔐 Change PINs</h3>
         <div class="pin-grid">
-          ${[['m','Michael'],['l','Lisa'],['s','Shannon'],['admin','Admin']].map(([u,n]) => `
+          ${Object.keys(CONFIG.candidates).filter(c=>CONFIG.candidates[c].active!==false).concat(['admin']).map(u => `
             <div class="pin-item">
-              <label>${n}</label>
-              <input type="text" maxlength="4" value="${CONFIG.pins[u]}" id="pin-${u}" style="letter-spacing:.2em" oninput="updatePin('${u}',this.value)">
+              <label>${CONFIG.candidates[u]?.name || 'Admin'}</label>
+              <input type="text" maxlength="4" value="${CONFIG.pins[u]||''}" id="pin-${u}" style="letter-spacing:.2em" oninput="updatePin('${u}',this.value)">
             </div>`).join('')}
         </div>
         <div style="font-size:11px;color:var(--muted);margin-top:8px">Changes save automatically and take effect on next login.</div>
+      </div>
+
+      <!-- AIRTABLE -->
+      <div style="background:var(--admin-lt);border:1.5px solid #f6c96b;border-radius:var(--radius);padding:14px 16px;margin-bottom:14px;">
+        <div style="font-size:13px;font-weight:700;color:var(--admin);margin-bottom:10px;">☁️ Airtable Sync</div>
+        <div style="font-size:11px;color:var(--muted);margin-bottom:10px;line-height:1.5;">Jobs auto-push after each AI search. Use Push All to sync manually.</div>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <div>
+            <div style="font-size:10px;font-weight:700;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;margin-bottom:4px;">API Key</div>
+            <input class="form-input" id="at-key" type="password" placeholder="pat..." value="${at?.apiKey||''}" style="font-size:12px;padding:6px 10px;">
+          </div>
+          <div>
+            <div style="font-size:10px;font-weight:700;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;margin-bottom:4px;">Base ID</div>
+            <input class="form-input" id="at-base" placeholder="appXXX..." value="${at?.baseId||''}" style="font-size:12px;padding:6px 10px;">
+          </div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;">
+            <button class="submit-btn" style="background:var(--admin);color:white;padding:7px 12px;font-size:12px;flex:1" onclick="saveAirtable()">Save & Test</button>
+            ${at?.enabled ? `<button class="submit-btn" style="background:var(--green);color:white;padding:7px 12px;font-size:12px;flex:1" onclick="syncAllToAirtable()">↑ Push All</button>` : ''}
+            ${at?.enabled ? `<button class="cancel-btn" style="padding:7px 12px;font-size:12px;" onclick="CONFIG.airtable.enabled=false;saveConfig();renderOverview()">Disconnect</button>` : ''}
+          </div>
+        </div>
+      </div>
+
+      <!-- DATA -->
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <button class="export-btn" style="width:100%;padding:8px;font-size:12px;" onclick="exportCSV()">📊 Export CSV</button>
+        <button class="cancel-btn" style="width:100%;padding:8px;font-size:12px;color:var(--red);border-color:var(--red);" onclick="if(confirm('Clear ALL data for all candidates? This cannot be undone.'))clearAllData()">🗑 Clear All Data</button>
       </div>
     </div>`;
 }
@@ -1826,7 +2068,149 @@ function renderPinManager() {
 function updatePin(u, val) {
   CONFIG.pins[u] = val;
   saveConfig();
-  toast('PIN updated for ' + CONFIG.candidates[u]?.name || u);
+  toast('PIN updated for ' + (CONFIG.candidates[u]?.name || u));
+}
+
+function restoreJob(c, id) {
+  const j = CONFIG.candidates[c].jobs.find(x => x._id === id);
+  if (!j) return;
+  j.dismissed = false;
+  j.isNew = true;
+  saveConfig();
+  updateLoginCounts();
+  renderOverview();
+  toast(`↩ Job restored to ${CONFIG.candidates[c].name}'s list`);
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  SITE CUSTOMIZATION
+// ═══════════════════════════════════════════════════════════════
+function updateSiteTitle() {
+  const emoji = document.getElementById('site-emoji')?.value?.trim() || '💼';
+  const title = document.getElementById('site-title')?.value?.trim() || 'Career Hub';
+  CONFIG.site = { emoji, title };
+  saveConfig();
+  applySiteTitle();
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  CANDIDATE MANAGEMENT
+// ═══════════════════════════════════════════════════════════════
+function toggleCandidateActive(c) {
+  const cd = CONFIG.candidates[c];
+  const wasActive = cd.active !== false;
+  if (wasActive && !confirm(`Hide ${cd.name} from the portal? Their data will be preserved and you can restore them any time.`)) return;
+  cd.active = !wasActive;
+  saveConfig();
+  updateLoginCounts();
+  renderLoginScreen();
+  renderOverview();
+  toast(`${cd.name} is now ${cd.active ? 'visible' : 'hidden'}`);
+}
+
+function showAddCandidateForm() {
+  document.getElementById('add-candidate-form').style.display = 'block';
+}
+
+function addCandidate() {
+  const name = document.getElementById('nc-name')?.value?.trim();
+  const role = document.getElementById('nc-role')?.value?.trim() || '';
+  const color = document.getElementById('nc-color')?.value || '#1a4b8c';
+  const pin = document.getElementById('nc-pin')?.value?.trim();
+
+  if (!name) { toast('Name is required'); return; }
+  if (!pin || pin.length !== 4) { toast('PIN must be 4 digits'); return; }
+
+  // Generate a unique key from name
+  const key = name.toLowerCase().replace(/[^a-z0-9]/g,'').substring(0,8) + Date.now().toString().slice(-3);
+
+  CONFIG.candidates[key] = {
+    name, active: true,
+    color: color, colorHex: color,
+    lt: color + '22',
+    role: role || `${name} · New User`,
+    bio: `${name} is currently searching for new opportunities.`,
+    skills: [], prefs: {}, searchAreas: '',
+    jobs: []
+  };
+  CONFIG.pins[key] = pin;
+  saveConfig();
+  renderLoginScreen();
+  renderOverview();
+  toast(`✅ ${name} added!`);
+}
+
+function editCandidate(c) {
+  const cd = CONFIG.candidates[c];
+  const name = prompt('Name:', cd.name);
+  if (name === null) return;
+  const role = prompt('Subtitle:', cd.role);
+  if (role === null) return;
+  cd.name = name.trim() || cd.name;
+  cd.role = role.trim() || cd.role;
+  saveConfig();
+  renderLoginScreen();
+  renderOverview();
+  toast(`${cd.name} updated`);
+}
+
+function renderLoginScreen() {
+  // Re-render the user selector buttons dynamically
+  const selector = document.getElementById('user-selector');
+  if (!selector) return;
+  const active = activeCandidates();
+  selector.innerHTML = active.map(c => {
+    const cd = CONFIG.candidates[c];
+    return `
+      <div class="user-btn" data-u="${c}" onclick="selectUser('${c}')">
+        <div class="user-avatar" style="background:${cd.colorHex}">${cd.name[0]}</div>
+        ${cd.name}
+        <div class="login-job-count" id="lc-${c}">— jobs</div>
+      </div>`;
+  }).join('');
+  updateLoginCounts();
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  HOVER PREVIEW
+// ═══════════════════════════════════════════════════════════════
+const tooltip = () => document.getElementById('card-preview-tooltip');
+
+function showCardPreview(e, c, id) {
+  const t = tooltip();
+  if (!t || window.innerWidth < 768) return;
+  const cd = CONFIG.candidates[c];
+  const j = (cd?.jobs||[]).find(x => x._id === id);
+  if (!j || !cd) return;
+  const quals = j.qualifications?.length
+    ? `<ul class="preview-quals">${j.qualifications.slice(0,4).map(q=>`<li>${q}</li>`).join('')}</ul>` : '';
+  t.innerHTML = `
+    <div class="preview-title" style="color:${cd.colorHex}">${j.title}</div>
+    <div class="preview-company">${j.company} · ${j.location||''}${j.workType?' · '+j.workType:''}${j.salary?' · '+j.salary:''}</div>
+    ${j.description ? `<div class="preview-desc">${j.description}</div>` : ''}
+    ${quals}
+    ${j.benefits ? `<div style="font-size:11px;color:var(--muted);margin-top:6px;"><strong>Benefits:</strong> ${j.benefits}</div>` : ''}`;
+  positionTooltip(e);
+  t.classList.add('visible');
+}
+
+function positionTooltip(e) {
+  const t = tooltip();
+  if (!t) return;
+  const x = e.clientX + 16;
+  const y = e.clientY - 20;
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+  t.style.left = (x + 340 > vw ? x - 360 : x) + 'px';
+  t.style.top  = (y + 380 > vh ? vh - 400 : y) + 'px';
+}
+
+function moveCardPreview(e) {
+  if (tooltip()?.classList.contains('visible')) positionTooltip(e);
+}
+
+function hideCardPreview() {
+  tooltip()?.classList.remove('visible');
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -2011,7 +2395,7 @@ function buildMainContent(c, cd, isAdmin) {
       <div class="form-group full" style="margin-bottom:12px;">
         <div class="form-label">Add this job to which candidate?</div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;">
-          ${['m','l','s'].map(x => `
+          ${activeCandidates().map(x => `
             <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;font-weight:600;padding:7px 12px;border-radius:8px;border:1.5px solid var(--border);background:${x===c?CONFIG.candidates[x].colorHex:'white'};color:${x===c?'white':'var(--text2)'};transition:all .15s">
               <input type="radio" name="admin-target-${c}" value="${x}" ${x===c?'checked':''} style="display:none" onchange="document.getElementById('admin-add-target-${c}').value=this.value">
               ${CONFIG.candidates[x].name}
@@ -2153,7 +2537,7 @@ async function cleanupBio(c) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
+        model: 'claude-haiku-4-5-20251001',
         max_tokens: 300,
         messages: [{
           role: 'user',
@@ -2205,7 +2589,7 @@ async function suggestSkills(c) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
+        model: 'claude-haiku-4-5-20251001',
         max_tokens: 300,
         messages: [{
           role: 'user',
@@ -2541,7 +2925,10 @@ function buildCard(j, c, cd) {
      data-worktype="${(j.workType||'').toLowerCase()}"
      data-new="${j.isNew?'true':'false'}"
      data-starred="${j.starred?'true':'false'}"
-     data-applied="${j.applied?'true':'false'}">
+     data-applied="${j.applied?'true':'false'}"
+     onmouseenter="showCardPreview(event,'${c}','${j._id}')"
+     onmousemove="moveCardPreview(event)"
+     onmouseleave="hideCardPreview()">
   <div class="card-top-stripe" style="background:${cd.colorHex}${j.userAdded?';background:var(--green)':''}"></div>
   <div class="card-body">
     <div class="card-row1">
@@ -2743,7 +3130,7 @@ async function scrapeUrl(c) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
+        model: 'claude-haiku-4-5-20251001',
         max_tokens: 1000,
         tools: [{ type: 'web_search_20250305', name: 'web_search' }],
         messages: [{
@@ -2867,7 +3254,7 @@ async function parseResume() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
+        model: 'claude-haiku-4-5-20251001',
         max_tokens: 1000,
         messages: [{
           role: 'user',
@@ -2934,7 +3321,7 @@ function filterJobs(c, type, btn) {
 // ═══════════════════════════════════════════════════════════════
 function exportCSV() {
   const rows = [['Candidate','Title','Company','Location','Work Type','Salary','Match Score','Starred','Applied','Notes','Apply URL','Source']];
-  ['m','l','s'].forEach(c => {
+  activeCandidates().forEach(c => {
     const cd = CONFIG.candidates[c];
     (cd.jobs||[]).filter(j=>!j.dismissed).forEach(j => {
       rows.push([
@@ -3036,7 +3423,7 @@ function showSettings() {
       <div style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:10px">Data</div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;">
         <button class="h-btn" onclick="exportCSV();closeModal('settings-modal')">📊 Export CSV</button>
-        ${isAdmin ? `<button class="h-btn danger" onclick="if(confirm('Clear ALL job data?')){['m','l','s'].forEach(c=>{CONFIG.candidates[c].jobs=[]});saveConfig();closeModal('settings-modal');initApp();toast('All data cleared')}">🗑 Clear All Data</button>` : ''}
+        ${isAdmin ? `<button class="h-btn danger" onclick="if(confirm('Clear ALL job data?')){activeCandidates().forEach(c=>{CONFIG.candidates[c].jobs=[]});saveConfig();closeModal('settings-modal');initApp();toast('All data cleared')}">🗑 Clear All Data</button>` : ''}
       </div>
     </div>
 
@@ -3149,7 +3536,7 @@ async function syncAllToAirtable() {
   if (!at?.enabled) return;
   toast('Syncing all jobs to Airtable...');
   let total = 0;
-  for (const c of ['m','l','s']) {
+  for (const c of activeCandidates()) {
     const jobs = (CONFIG.candidates[c].jobs||[]).filter(j=>!j.dismissed);
     if (jobs.length) { await syncToAirtable(jobs, c); total += jobs.length; }
   }
@@ -3158,7 +3545,7 @@ async function syncAllToAirtable() {
 
 function updateSyncBadges() {
   const at = CONFIG.airtable;
-  ['m','l','s'].forEach(c => {
+  activeCandidates().forEach(c => {
     const badge = document.getElementById('sync-badge-'+c);
     if (!badge) return;
     if (at?.enabled && at.apiKey && at.baseId) {
@@ -3255,8 +3642,11 @@ document.addEventListener('keydown', e => {
 // ═══════════════════════════════════════════════════════════════
 //  INIT
 // ═══════════════════════════════════════════════════════════════
+applyFontSize(CONFIG.uiPrefs?.fontSize || 'normal', false);
+applySiteTitle();
+renderLoginScreen();
 updateLoginCounts();
-selectUser('m');
+selectUser(activeCandidates()[0] || 'm');
 </script>
 </body>
 </html>
