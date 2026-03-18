@@ -47,7 +47,7 @@ body {
   font-family: 'Nunito', sans-serif;
   font-weight: 400;
   line-height: 1.6;
-  font-size: 15px;
+  font-size: 16px;
 }
 
 /* ═══════════════════════════════════════════════
@@ -88,10 +88,42 @@ body {
 
 .user-selector {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr 1fr 1fr;
   gap: 10px;
   margin-bottom: 24px;
 }
+
+/* Discreet admin link */
+.admin-link {
+  font-size: 11px;
+  color: var(--muted);
+  text-align: center;
+  margin-top: 12px;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  opacity: .5;
+  transition: opacity .15s;
+}
+.admin-link:hover { opacity: 1; }
+
+/* Admin mode - show single centered button */
+.admin-btn-mode {
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+.admin-btn-mode.visible { display: flex; }
+.admin-back {
+  font-size: 12px;
+  color: var(--muted);
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.admin-back:hover { color: var(--text); }
 
 .user-btn {
   padding: 14px 10px;
@@ -351,7 +383,7 @@ header {
 }
 
 .profile-bio {
-  font-size: 13px;
+  font-size: 14px;
   color: var(--text2);
   line-height: 1.65;
   margin-bottom: 16px;
@@ -397,7 +429,7 @@ header {
 .skill-tag {
   padding: 3px 10px;
   border-radius: 6px;
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 600;
   background: var(--surface2);
   color: var(--text2);
@@ -450,12 +482,12 @@ header {
   align-items: center;
   padding: 8px 0;
   border-bottom: 1px solid var(--border);
-  font-size: 13px;
+  font-size: 14px;
 }
 
 .stat-row:last-child { border-bottom: none; }
-.stat-key { color: var(--muted); font-size: 12px; }
-.stat-val { font-weight: 700; font-size: 12px; }
+.stat-key { color: var(--muted); font-size: 13px; }
+.stat-val { font-weight: 700; font-size: 13px; }
 
 /* Search + action buttons */
 .action-section { margin-top: 16px; display: flex; flex-direction: column; gap: 8px; }
@@ -466,7 +498,7 @@ header {
   border-radius: 10px;
   border: none;
   font-family: 'Nunito', sans-serif;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 700;
   cursor: pointer;
   transition: all .2s;
@@ -712,7 +744,7 @@ header {
 
 .card-title {
   font-family: 'Lora', serif;
-  font-size: 16px;
+  font-size: 17px;
   font-weight: 700;
   line-height: 1.3;
   color: var(--text);
@@ -720,7 +752,7 @@ header {
 }
 
 .card-company {
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
   color: var(--text2);
   display: flex;
@@ -729,7 +761,7 @@ header {
   flex-wrap: wrap;
 }
 
-.card-location { font-size: 12px; color: var(--muted); }
+.card-location { font-size: 13px; color: var(--muted); }
 
 .card-actions { display: flex; gap: 5px; flex-shrink: 0; }
 
@@ -771,7 +803,7 @@ header {
 .jb-applied { background: #e8f5e9; color: #1e7a4e; border: 1px solid #a0d8b8; }
 
 .card-desc {
-  font-size: 13px;
+  font-size: 14px;
   color: var(--text2);
   line-height: 1.65;
   margin-bottom: 12px;
@@ -1089,15 +1121,60 @@ header {
    RESPONSIVE
 ═══════════════════════════════════════════════ */
 @media (max-width: 768px) {
+  /* Layout */
   .app-body { grid-template-columns: 1fr; height: auto; overflow: visible; }
-  .sidebar { position: relative; }
-  .main-content { padding: 16px; }
+  .sidebar {
+    position: relative;
+    border-right: none;
+    border-bottom: 2px solid var(--border);
+    padding: 16px;
+    height: auto;
+  }
+  .main-content { padding: 14px; }
+
+  /* Header */
+  header { padding: 10px 14px; flex-wrap: wrap; gap: 8px; }
+  .h-logo { font-size: 16px; }
+  .h-btn { padding: 6px 10px; font-size: 11px; }
+  .header-right { gap: 6px; }
+
+  /* Tabs */
+  .admin-tabs { padding: 0 12px; }
+  .atab { padding: 10px 14px; font-size: 11px; }
+
+  /* Login */
+  .login-card { padding: 32px 24px; }
+  .user-selector { grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+  .user-btn { padding: 10px 6px; font-size: 12px; }
+  .user-avatar { width: 30px; height: 30px; font-size: 12px; }
+  .pin-input { width: 48px; height: 56px; font-size: 20px; }
+
+  /* Forms */
   .form-grid { grid-template-columns: 1fr; }
   .detail-grid { grid-template-columns: 1fr; }
   .overview-grid { grid-template-columns: 1fr; }
   .pin-grid { grid-template-columns: 1fr 1fr; }
-  header { padding: 12px 16px; }
-  .admin-tabs { padding: 0 16px; }
+  .url-paste-row { flex-direction: column; }
+  .url-paste-row .submit-btn { width: 100%; }
+
+  /* Cards */
+  .card-row1 { flex-wrap: wrap; }
+  .card-actions { margin-left: auto; }
+  .badge-row { gap: 4px; }
+  .card-footer { flex-direction: column; align-items: flex-start; }
+  .card-footer-left { flex-wrap: wrap; }
+  .pipeline-select { font-size: 12px; }
+
+  /* Sidebar */
+  .profile-name { font-size: 20px; }
+  .action-section { gap: 6px; }
+
+  /* Filters */
+  .filter-row { gap: 5px; }
+  .fbt { padding: 4px 10px; font-size: 11px; }
+
+  /* Content header */
+  .content-header { flex-direction: column; align-items: flex-start; gap: 10px; }
 }
 
 ::-webkit-scrollbar { width: 5px; }
@@ -1196,6 +1273,53 @@ header {
 .help-item-icon { font-size: 16px; flex-shrink: 0; margin-top: 1px; }
 .help-item-text { color: var(--text2); line-height: 1.5; }
 .help-item-text strong { color: var(--text); }
+
+/* ── Pipeline stages ── */
+.pipeline-select {
+  padding: 4px 8px;
+  border-radius: 6px;
+  border: 1.5px solid var(--border);
+  font-family: 'Nunito', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  outline: none;
+  background: white;
+  color: var(--text2);
+  transition: all .15s;
+}
+.pipeline-select.stage-researching { background: #eef2ff; color: #3b5bdb; border-color: #c5d0ff; }
+.pipeline-select.stage-applied     { background: var(--green-lt); color: var(--green); border-color: #a0d8b8; }
+.pipeline-select.stage-interview   { background: #fff3cd; color: #b45309; border-color: #f6d860; }
+.pipeline-select.stage-offer       { background: #d4edda; color: #155724; border-color: #82c99a; }
+.pipeline-select.stage-declined    { background: var(--red-lt); color: var(--red); border-color: #f5c6c1; }
+
+/* ── Notes saved flash ── */
+.notes-saved-flash {
+  font-size: 11px; color: var(--green); font-weight: 700;
+  opacity: 0; transition: opacity .3s; margin-left: 6px;
+}
+.notes-saved-flash.show { opacity: 1; }
+
+/* ── Last searched ── */
+.last-searched { font-size: 11px; color: var(--muted); margin-top: 2px; text-align: center; }
+
+/* ── Login job count badges ── */
+.login-job-count {
+  font-size: 10px; font-weight: 800;
+  background: var(--surface2); color: var(--muted);
+  border-radius: 10px; padding: 1px 7px; margin-top: 2px;
+}
+.user-btn.selected .login-job-count { background: rgba(255,255,255,.25); color: white; }
+
+/* ── Admin discreet link ── */
+.admin-link {
+  font-size: 11px; color: var(--muted); text-align: center;
+  margin-top: 10px; cursor: pointer; opacity: .45;
+  text-decoration: none; display: block; transition: opacity .15s;
+  letter-spacing: .04em;
+}
+.admin-link:hover { opacity: .9; }
 </style>
 <body>
 
@@ -1207,22 +1331,21 @@ header {
     <div class="login-logo">💼 Career Hub</div>
     <div class="login-sub">Select your profile to continue</div>
 
-    <div class="user-selector">
+    <div class="user-selector" id="user-selector">
       <div class="user-btn" data-u="m" onclick="selectUser('m')">
         <div class="user-avatar">M</div>
         Michael
+        <div class="login-job-count" id="lc-m">— jobs</div>
       </div>
       <div class="user-btn" data-u="l" onclick="selectUser('l')">
         <div class="user-avatar">L</div>
         Lisa
+        <div class="login-job-count" id="lc-l">— jobs</div>
       </div>
       <div class="user-btn" data-u="s" onclick="selectUser('s')">
         <div class="user-avatar">S</div>
         Shannon
-      </div>
-      <div class="user-btn" data-u="admin" onclick="selectUser('admin')">
-        <div class="user-avatar">⚙</div>
-        Admin
+        <div class="login-job-count" id="lc-s">— jobs</div>
       </div>
     </div>
 
@@ -1240,9 +1363,10 @@ header {
 
     <div class="login-hint">
       Each person only sees their own jobs and profile.<br>
-      Admin can view and edit everything.<br>
-      <strong>Default PINs:</strong> Michael: 1111 · Lisa: 2222 · Shannon: 3333 · Admin: 0000
+      <strong>Don't know your PIN?</strong> Contact your administrator.
     </div>
+
+    <a class="admin-link" onclick="selectUser('admin')" id="admin-link">admin</a>
   </div>
 </div>
 
@@ -1502,13 +1626,31 @@ let selectedUser = null;
 
 function selectUser(u) {
   selectedUser = u;
+  // Only candidate buttons are in DOM; admin has no button
   document.querySelectorAll('.user-btn').forEach(b => b.classList.remove('selected'));
-  document.querySelector(`.user-btn[data-u="${u}"]`).classList.add('selected');
+  const btn = document.querySelector(`.user-btn[data-u="${u}"]`);
+  if (btn) btn.classList.add('selected');
+  // Style admin link when selected
+  const adminLink = document.getElementById('admin-link');
+  if (adminLink) adminLink.style.opacity = u === 'admin' ? '1' : '';
+  // Update login button color
   document.getElementById('login-btn').setAttribute('data-c', u);
   // Clear PIN inputs
   [0,1,2,3].forEach(i => document.getElementById('p'+i).value = '');
   document.getElementById('p0').focus();
   document.getElementById('login-error').style.display = 'none';
+}
+
+function updateLoginCounts() {
+  ['m','l','s'].forEach(c => {
+    const el = document.getElementById('lc-'+c);
+    if (!el) return;
+    const jobs = (CONFIG.candidates[c]?.jobs||[]).filter(j=>!j.dismissed);
+    const starred = jobs.filter(j=>j.starred).length;
+    el.textContent = jobs.length
+      ? `${jobs.length} job${jobs.length!==1?'s':''}${starred?` · ⭐${starred}`:''}`
+      : 'no jobs yet';
+  });
 }
 
 function pinNext(idx) {
@@ -1549,6 +1691,9 @@ function logout() {
   document.getElementById('app').style.display = 'none';
   document.querySelectorAll('.user-btn').forEach(b => b.classList.remove('selected'));
   [0,1,2,3].forEach(i => document.getElementById('p'+i).value = '');
+  const adminLink = document.getElementById('admin-link');
+  if (adminLink) adminLink.style.opacity = '';
+  updateLoginCounts();
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -1744,6 +1889,13 @@ function buildSidebar(c, cd, isAdmin) {
       <div class="stat-row"><span class="stat-key">Total Jobs</span><span class="stat-val" id="stat-total-${c}">${(cd.jobs||[]).filter(j=>!j.dismissed).length}</span></div>
       <div class="stat-row"><span class="stat-key">⭐ Starred</span><span class="stat-val" id="stat-starred-${c}">${(cd.jobs||[]).filter(j=>j.starred).length}</span></div>
       <div class="stat-row"><span class="stat-key">✅ Applied</span><span class="stat-val" id="stat-applied-${c}">${(cd.jobs||[]).filter(j=>j.applied).length}</span></div>
+      <div class="stat-row"><span class="stat-key">🆕 New</span>
+        <span style="display:flex;align-items:center;gap:6px;">
+          <span class="stat-val" id="stat-new-${c}">${(cd.jobs||[]).filter(j=>j.isNew).length}</span>
+          ${(cd.jobs||[]).filter(j=>j.isNew).length > 0 ? `<button onclick="clearNewBadges('${c}')" style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:5px;border:1px solid var(--border);background:var(--surface2);color:var(--muted);cursor:pointer;" title="Mark all as seen">Clear</button>` : ''}
+        </span>
+      </div>
+      <div class="stat-row"><span class="stat-key">🔎 Last Searched</span><span class="stat-val" id="stat-lastsearch-${c}">${cd.lastSearched ? new Date(cd.lastSearched).toLocaleDateString('en-US',{month:'short',day:'numeric'}) : 'Never'}</span></div>
       <div class="stat-row"><span class="stat-key">🔗 Self-Added</span><span class="stat-val">${(cd.jobs||[]).filter(j=>j.userAdded).length}</span></div>
     </div>
 
@@ -1794,6 +1946,19 @@ function buildMainContent(c, cd, isAdmin) {
         ➕ Add a Job Posting
         <span class="close-btn" onclick="toggleAddJob('${c}')">✕</span>
       </div>
+
+      ${isAdmin ? `
+      <div class="form-group full" style="margin-bottom:12px;">
+        <div class="form-label">Add this job to which candidate?</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          ${['m','l','s'].map(x => `
+            <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;font-weight:600;padding:7px 12px;border-radius:8px;border:1.5px solid var(--border);background:${x===c?CONFIG.candidates[x].colorHex:'white'};color:${x===c?'white':'var(--text2)'};transition:all .15s">
+              <input type="radio" name="admin-target-${c}" value="${x}" ${x===c?'checked':''} style="display:none" onchange="document.getElementById('admin-add-target-${c}').value=this.value">
+              ${CONFIG.candidates[x].name}
+            </label>`).join('')}
+        </div>
+        <input type="hidden" id="admin-add-target-${c}" value="${c}">
+      </div>` : ''}
 
       <div class="form-group full">
         <div class="form-label">Paste Job URL (we'll try to fill in the details)</div>
@@ -1997,6 +2162,8 @@ async function aiSearch(c) {
     if (!cd.jobs) cd.jobs = [];
     cd.jobs = [...newJobs, ...cd.jobs];
 
+    // Save timestamp
+    cd.lastSearched = Date.now();
     saveConfig();
 
     // Sync new jobs to Airtable if connected
@@ -2168,6 +2335,16 @@ function buildCard(j, c, cd) {
     <div class="card-footer">
       <div class="card-footer-left">
         ${j.applyUrl ? `<a class="apply-link" style="background:${cd.colorHex}" href="${j.applyUrl}" target="_blank" rel="noopener">Apply Now ↗</a>` : ''}
+        <select class="pipeline-select stage-${(j.stage||'none')}" 
+                onchange="setStage('${c}','${j._id}',this)"
+                title="Track your progress on this job">
+          <option value="none" ${!j.stage||j.stage==='none'?'selected':''}>— Track progress</option>
+          <option value="researching" ${j.stage==='researching'?'selected':''}>🔍 Researching</option>
+          <option value="applied"     ${j.stage==='applied'?'selected':''}>📤 Applied</option>
+          <option value="interview"   ${j.stage==='interview'?'selected':''}>📅 Interview</option>
+          <option value="offer"       ${j.stage==='offer'?'selected':''}>🎉 Offer Received</option>
+          <option value="declined"    ${j.stage==='declined'?'selected':''}>✕ Declined</option>
+        </select>
         <button class="toggle-btn" onclick="toggleCardDetail('${safeId}')">Details ▾</button>
       </div>
       <span class="card-source">${j.source||''}</span>
@@ -2184,8 +2361,12 @@ function buildCard(j, c, cd) {
         <div class="detail-box-text">${j.benefits||'See listing for details.'}</div>
       </div>
     </div>
-    <div class="notes-label">📝 Your Notes</div>
-    <textarea class="card-notes" placeholder="Add notes, contacts, interview dates..." onchange="saveNote('${c}','${j._id}',this.value)">${j.notes||''}</textarea>
+    <div class="notes-label">
+      📝 Your Notes
+      <span class="notes-saved-flash" id="notesflash-${safeId}">✓ Saved</span>
+    </div>
+    <textarea class="card-notes" placeholder="Add notes, contacts, interview dates..." 
+              onchange="saveNote('${c}','${j._id}',this.value,'${safeId}')">${j.notes||''}</textarea>
   </div>
 </div>`;
 }
@@ -2246,22 +2427,62 @@ function deleteJob(c, id) {
   toast('Job deleted');
 }
 
-function saveNote(c, id, val) {
+function saveNote(c, id, val, safeId) {
   const j = CONFIG.candidates[c].jobs.find(x=>x._id===id);
-  if (j) { j.notes = val; saveConfig(); }
+  if (!j) return;
+  j.notes = val;
+  saveConfig();
+  // Flash saved indicator
+  if (safeId) {
+    const flash = document.getElementById('notesflash-'+safeId);
+    if (flash) {
+      flash.classList.add('show');
+      setTimeout(() => flash.classList.remove('show'), 2000);
+    }
+  }
+}
+
+function setStage(c, id, select) {
+  const j = CONFIG.candidates[c].jobs.find(x=>x._id===id);
+  if (!j) return;
+  j.stage = select.value;
+  // Update select color class
+  select.className = `pipeline-select stage-${select.value}`;
+  // Sync applied flag with pipeline
+  if (select.value === 'applied' || select.value === 'interview' || select.value === 'offer') {
+    j.applied = true;
+  } else if (select.value === 'none' || select.value === 'researching') {
+    j.applied = false;
+  }
+  saveConfig();
+  updateSidebarStats(c);
+  updateLoginCounts();
+}
+
+function clearNewBadges(c) {
+  (CONFIG.candidates[c].jobs||[]).forEach(j => j.isNew = false);
+  saveConfig();
+  renderCandidatePanel(c);
+  toast('All new badges cleared');
 }
 
 function updateSidebarStats(c) {
   const cd = CONFIG.candidates[c];
   const all = (cd.jobs||[]).filter(j=>!j.dismissed);
+  const newJobs = all.filter(j=>j.isNew);
   const s1 = document.getElementById('stat-total-'+c);
   const s2 = document.getElementById('stat-starred-'+c);
   const s3 = document.getElementById('stat-applied-'+c);
+  const s4 = document.getElementById('stat-new-'+c);
+  const s5 = document.getElementById('stat-lastsearch-'+c);
   if (s1) s1.textContent = all.length;
   if (s2) s2.textContent = all.filter(j=>j.starred).length;
-  if (s3) s3.textContent = all.filter(j=>j.applied).length;
+  if (s3) s3.textContent = all.filter(j=>j.applied||['applied','interview','offer'].includes(j.stage)).length;
+  if (s4) s4.textContent = newJobs.length;
+  if (s5) s5.textContent = cd.lastSearched ? new Date(cd.lastSearched).toLocaleDateString('en-US',{month:'short',day:'numeric'}) : 'Never';
   const ntab = document.getElementById('ntab-'+c);
   if (ntab) ntab.textContent = all.length;
+  updateLoginCounts();
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -2336,8 +2557,12 @@ function addJobManual(c) {
   const company = document.getElementById('jf-company-'+c).value.trim();
   if (!title || !company) { toast('Title and Company are required'); return; }
 
+  // Admin can add to any candidate
+  const targetEl = document.getElementById('admin-add-target-'+c);
+  const target = (targetEl && currentUser === 'admin') ? targetEl.value : c;
+
   const job = {
-    _id: `${c}-user-${Date.now()}`,
+    _id: `${target}-user-${Date.now()}`,
     title,
     company,
     location: document.getElementById('jf-location-'+c).value.trim() || 'Not listed',
@@ -2345,17 +2570,17 @@ function addJobManual(c) {
     salary: document.getElementById('jf-salary-'+c).value.trim() || 'Competitive',
     description: document.getElementById('jf-desc-'+c).value.trim(),
     applyUrl: document.getElementById('jf-url2-'+c).value.trim() || document.getElementById('job-url-'+c).value.trim(),
-    source: document.getElementById('jf-source-'+c).value.trim() || 'Self-added',
+    source: document.getElementById('jf-source-'+c).value.trim() || 'Admin-added',
     matchScore: 'Good Match',
     isNew: true,
     userAdded: true,
     benefits: '',
     qualifications: [],
-    tags: ['Self-Added']
+    tags: ['Added by Admin']
   };
 
-  if (!CONFIG.candidates[c].jobs) CONFIG.candidates[c].jobs = [];
-  CONFIG.candidates[c].jobs.unshift(job);
+  if (!CONFIG.candidates[target].jobs) CONFIG.candidates[target].jobs = [];
+  CONFIG.candidates[target].jobs.unshift(job);
   saveConfig();
 
   // Clear form
@@ -2367,8 +2592,15 @@ function addJobManual(c) {
   document.getElementById('jf-worktype-'+c).value = 'Remote';
 
   toggleAddJob(c);
-  renderJobCards(c);
-  toast('✓ Job added!');
+  // Re-render whichever candidate was targeted
+  if (target !== c) {
+    const targetName = CONFIG.candidates[target].name;
+    toast(`✓ Job added to ${targetName}'s list!`);
+    updateLoginCounts();
+  } else {
+    renderJobCards(c);
+    toast('✓ Job added!');
+  }
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -2784,7 +3016,7 @@ document.addEventListener('keydown', e => {
 // ═══════════════════════════════════════════════════════════════
 //  INIT
 // ═══════════════════════════════════════════════════════════════
-// Auto-select first user for UX
+updateLoginCounts();
 selectUser('m');
 </script>
 </body>
