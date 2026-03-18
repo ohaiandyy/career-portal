@@ -1548,17 +1548,14 @@ body.font-xl .card-title { font-size: calc(var(--base-font) + 1px); }
       <div class="user-btn" data-u="m" onclick="selectUser('m')">
         <div class="user-avatar">M</div>
         Michael
-        <div class="login-job-count" id="lc-m">— jobs</div>
       </div>
       <div class="user-btn" data-u="l" onclick="selectUser('l')">
         <div class="user-avatar">L</div>
         Lisa
-        <div class="login-job-count" id="lc-l">— jobs</div>
       </div>
       <div class="user-btn" data-u="s" onclick="selectUser('s')">
         <div class="user-avatar">S</div>
         Shannon
-        <div class="login-job-count" id="lc-s">— jobs</div>
       </div>
     </div>
 
@@ -2133,6 +2130,100 @@ function renderOverview() {
     </div>`;
 }
 
+function renderAdminSidebar() {
+  const at = CONFIG.airtable;
+  const site = CONFIG.site || { emoji: '💼', title: 'Career Hub' };
+  return `
+    <div style="padding:4px 0">
+      <div style="font-family:Lora,serif;font-size:16px;font-weight:700;margin-bottom:16px;color:var(--admin)">⚙️ Admin Tools</div>
+
+      <div style="background:var(--surface2);border-radius:10px;padding:12px 14px;margin-bottom:14px;">
+        <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:10px;">🎨 Site Customization</div>
+        <div style="display:flex;gap:8px;margin-bottom:8px;">
+          <div style="flex:0 0 52px;">
+            <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:3px;">Emoji</div>
+            <input id="site-emoji" value="${site.emoji}" maxlength="4" style="width:100%;padding:5px 6px;border-radius:6px;border:1.5px solid var(--border);font-size:18px;text-align:center;" oninput="updateSiteTitle()">
+          </div>
+          <div style="flex:1">
+            <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:3px;">Site Name</div>
+            <input id="site-title" value="${site.title}" style="width:100%;padding:5px 8px;border-radius:6px;border:1.5px solid var(--border);font-size:13px;font-weight:700;" oninput="updateSiteTitle()">
+          </div>
+        </div>
+        <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;">Sidebar Width</div>
+        <div style="display:flex;gap:6px;">
+          ${[['Narrow','260'],['Normal','300'],['Wide','360'],['XL','420']].map(([label,w]) => `
+            <button onclick="setSidebarWidth(${w})" style="flex:1;padding:5px 2px;border-radius:6px;border:1.5px solid var(--border);background:${(CONFIG.uiPrefs?.sidebarWidth||300)==w?'var(--text)':'white'};color:${(CONFIG.uiPrefs?.sidebarWidth||300)==w?'white':'var(--text2)'};font-size:10px;font-weight:700;cursor:pointer;">${label}</button>`).join('')}
+        </div>
+      </div>
+
+      <div style="background:var(--surface2);border-radius:10px;padding:12px 14px;margin-bottom:14px;">
+        <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:10px;">👥 Manage Users</div>
+        ${Object.keys(CONFIG.candidates).map(c => {
+          const cd = CONFIG.candidates[c];
+          const isActive = cd.active !== false;
+          return `
+          <div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--border);">
+            <div style="width:26px;height:26px;border-radius:50%;background:${cd.colorHex};color:white;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;flex-shrink:0;opacity:${isActive?1:.4}">${cd.name[0]}</div>
+            <div style="flex:1;font-size:12px;font-weight:700;color:${isActive?'var(--text)':'var(--muted)'};">${cd.name}</div>
+            <button onclick="editCandidate('${c}')" style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:5px;border:1.5px solid var(--border);background:white;color:var(--text2);cursor:pointer;">✏️ Edit</button>
+            <button onclick="toggleCandidateActive('${c}')" style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:5px;border:1.5px solid ${isActive?'var(--red)':'var(--green)'};background:white;color:${isActive?'var(--red)':'var(--green)'};cursor:pointer;">${isActive?'Hide':'Show'}</button>
+          </div>`;
+        }).join('')}
+        <button onclick="showAddCandidateForm()" style="width:100%;margin-top:10px;padding:7px;border-radius:8px;border:1.5px dashed var(--border);background:white;color:var(--text2);font-size:12px;font-weight:700;cursor:pointer;">+ Add New User</button>
+        <div id="add-candidate-form" style="display:none;margin-top:10px;">
+          <input id="nc-name" placeholder="Full name" style="width:100%;padding:6px 8px;border-radius:6px;border:1.5px solid var(--border);font-size:12px;margin-bottom:6px;">
+          <input id="nc-role" placeholder="Subtitle (e.g. RN · 10+ Years)" style="width:100%;padding:6px 8px;border-radius:6px;border:1.5px solid var(--border);font-size:12px;margin-bottom:6px;">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+            <label style="font-size:11px;font-weight:700;color:var(--muted);">Color:</label>
+            <input type="color" id="nc-color" value="#1a4b8c" style="width:36px;height:28px;border:1.5px solid var(--border);border-radius:6px;cursor:pointer;padding:2px;">
+          </div>
+          <input id="nc-pin" placeholder="4-digit PIN" maxlength="4" style="width:100%;padding:6px 8px;border-radius:6px;border:1.5px solid var(--border);font-size:12px;margin-bottom:8px;">
+          <div style="display:flex;gap:6px;">
+            <button onclick="addCandidate()" style="flex:1;padding:7px;border-radius:7px;border:none;background:var(--admin);color:white;font-size:12px;font-weight:700;cursor:pointer;">Add User</button>
+            <button onclick="document.getElementById('add-candidate-form').style.display='none'" style="flex:1;padding:7px;border-radius:7px;border:1.5px solid var(--border);background:white;color:var(--muted);font-size:12px;font-weight:700;cursor:pointer;">Cancel</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="pin-manage" style="margin-bottom:14px;">
+        <h3>🔐 Change PINs</h3>
+        <div class="pin-grid">
+          ${Object.keys(CONFIG.candidates).filter(c=>CONFIG.candidates[c].active!==false).concat(['admin']).map(u => `
+            <div class="pin-item">
+              <label>${CONFIG.candidates[u]?.name || 'Admin'}</label>
+              <input type="text" maxlength="4" value="${CONFIG.pins[u]||''}" id="pin-${u}" style="letter-spacing:.2em" oninput="updatePin('${u}',this.value)">
+            </div>`).join('')}
+        </div>
+        <div style="font-size:11px;color:var(--muted);margin-top:8px">Changes save automatically and take effect on next login.</div>
+      </div>
+
+      <div style="background:var(--admin-lt);border:1.5px solid #f6c96b;border-radius:var(--radius);padding:14px 16px;margin-bottom:14px;">
+        <div style="font-size:13px;font-weight:700;color:var(--admin);margin-bottom:10px;">☁️ Airtable Sync</div>
+        <div style="font-size:11px;color:var(--muted);margin-bottom:10px;line-height:1.5;">Jobs auto-push after each AI search. Use Push All to sync manually.</div>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <div>
+            <div style="font-size:10px;font-weight:700;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;margin-bottom:4px;">API Key</div>
+            <input class="form-input" id="at-key" type="password" placeholder="pat..." value="${at?.apiKey||''}" style="font-size:12px;padding:6px 10px;">
+          </div>
+          <div>
+            <div style="font-size:10px;font-weight:700;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;margin-bottom:4px;">Base ID</div>
+            <input class="form-input" id="at-base" placeholder="appXXX..." value="${at?.baseId||''}" style="font-size:12px;padding:6px 10px;">
+          </div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;">
+            <button class="submit-btn" style="background:var(--admin);color:white;padding:7px 12px;font-size:12px;flex:1" onclick="saveAirtable()">Save & Test</button>
+            ${at?.enabled ? `<button class="submit-btn" style="background:var(--green);color:white;padding:7px 12px;font-size:12px;flex:1" onclick="syncAllToAirtable()">↑ Push All</button>` : ''}
+            ${at?.enabled ? `<button class="cancel-btn" style="padding:7px 12px;font-size:12px;" onclick="CONFIG.airtable.enabled=false;saveConfig();renderOverview()">Disconnect</button>` : ''}
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <button class="export-btn" style="width:100%;padding:8px;font-size:12px;" onclick="exportCSV()">📊 Export CSV</button>
+        <button class="cancel-btn" style="width:100%;padding:8px;font-size:12px;color:var(--red);border-color:var(--red);" onclick="if(confirm('Clear ALL data for all candidates? This cannot be undone.'))clearAllData()">🗑 Clear All Data</button>
+      </div>
+    </div>`;
+}
+
 function adminQuery(type, btn) {
   // Update active chip
   document.querySelectorAll('.query-chip').forEach(c => c.classList.remove('active'));
@@ -2181,120 +2272,6 @@ function adminQuery(type, btn) {
         </div>`).join('')}
     </div>`;
   results.innerHTML = html;
-}
-  const at = CONFIG.airtable;
-  const site = CONFIG.site || { emoji: '💼', title: 'Career Hub' };
-  return `
-    <div style="padding:4px 0">
-      <div style="font-family:Lora,serif;font-size:16px;font-weight:700;margin-bottom:16px;color:var(--admin)">⚙️ Admin Tools</div>
-
-      <!-- SITE CUSTOMIZATION -->
-      <div style="background:var(--surface2);border-radius:10px;padding:12px 14px;margin-bottom:14px;">
-        <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:10px;">🎨 Site Customization</div>
-        <div style="display:flex;gap:8px;margin-bottom:8px;">
-          <div style="flex:0 0 52px;">
-            <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:3px;">Emoji</div>
-            <input id="site-emoji" value="${site.emoji}" maxlength="4"
-              style="width:100%;padding:5px 6px;border-radius:6px;border:1.5px solid var(--border);font-size:18px;text-align:center;"
-              oninput="updateSiteTitle()">
-          </div>
-          <div style="flex:1">
-            <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:3px;">Site Name</div>
-            <input id="site-title" value="${site.title}"
-              style="width:100%;padding:5px 8px;border-radius:6px;border:1.5px solid var(--border);font-size:13px;font-weight:700;"
-              oninput="updateSiteTitle()">
-          </div>
-        </div>
-        <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;">Sidebar Width</div>
-        <div style="display:flex;gap:6px;">
-          ${[['Narrow','260'],['Normal','300'],['Wide','360'],['XL','420']].map(([label,w]) => `
-            <button onclick="setSidebarWidth(${w})"
-              style="flex:1;padding:5px 2px;border-radius:6px;border:1.5px solid var(--border);background:${(CONFIG.uiPrefs?.sidebarWidth||300)==w?'var(--text)':'white'};color:${(CONFIG.uiPrefs?.sidebarWidth||300)==w?'white':'var(--text2)'};font-size:10px;font-weight:700;cursor:pointer;">
-              ${label}
-            </button>`).join('')}
-        </div>
-      </div>
-
-      <!-- CANDIDATE MANAGEMENT -->
-      <div style="background:var(--surface2);border-radius:10px;padding:12px 14px;margin-bottom:14px;">
-        <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:10px;">👥 Manage Users</div>
-        ${Object.keys(CONFIG.candidates).map(c => {
-          const cd = CONFIG.candidates[c];
-          const isActive = cd.active !== false;
-          return `
-          <div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--border);">
-            <div style="width:26px;height:26px;border-radius:50%;background:${cd.colorHex};color:white;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;flex-shrink:0;opacity:${isActive?1:.4}">${cd.name[0]}</div>
-            <div style="flex:1;font-size:12px;font-weight:700;color:${isActive?'var(--text)':'var(--muted)'};">${cd.name}</div>
-            <button onclick="editCandidate('${c}')"
-              style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:5px;border:1.5px solid var(--border);background:white;color:var(--text2);cursor:pointer;">
-              ✏️ Edit
-            </button>
-            <button onclick="toggleCandidateActive('${c}')"
-              style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:5px;border:1.5px solid ${isActive?'var(--red)':'var(--green)'};background:white;color:${isActive?'var(--red)':'var(--green)'};cursor:pointer;">
-              ${isActive ? 'Hide' : 'Show'}
-            </button>
-          </div>`;
-        }).join('')}
-        <button onclick="showAddCandidateForm()"
-          style="width:100%;margin-top:10px;padding:7px;border-radius:8px;border:1.5px dashed var(--border);background:white;color:var(--text2);font-size:12px;font-weight:700;cursor:pointer;">
-          + Add New User
-        </button>
-        <div id="add-candidate-form" style="display:none;margin-top:10px;">
-          <div style="font-size:11px;font-weight:700;color:var(--muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:.05em;">New User Details</div>
-          <input id="nc-name" placeholder="Full name" style="width:100%;padding:6px 8px;border-radius:6px;border:1.5px solid var(--border);font-size:12px;margin-bottom:6px;">
-          <input id="nc-role" placeholder="Subtitle (e.g. RN · 10+ Years)" style="width:100%;padding:6px 8px;border-radius:6px;border:1.5px solid var(--border);font-size:12px;margin-bottom:6px;">
-          <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
-            <label style="font-size:11px;font-weight:700;color:var(--muted);">Color:</label>
-            <input type="color" id="nc-color" value="#1a4b8c" style="width:36px;height:28px;border:1.5px solid var(--border);border-radius:6px;cursor:pointer;padding:2px;">
-          </div>
-          <input id="nc-pin" placeholder="4-digit PIN" maxlength="4" style="width:100%;padding:6px 8px;border-radius:6px;border:1.5px solid var(--border);font-size:12px;margin-bottom:8px;">
-          <div style="display:flex;gap:6px;">
-            <button onclick="addCandidate()" style="flex:1;padding:7px;border-radius:7px;border:none;background:var(--admin);color:white;font-size:12px;font-weight:700;cursor:pointer;">Add User</button>
-            <button onclick="document.getElementById('add-candidate-form').style.display='none'" style="flex:1;padding:7px;border-radius:7px;border:1.5px solid var(--border);background:white;color:var(--muted);font-size:12px;font-weight:700;cursor:pointer;">Cancel</button>
-          </div>
-        </div>
-      </div>
-
-      <!-- PINS -->
-      <div class="pin-manage" style="margin-bottom:14px;">
-        <h3>🔐 Change PINs</h3>
-        <div class="pin-grid">
-          ${Object.keys(CONFIG.candidates).filter(c=>CONFIG.candidates[c].active!==false).concat(['admin']).map(u => `
-            <div class="pin-item">
-              <label>${CONFIG.candidates[u]?.name || 'Admin'}</label>
-              <input type="text" maxlength="4" value="${CONFIG.pins[u]||''}" id="pin-${u}" style="letter-spacing:.2em" oninput="updatePin('${u}',this.value)">
-            </div>`).join('')}
-        </div>
-        <div style="font-size:11px;color:var(--muted);margin-top:8px">Changes save automatically and take effect on next login.</div>
-      </div>
-
-      <!-- AIRTABLE -->
-      <div style="background:var(--admin-lt);border:1.5px solid #f6c96b;border-radius:var(--radius);padding:14px 16px;margin-bottom:14px;">
-        <div style="font-size:13px;font-weight:700;color:var(--admin);margin-bottom:10px;">☁️ Airtable Sync</div>
-        <div style="font-size:11px;color:var(--muted);margin-bottom:10px;line-height:1.5;">Jobs auto-push after each AI search. Use Push All to sync manually.</div>
-        <div style="display:flex;flex-direction:column;gap:8px;">
-          <div>
-            <div style="font-size:10px;font-weight:700;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;margin-bottom:4px;">API Key</div>
-            <input class="form-input" id="at-key" type="password" placeholder="pat..." value="${at?.apiKey||''}" style="font-size:12px;padding:6px 10px;">
-          </div>
-          <div>
-            <div style="font-size:10px;font-weight:700;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;margin-bottom:4px;">Base ID</div>
-            <input class="form-input" id="at-base" placeholder="appXXX..." value="${at?.baseId||''}" style="font-size:12px;padding:6px 10px;">
-          </div>
-          <div style="display:flex;gap:6px;flex-wrap:wrap;">
-            <button class="submit-btn" style="background:var(--admin);color:white;padding:7px 12px;font-size:12px;flex:1" onclick="saveAirtable()">Save & Test</button>
-            ${at?.enabled ? `<button class="submit-btn" style="background:var(--green);color:white;padding:7px 12px;font-size:12px;flex:1" onclick="syncAllToAirtable()">↑ Push All</button>` : ''}
-            ${at?.enabled ? `<button class="cancel-btn" style="padding:7px 12px;font-size:12px;" onclick="CONFIG.airtable.enabled=false;saveConfig();renderOverview()">Disconnect</button>` : ''}
-          </div>
-        </div>
-      </div>
-
-      <!-- DATA -->
-      <div style="display:flex;flex-direction:column;gap:8px;">
-        <button class="export-btn" style="width:100%;padding:8px;font-size:12px;" onclick="exportCSV()">📊 Export CSV</button>
-        <button class="cancel-btn" style="width:100%;padding:8px;font-size:12px;color:var(--red);border-color:var(--red);" onclick="if(confirm('Clear ALL data for all candidates? This cannot be undone.'))clearAllData()">🗑 Clear All Data</button>
-      </div>
-    </div>`;
 }
 
 function updatePin(u, val) {
