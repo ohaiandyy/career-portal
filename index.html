@@ -2770,20 +2770,29 @@ async function saveAirtable() {
 
   toast('Testing connection...');
   try {
-    // Test by listing tables
-    const res = await fetch(`https://api.airtable.com/v0/meta/bases/${base}/tables`, {
+    // Test by fetching records from Jobs table (only needs data.records:read or write scope)
+    const res = await fetch(`https://api.airtable.com/v0/${base}/Jobs?maxRecords=1`, {
       headers: { Authorization: `Bearer ${key}` }
     });
-    const data = await res.json();
-    if (data.error) throw new Error(data.error.message || 'Invalid credentials');
 
+    if (res.status === 401) throw new Error('Invalid API key — check your Personal Access Token');
+    if (res.status === 403) throw new Error('Token missing permissions — make sure you added data.records:write scope and selected the Career Portal base');
+    if (res.status === 404) throw new Error('Table "Jobs" not found — make sure your table is named exactly "Jobs"');
+    if (!res.ok) throw new Error(`Error ${res.status} — check your Base ID`);
+
+    // Connection good — save
     CONFIG.airtable = { apiKey: key, baseId: base, enabled: true };
     saveConfig();
     toast('✅ Airtable connected!');
     updateSyncBadges();
     showSettings();
   } catch(e) {
-    toast('Connection failed: ' + e.message);
+    // If it's a network/CORS error give a specific message
+    if (e.message.includes('fetch') || e.message.includes('network') || e.message.toLowerCase().includes('failed')) {
+      toast('Network error — make sure you\'re accessing the site via the GitHub Pages URL, not a local file');
+    } else {
+      toast('❌ ' + e.message);
+    }
   }
 }
 
