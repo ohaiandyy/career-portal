@@ -1550,6 +1550,12 @@ header {
 
 <script>
 // ═══════════════════════════════════════════════════════════════
+//  CLOUDFLARE WORKER — API proxy URL
+//  Update this if you ever redeploy your Worker
+// ═══════════════════════════════════════════════════════════════
+const WORKER_URL = 'https://career-hub-api.andy-dao-91-aaf.workers.dev';
+
+// ═══════════════════════════════════════════════════════════════
 //  CONFIGURATION — Edit PINs and candidate defaults here
 // ═══════════════════════════════════════════════════════════════
 let CONFIG = {
@@ -1861,10 +1867,33 @@ function buildSidebar(c, cd, isAdmin) {
         ${cd.name}
         <span class="edit-icon" onclick="toggleBioEdit('${c}')" title="Edit bio">✏️</span>
       </div>
-      <div class="profile-role">${cd.role}</div>
-      <div class="profile-bio" id="bio-display-${c}">${cd.bio}</div>
-      <textarea class="editable-bio" id="bio-edit-${c}" onblur="saveBio('${c}',this.value)">${cd.bio}</textarea>
 
+      <!-- Editable subtitle/role line -->
+      <div class="profile-role" id="role-display-${c}" onclick="toggleRoleEdit('${c}')" title="Click to edit" style="cursor:pointer;">${cd.role} <span style="font-size:10px;opacity:.4">✏️</span></div>
+      <input class="skill-input" id="role-edit-${c}" value="${cd.role}" 
+             style="display:none;width:100%;margin-bottom:6px;font-size:12px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;"
+             onblur="saveRole('${c}',this.value)" onkeydown="if(event.key==='Enter')this.blur()">
+
+      <!-- Bio with cleanup button -->
+      <div style="position:relative;">
+        <div class="profile-bio" id="bio-display-${c}">${cd.bio}</div>
+        <textarea class="editable-bio" id="bio-edit-${c}" onblur="saveBio('${c}',this.value)">${cd.bio}</textarea>
+        <div id="bio-cleanup-wrap-${c}" style="display:none;gap:6px;margin-top:6px;flex-wrap:wrap;">
+          <button onclick="cleanupBio('${c}')" id="bio-cleanup-btn-${c}"
+            style="font-size:11px;font-weight:700;padding:4px 10px;border-radius:6px;border:1.5px solid ${colorHex};background:white;color:${colorHex};cursor:pointer;">
+            ✨ Clean Up Bio
+          </button>
+          <div id="bio-cleanup-result-${c}" style="display:none;width:100%;background:var(--green-lt);border:1.5px solid #a0d8b8;border-radius:8px;padding:10px 12px;font-size:12px;color:var(--text2);line-height:1.6;margin-top:4px;">
+            <div id="bio-cleanup-text-${c}"></div>
+            <div style="display:flex;gap:8px;margin-top:8px;">
+              <button onclick="acceptCleanupBio('${c}')" style="font-size:11px;font-weight:700;padding:3px 10px;border-radius:5px;border:none;background:var(--green);color:white;cursor:pointer;">✓ Use This</button>
+              <button onclick="dismissCleanupBio('${c}')" style="font-size:11px;font-weight:700;padding:3px 10px;border-radius:5px;border:1px solid var(--border);background:white;color:var(--muted);cursor:pointer;">✕ Dismiss</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Skills with suggest button -->
       <div class="section-label">
         Skills & Keywords
         <span class="tip">?<span class="tip-bubble">Add any skills or keywords here. The AI uses these when searching for jobs — the more accurate, the better your matches. Click × to remove any skill.</span></span>
@@ -1873,6 +1902,14 @@ function buildSidebar(c, cd, isAdmin) {
       <div class="skill-add-row">
         <input class="skill-input" id="skill-new-${c}" placeholder="Add a skill..." maxlength="30">
         <button class="add-skill-btn" style="background:${colorHex}" onclick="addSkill('${c}', document.getElementById('skill-new-${c}').value)">+</button>
+      </div>
+      <button onclick="suggestSkills('${c}')" id="suggest-skills-btn-${c}"
+        style="font-size:11px;font-weight:700;padding:4px 10px;border-radius:6px;border:1.5px solid ${colorHex};background:white;color:${colorHex};cursor:pointer;margin-top:4px;width:100%;">
+        ✨ Suggest More Skills
+      </button>
+      <div id="skill-suggestions-${c}" style="display:none;margin-top:6px;background:${cd.lt};border-radius:8px;padding:8px 10px;">
+        <div style="font-size:11px;color:var(--muted);margin-bottom:6px;">Click any skill to add it:</div>
+        <div id="skill-suggestion-chips-${c}" style="display:flex;flex-wrap:wrap;gap:5px;"></div>
       </div>
 
       <div class="section-label">
@@ -1900,6 +1937,29 @@ function buildSidebar(c, cd, isAdmin) {
     </div>
 
     <div class="action-section">
+      <div class="section-label" style="margin-top:0">
+        LinkedIn Job Alerts
+        <span class="tip">?<span class="tip-bubble">Set these up on LinkedIn to get daily emails whenever new matching jobs are posted — completely free, works 24/7 even when you're not actively searching.</span></span>
+      </div>
+      <div style="background:${cd.lt};border-radius:8px;padding:10px 12px;margin-bottom:8px;">
+        <div style="font-size:11px;color:var(--text2);line-height:1.6;margin-bottom:8px;">
+          Go to <a href="https://www.linkedin.com/jobs/" target="_blank" style="color:${colorHex};font-weight:700;">LinkedIn Jobs</a> → search each term below → click <strong>Set alert</strong>. You'll get daily emails for new matches.
+        </div>
+        ${(LINKEDIN_ALERTS[c]||[]).map(a => `
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border);">
+            <div>
+              <div style="font-size:12px;font-weight:700;color:var(--text2)">${a.label}</div>
+              <div style="font-size:10px;color:var(--muted)">${a.filters}</div>
+            </div>
+            <a href="https://www.linkedin.com/jobs/search/?keywords=${encodeURIComponent(a.search)}&f_WT=2&f_TPR=r86400" 
+               target="_blank"
+               style="font-size:11px;font-weight:700;color:${colorHex};text-decoration:none;white-space:nowrap;margin-left:8px;background:white;border:1.5px solid ${colorHex};border-radius:6px;padding:3px 8px;"
+               title="Search LinkedIn for: ${a.search}">
+              Search ↗
+            </a>
+          </div>`).join('')}
+      </div>
+
       <button class="sidebar-btn" style="background:${colorHex};color:white;border:none" id="ai-search-btn-${c}" onclick="aiSearch('${c}')">
         🔍 Search for New Jobs
       </button>
@@ -2038,9 +2098,11 @@ function buildMainContent(c, cd, isAdmin) {
 function toggleBioEdit(c) {
   const display = document.getElementById('bio-display-'+c);
   const edit = document.getElementById('bio-edit-'+c);
+  const cleanupWrap = document.getElementById('bio-cleanup-wrap-'+c);
   const showing = edit.classList.contains('visible');
   edit.classList.toggle('visible', !showing);
   display.style.display = showing ? '' : 'none';
+  if (cleanupWrap) cleanupWrap.style.display = showing ? 'none' : 'flex';
   if (!showing) edit.focus();
 }
 
@@ -2049,8 +2111,148 @@ function saveBio(c, val) {
   document.getElementById('bio-display-'+c).textContent = val;
   document.getElementById('bio-edit-'+c).classList.remove('visible');
   document.getElementById('bio-display-'+c).style.display = '';
+  const cw = document.getElementById('bio-cleanup-wrap-'+c);
+  if (cw) cw.style.display = 'none';
   saveConfig();
   toast('Bio saved');
+}
+
+function toggleRoleEdit(c) {
+  const display = document.getElementById('role-display-'+c);
+  const edit = document.getElementById('role-edit-'+c);
+  display.style.display = 'none';
+  edit.style.display = 'block';
+  edit.focus();
+  edit.select();
+}
+
+function saveRole(c, val) {
+  val = val.trim();
+  if (!val) return;
+  CONFIG.candidates[c].role = val;
+  const display = document.getElementById('role-display-'+c);
+  display.innerHTML = `${val} <span style="font-size:10px;opacity:.4">✏️</span>`;
+  display.style.display = '';
+  document.getElementById('role-edit-'+c).style.display = 'none';
+  saveConfig();
+  toast('Subtitle updated');
+}
+
+async function cleanupBio(c) {
+  const cd = CONFIG.candidates[c];
+  const current = document.getElementById('bio-edit-'+c).value.trim() || cd.bio;
+  const btn = document.getElementById('bio-cleanup-btn-'+c);
+  const resultDiv = document.getElementById('bio-cleanup-result-'+c);
+  const resultText = document.getElementById('bio-cleanup-text-'+c);
+
+  btn.textContent = '⏳ Cleaning up...';
+  btn.disabled = true;
+
+  try {
+    const res = await fetch(WORKER_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 300,
+        messages: [{
+          role: 'user',
+          content: `Rewrite this professional bio to be polished, confident, and clear. Keep it 2-3 sentences. Remove any awkward phrasing. Preserve all the key facts and the person's voice. Return ONLY the rewritten bio text, nothing else.
+
+BIO: ${current}`
+        }]
+      })
+    });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error.message);
+    const text = (data.content||[]).find(b=>b.type==='text')?.text?.trim();
+    if (!text) throw new Error('No result returned');
+
+    resultText.textContent = text;
+    resultDiv.style.display = 'block';
+    btn.textContent = '✨ Clean Up Bio';
+    btn.disabled = false;
+  } catch(e) {
+    toast('Cleanup failed: ' + e.message);
+    btn.textContent = '✨ Clean Up Bio';
+    btn.disabled = false;
+  }
+}
+
+function acceptCleanupBio(c) {
+  const text = document.getElementById('bio-cleanup-text-'+c).textContent;
+  document.getElementById('bio-edit-'+c).value = text;
+  saveBio(c, text);
+  document.getElementById('bio-cleanup-result-'+c).style.display = 'none';
+  toast('✅ Bio updated!');
+}
+
+function dismissCleanupBio(c) {
+  document.getElementById('bio-cleanup-result-'+c).style.display = 'none';
+}
+
+async function suggestSkills(c) {
+  const cd = CONFIG.candidates[c];
+  const btn = document.getElementById('suggest-skills-btn-'+c);
+  const container = document.getElementById('skill-suggestions-'+c);
+  const chips = document.getElementById('skill-suggestion-chips-'+c);
+
+  btn.textContent = '⏳ Thinking...';
+  btn.disabled = true;
+
+  try {
+    const res = await fetch(WORKER_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 300,
+        messages: [{
+          role: 'user',
+          content: `Based on this professional profile, suggest 8-10 additional skills or keywords that would improve job search results on job boards. Focus on transferable skills, tools, certifications, and industry terms that employers search for.
+
+Name: ${cd.name}
+Current skills: ${(cd.skills||[]).join(', ')}
+Bio: ${cd.bio}
+Target roles: ${cd.searchAreas}
+
+Return ONLY a JSON array of strings, no markdown. Example: ["Skill 1","Skill 2","Skill 3"]`
+        }]
+      })
+    });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error.message);
+    const raw = (data.content||[]).find(b=>b.type==='text')?.text?.trim();
+    const match = raw?.match(/\[[\s\S]*\]/);
+    if (!match) throw new Error('No suggestions returned');
+    const suggestions = JSON.parse(match[0]);
+
+    // Filter out skills already added
+    const existing = new Set((cd.skills||[]).map(s=>s.toLowerCase()));
+    const fresh = suggestions.filter(s => !existing.has(s.toLowerCase()));
+
+    chips.innerHTML = fresh.map(s => `
+      <span onclick="addSkillFromSuggestion('${c}','${s.replace(/'/g,"\\'")}',this)"
+        style="padding:3px 10px;border-radius:12px;font-size:11px;font-weight:700;background:white;border:1.5px solid ${cd.colorHex};color:${cd.colorHex};cursor:pointer;transition:all .15s;"
+        onmouseover="this.style.background='${cd.colorHex}';this.style.color='white'"
+        onmouseout="this.style.background='white';this.style.color='${cd.colorHex}'"
+      >${s}</span>`).join('');
+
+    container.style.display = 'block';
+    btn.textContent = '✨ Suggest More Skills';
+    btn.disabled = false;
+  } catch(e) {
+    toast('Could not fetch suggestions: ' + e.message);
+    btn.textContent = '✨ Suggest More Skills';
+    btn.disabled = false;
+  }
+}
+
+function addSkillFromSuggestion(c, skill, el) {
+  addSkill(c, skill);
+  el.style.opacity = '.35';
+  el.style.pointerEvents = 'none';
+  el.textContent = '✓ ' + skill;
 }
 
 function toggleTargetEdit(c) {
@@ -2095,6 +2297,41 @@ function removeSkill(c, skill) {
 }
 
 // ═══════════════════════════════════════════════════════════════
+//  LINKEDIN HELPERS
+// ═══════════════════════════════════════════════════════════════
+
+// Builds a LinkedIn job search URL for a given title + company
+function buildLinkedInUrl(title, company) {
+  const q = encodeURIComponent(company ? `${title} ${company}` : title);
+  return `https://www.linkedin.com/jobs/search/?keywords=${q}&location=United%20States&f_WT=2`;
+}
+
+// Pre-built LinkedIn alert strings per candidate
+const LINKEDIN_ALERTS = {
+  m: [
+    { label: 'HR Director / CHRO', search: 'HR Director OR CHRO OR "Chief People Officer" OR "VP HR"', filters: 'Remote · Any industry' },
+    { label: 'VP / Director of Operations', search: '"VP Operations" OR "Director of Operations" OR COO', filters: 'Remote · Any industry' },
+    { label: 'CIO / IT Director', search: 'CIO OR "IT Director" OR "Chief Information Officer"', filters: 'Remote · SMB / Mid-market' },
+    { label: 'Chief Compliance Officer', search: '"Chief Compliance Officer" OR "Director of Compliance" OR CCO', filters: 'Remote · Any industry' },
+    { label: 'HR Technology / HRIS', search: '"HRIS Manager" OR "HR Technology" OR "Paycom" OR "Director HR Technology"', filters: 'Remote' },
+  ],
+  l: [
+    { label: 'Remote Case Manager RN', search: '"Case Manager" RN OR "Registered Nurse" remote telephonic', filters: 'Remote · Health insurance / telehealth' },
+    { label: 'Utilization Management', search: '"Utilization Management" RN OR nurse remote', filters: 'Remote · Health plan / payer' },
+    { label: 'Clinical Consultant', search: '"Clinical Consultant" RN OR nurse remote hospice "home health"', filters: 'Remote' },
+    { label: 'Telehealth Clinical Lead', search: 'telehealth "clinical lead" OR "clinical director" RN remote', filters: 'Remote · Telehealth' },
+    { label: 'Joint Commission Surveyor', search: '"Joint Commission" surveyor nurse hospice "home care"', filters: 'United States' },
+  ],
+  s: [
+    { label: 'Corporate Trainer', search: '"Corporate Trainer" OR "L&D Specialist" OR "Training Specialist" remote', filters: 'Remote · Any industry' },
+    { label: 'Instructional Designer', search: '"Instructional Designer" OR "eLearning Developer" OR "Learning Experience Designer" remote', filters: 'Remote' },
+    { label: 'EMR / EHR Implementation Trainer', search: '"EMR Trainer" OR "EHR Trainer" OR "Implementation Trainer" healthcare', filters: 'Remote + travel' },
+    { label: 'Learning Consultant (travel)', search: '"Learning Consultant" OR "Healthcare Trainer" travel consulting', filters: 'United States' },
+    { label: 'Curriculum Developer', search: '"Curriculum Developer" OR "Curriculum Designer" remote corporate', filters: 'Remote · Any industry' },
+  ]
+};
+
+// ═══════════════════════════════════════════════════════════════
 //  AI SEARCH — Single clean search, 10-15 focused results
 // ═══════════════════════════════════════════════════════════════
 async function aiSearch(c) {
@@ -2124,7 +2361,7 @@ async function aiSearch(c) {
     </div>`;
 
   try {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
+    const res = await fetch(WORKER_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -2184,9 +2421,9 @@ async function aiSearch(c) {
     // Show error inline but still load fallbacks so page isn't empty
     container.innerHTML = `
       <div style="background:var(--red-lt);border:1.5px solid #f5c6c1;border-radius:var(--radius);padding:16px 20px;margin-bottom:16px;">
-        <div style="font-size:13px;font-weight:700;color:var(--red);margin-bottom:4px">Search unavailable right now</div>
+        <div style="font-size:13px;font-weight:700;color:var(--red);margin-bottom:4px">Search error</div>
         <div style="font-size:12px;color:var(--red);opacity:.8">${err.message}</div>
-        <div style="font-size:12px;color:var(--muted);margin-top:8px">The AI search works when opened inside Claude.ai with web search enabled. Showing curated listings below — you can also add any job manually with the "Add a Job" button.</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:8px">Check that your Cloudflare Worker is deployed and your Anthropic API key is set correctly. Showing curated listings below in the meantime.</div>
       </div>`;
     loadFallback(c);
   }
@@ -2334,7 +2571,9 @@ function buildCard(j, c, cd) {
     <div class="card-desc">${j.description||''}</div>
     <div class="card-footer">
       <div class="card-footer-left">
-        ${j.applyUrl ? `<a class="apply-link" style="background:${cd.colorHex}" href="${j.applyUrl}" target="_blank" rel="noopener">Apply Now ↗</a>` : ''}
+        <a class="apply-link" style="background:${cd.colorHex}" href="${j.applyUrl || buildLinkedInUrl(j.title, j.company)}" target="_blank" rel="noopener">
+          ${j.applyUrl ? 'Apply Now ↗' : '🔗 Search on LinkedIn ↗'}
+        </a>
         <select class="pipeline-select stage-${(j.stage||'none')}" 
                 onchange="setStage('${c}','${j._id}',this)"
                 title="Track your progress on this job">
@@ -2500,7 +2739,7 @@ async function scrapeUrl(c) {
   toast('🔍 Fetching job details...');
 
   try {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
+    const res = await fetch(WORKER_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -2624,7 +2863,7 @@ async function parseResume() {
   btn.textContent = '🤖 Parsing...';
 
   try {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
+    const res = await fetch(WORKER_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
