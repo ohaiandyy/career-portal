@@ -1275,8 +1275,38 @@ header {
 .help-item-text strong { color: var(--text); }
 
 /* ── Font size control ── */
-body.font-large  { font-size: 17px; }
-body.font-xl     { font-size: 19px; }
+:root { --base-font: 15px; }
+body { font-size: var(--base-font); }
+body.font-large  { --base-font: 17px; }
+body.font-xl     { --base-font: 19px; }
+
+/* Scale key text elements with the variable */
+body.font-large .profile-bio,
+body.font-large .card-desc,
+body.font-large .card-title,
+body.font-large .stat-row,
+body.font-large .skill-tag,
+body.font-large .sidebar-btn,
+body.font-large .card-company,
+body.font-large .section-label,
+body.font-large .form-input,
+body.font-large .form-label,
+body.font-large .pipeline-select { font-size: calc(var(--base-font) - 1px); }
+body.font-large .card-title { font-size: calc(var(--base-font) + 1px); }
+
+body.font-xl .profile-bio,
+body.font-xl .card-desc,
+body.font-xl .card-title,
+body.font-xl .stat-row,
+body.font-xl .skill-tag,
+body.font-xl .sidebar-btn,
+body.font-xl .card-company,
+body.font-xl .section-label,
+body.font-xl .form-input,
+body.font-xl .form-label,
+body.font-xl .pipeline-select { font-size: calc(var(--base-font) - 2px); }
+body.font-xl .card-title { font-size: calc(var(--base-font) + 1px); }
+
 .font-size-ctrl  { display: flex; align-items: center; gap: 3px; }
 .font-btn {
   width: 28px; height: 28px;
@@ -1290,8 +1320,8 @@ body.font-xl     { font-size: 19px; }
 .font-btn.active { background: var(--text); color: white; border-color: var(--text); }
 .font-btn:hover:not(.active) { background: var(--surface2); }
 .font-btn-sm { font-size: 11px; }
-.font-btn-md { font-size: 13px; }
-.font-btn-lg { font-size: 16px; }
+.font-btn-md { font-size: 14px; }
+.font-btn-lg { font-size: 17px; }
 
 /* ── Sidebar width toggle ── */
 .sidebar-width-toggle {
@@ -1308,28 +1338,43 @@ body.font-xl     { font-size: 19px; }
 .sidebar-width-toggle:hover { background: var(--text2); color: white; }
 .sidebar { position: relative; }
 
-/* ── Job card hover preview ── */
+/* ── Job title hover popover (anchored, not floating) ── */
+.card-title-wrap {
+  position: relative;
+  display: inline-block;
+  max-width: 100%;
+}
+.card-title-wrap .card-title {
+  cursor: default;
+  text-decoration-line: underline;
+  text-decoration-style: dotted;
+  text-decoration-color: var(--border);
+  text-underline-offset: 3px;
+}
 .card-preview-tooltip {
   display: none;
-  position: fixed;
-  z-index: 999;
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 200;
   background: white;
   border: 1.5px solid var(--border);
   border-radius: var(--radius);
-  box-shadow: 0 8px 32px rgba(0,0,0,.15);
-  padding: 16px 18px;
-  width: 340px;
-  max-height: 380px;
+  box-shadow: 0 8px 28px rgba(0,0,0,.13);
+  padding: 14px 16px;
+  width: 380px;
+  max-width: 90vw;
+  max-height: 320px;
   overflow-y: auto;
   pointer-events: none;
   font-size: 13px;
   line-height: 1.6;
 }
-.card-preview-tooltip.visible { display: block; }
+.card-title-wrap:hover .card-preview-tooltip { display: block; }
 .preview-title { font-family: 'Lora', serif; font-size: 15px; font-weight: 700; margin-bottom: 4px; color: var(--text); }
-.preview-company { font-size: 12px; font-weight: 600; color: var(--text2); margin-bottom: 10px; }
-.preview-desc { font-size: 12px; color: var(--text2); margin-bottom: 10px; line-height: 1.65; }
-.preview-quals { font-size: 11px; color: var(--muted); }
+.preview-meta { font-size: 12px; font-weight: 600; color: var(--text2); margin-bottom: 10px; display:flex; flex-wrap:wrap; gap:6px; }
+.preview-desc { font-size: 12px; color: var(--text2); margin-bottom: 8px; line-height: 1.65; }
+.preview-quals { font-size: 11px; color: var(--muted); padding-left: 16px; margin: 0; }
 .preview-quals li { margin-bottom: 2px; }
 .pipeline-select {
   padding: 4px 8px;
@@ -1350,7 +1395,65 @@ body.font-xl     { font-size: 19px; }
 .pipeline-select.stage-offer       { background: #d4edda; color: #155724; border-color: #82c99a; }
 .pipeline-select.stage-declined    { background: var(--red-lt); color: var(--red); border-color: #f5c6c1; }
 
-/* ── Notes saved flash ── */
+/* ── Clickable stats ── */
+.stat-row.stat-clickable { cursor: pointer; transition: background .15s; border-radius: 6px; padding-left: 4px; padding-right: 4px; }
+.stat-row.stat-clickable:hover { background: var(--surface2); }
+.stat-row.stat-clickable:hover .stat-key { color: var(--text); }
+
+/* ── LinkedIn alerts toggle ── */
+.linkedin-alerts-toggle {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 8px 10px; border-radius: 8px; border: 1.5px solid var(--border);
+  background: white; cursor: pointer; font-size: 12px; font-weight: 700;
+  color: var(--text2); transition: all .15s; margin-top: 4px;
+}
+.linkedin-alerts-toggle:hover { background: var(--surface2); }
+
+/* ── Back to top button ── */
+.back-to-top {
+  display: none; position: fixed; bottom: 24px; right: 24px;
+  width: 40px; height: 40px; border-radius: 50%;
+  background: var(--text); color: white; border: none;
+  font-size: 18px; cursor: pointer; z-index: 100;
+  box-shadow: var(--shadow-lg); transition: all .2s;
+  align-items: center; justify-content: center;
+}
+.back-to-top.visible { display: flex; }
+.back-to-top:hover { transform: translateY(-2px); }
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: var(--surface2); border-radius: 4px; }
+::-webkit-scrollbar-thumb { background: #bbb; border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: #999; }
+/* ── Match gauge ── */
+.match-gauge { display:flex; align-items:center; gap:8px; margin-bottom:8px; }
+.match-gauge-track { width:100px; height:6px; background:var(--surface2); border-radius:3px; overflow:hidden; flex-shrink:0; }
+.match-gauge-bar { height:100%; border-radius:3px; transition:width .4s ease; }
+.match-gauge-label { font-size:11px; font-weight:700; white-space:nowrap; }
+
+/* ── Company research links ── */
+.company-research-links { display:flex; flex-wrap:wrap; gap:6px; align-items:center; padding:7px 0 10px; border-top:1px solid var(--border); margin-top:4px; }
+.co-link { font-size:11px; font-weight:700; color:var(--text2); text-decoration:none; padding:2px 8px; border-radius:5px; border:1.5px solid var(--border); background:white; transition:all .15s; white-space:nowrap; }
+.co-link:hover { background:var(--surface2); }
+
+/* ── AI tools ── */
+.ai-tools-row { display:flex; gap:6px; flex-wrap:wrap; padding:10px 0 8px; border-top:1px solid var(--border); margin-top:8px; }
+.ai-tool-btn { font-size:11px; font-weight:700; padding:5px 10px; border-radius:6px; border:1.5px solid var(--border); background:white; color:var(--text2); cursor:pointer; transition:all .15s; font-family:'Nunito',sans-serif; }
+.ai-tool-btn:hover { background:var(--surface2); }
+.ai-tool-btn:disabled { opacity:.5; cursor:not-allowed; }
+.ai-tool-output { background:var(--surface2); border-radius:8px; padding:12px 14px; font-size:12px; line-height:1.7; color:var(--text2); margin-top:6px; border:1px solid var(--border); white-space:pre-wrap; }
+.ai-tool-output-header { font-size:11px; font-weight:800; color:var(--muted); text-transform:uppercase; letter-spacing:.06em; margin-bottom:8px; display:flex; justify-content:space-between; align-items:center; }
+.ai-tool-disclaimer { font-size:10px; color:var(--muted); font-style:italic; margin-top:8px; padding-top:8px; border-top:1px solid var(--border); }
+
+/* ── Pagination ── */
+.load-more-row { display:flex; justify-content:center; padding:20px 0 8px; }
+.load-more-btn { padding:10px 24px; border-radius:10px; border:2px solid; background:white; font-family:'Nunito',sans-serif; font-size:13px; font-weight:700; cursor:pointer; transition:all .15s; }
+.load-more-btn:hover { background:var(--surface2); }
+.end-of-list { text-align:center; padding:24px 16px; display:flex; flex-direction:column; align-items:center; gap:4px; }
+.end-icon { font-size:24px; margin-bottom:4px; }
+.end-text { font-size:13px; font-weight:600; color:var(--text2); }
+
 .notes-saved-flash {
   font-size: 11px; color: var(--green); font-weight: 700;
   opacity: 0; transition: opacity .3s; margin-left: 6px;
@@ -1376,6 +1479,60 @@ body.font-xl     { font-size: 19px; }
   letter-spacing: .04em;
 }
 .admin-link:hover { opacity: .9; }
+
+/* ── View toggle ── */
+.view-toggle { display:flex; gap:3px; }
+.view-btn {
+  width:30px; height:30px; border-radius:6px; border:1.5px solid var(--border);
+  background:white; cursor:pointer; font-size:14px; display:flex;
+  align-items:center; justify-content:center; transition:all .15s; color:var(--muted);
+}
+.view-btn.active { background:var(--text); color:white; border-color:var(--text); }
+.view-btn:hover:not(.active) { background:var(--surface2); }
+
+/* ── Kanban board ── */
+.kanban-board {
+  display:flex; gap:12px; overflow-x:auto; padding:4px 0 16px;
+  align-items:flex-start;
+}
+.kanban-col {
+  flex:0 0 220px; background:var(--surface2);
+  border-radius:var(--radius); padding:12px 10px;
+  min-height:200px;
+}
+.kanban-col-header {
+  font-size:11px; font-weight:800; text-transform:uppercase;
+  letter-spacing:.06em; margin-bottom:10px; padding-bottom:8px;
+  border-bottom:2px solid; display:flex; justify-content:space-between;
+  align-items:center;
+}
+.kanban-count {
+  font-size:10px; font-weight:700; padding:1px 7px;
+  border-radius:10px; background:white;
+}
+.kanban-card {
+  background:white; border-radius:8px; padding:10px 12px;
+  margin-bottom:8px; border:1.5px solid var(--border);
+  cursor:pointer; transition:all .15s; font-size:12px;
+}
+.kanban-card:hover { box-shadow:var(--shadow); transform:translateY(-1px); }
+.kanban-card-title { font-weight:700; color:var(--text); margin-bottom:3px; line-height:1.3; }
+.kanban-card-company { font-size:11px; color:var(--muted); }
+.kanban-empty { font-size:11px; color:var(--muted); text-align:center; padding:16px 0; font-style:italic; }
+
+/* ── Admin query panel ── */
+.admin-query-bar {
+  display:flex; gap:8px; flex-wrap:wrap; align-items:center;
+  padding:14px 16px; background:var(--admin-lt);
+  border:1.5px solid #f6c96b; border-radius:var(--radius); margin-bottom:16px;
+}
+.query-chip {
+  padding:4px 12px; border-radius:20px; border:1.5px solid var(--border);
+  background:white; font-size:12px; font-weight:700; cursor:pointer;
+  color:var(--text2); transition:all .15s;
+}
+.query-chip.active { background:var(--admin); color:white; border-color:var(--admin); }
+.query-chip:hover:not(.active) { background:var(--surface2); }
 </style>
 <body>
 
@@ -1452,10 +1609,8 @@ body.font-xl     { font-size: 19px; }
   <!-- Admin tabs (admin only) — rendered dynamically -->
   <div class="admin-tabs" id="admin-tabs" style="display:none"></div>
 
-  <!-- Hover preview tooltip -->
-  <div class="card-preview-tooltip" id="card-preview-tooltip"></div>
-
   <!-- App body -->
+  <button class="back-to-top" id="back-to-top" onclick="scrollToTop()" title="Back to top">↑</button>
   <div class="app-body" id="app-body">
 
     <!-- SIDEBAR -->
@@ -1599,6 +1754,17 @@ body.font-xl     { font-size: 19px; }
 </div>
 
 <!-- Toast -->
+<!-- Generic modal for dismissed jobs, etc -->
+<div class="modal-overlay" id="generic-modal">
+  <div class="modal-card" style="max-width:520px;">
+    <div class="modal-title">
+      <span id="modal-title">Details</span>
+      <span class="close-btn" onclick="closeModal('generic-modal')">✕</span>
+    </div>
+    <div id="modal-body" style="max-height:60vh;overflow-y:auto;padding:4px 0;"></div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -1881,10 +2047,28 @@ function renderOverview() {
     <div class="admin-actions">
       <h3>Quick Actions</h3>
       <div class="admin-btn-grid">
-        <button class="sidebar-btn btn-primary-m" style="width:auto;padding:9px 16px" onclick="switchPanel('m')">📋 View Michael</button>
-        <button class="sidebar-btn btn-primary-l" style="width:auto;padding:9px 16px" onclick="switchPanel('l')">📋 View Lisa</button>
-        <button class="sidebar-btn btn-primary-s" style="width:auto;padding:9px 16px" onclick="switchPanel('s')">📋 View Shannon</button>
+        ${activeCandidates().map(c => {
+          const cd = CONFIG.candidates[c];
+          return `<button class="sidebar-btn" style="width:auto;padding:9px 16px;background:${cd.colorHex};color:white;border:none" onclick="switchPanel('${c}')">📋 View ${cd.name}</button>`;
+        }).join('')}
       </div>
+    </div>
+
+    <!-- Admin Query Panel -->
+    <div style="background:white;border-radius:var(--radius);padding:16px 20px;border:1.5px solid var(--border);margin-bottom:16px;">
+      <div style="font-size:13px;font-weight:700;color:var(--text2);margin-bottom:12px;">🔎 Query All Jobs</div>
+      <div class="admin-query-bar" id="admin-query-bar">
+        <span style="font-size:11px;font-weight:700;color:var(--muted);">Filter:</span>
+        <button class="query-chip active" onclick="adminQuery('all',this)">All Jobs</button>
+        <button class="query-chip" onclick="adminQuery('starred',this)">⭐ Starred</button>
+        <button class="query-chip" onclick="adminQuery('applied',this)">✅ Applied</button>
+        <button class="query-chip" onclick="adminQuery('interview',this)">📅 Interview</button>
+        <button class="query-chip" onclick="adminQuery('offer',this)">🎉 Offer</button>
+        <button class="query-chip" onclick="adminQuery('new',this)">🆕 New</button>
+        <button class="query-chip" onclick="adminQuery('remote',this)">🏠 Remote</button>
+        <button class="query-chip" onclick="adminQuery('dismissed',this)">🗑 Dismissed</button>
+      </div>
+      <div id="admin-query-results"></div>
     </div>
 
     <div class="overview-grid">
@@ -1949,7 +2133,55 @@ function renderOverview() {
     </div>`;
 }
 
-function renderAdminSidebar() {
+function adminQuery(type, btn) {
+  // Update active chip
+  document.querySelectorAll('.query-chip').forEach(c => c.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+
+  const results = document.getElementById('admin-query-results');
+  if (!results) return;
+
+  // Gather matching jobs across all candidates
+  const rows = [];
+  activeCandidates().forEach(c => {
+    const cd = CONFIG.candidates[c];
+    const jobs = cd.jobs || [];
+    jobs.forEach(j => {
+      let match = false;
+      if (type === 'all') match = !j.dismissed;
+      else if (type === 'starred') match = j.starred && !j.dismissed;
+      else if (type === 'applied') match = (j.applied || j.stage==='applied') && !j.dismissed;
+      else if (type === 'interview') match = j.stage === 'interview' && !j.dismissed;
+      else if (type === 'offer') match = j.stage === 'offer' && !j.dismissed;
+      else if (type === 'new') match = j.isNew && !j.dismissed;
+      else if (type === 'remote') match = (j.workType||'').toLowerCase()==='remote' && !j.dismissed;
+      else if (type === 'dismissed') match = j.dismissed;
+      if (match) rows.push({ c, cd, j });
+    });
+  });
+
+  if (!rows.length) {
+    results.innerHTML = `<div style="color:var(--muted);font-size:13px;padding:12px 0;">No jobs match this filter.</div>`;
+    return;
+  }
+
+  const html = `
+    <div style="font-size:11px;color:var(--muted);margin-bottom:8px;">${rows.length} job${rows.length!==1?'s':''} found</div>
+    <div style="display:flex;flex-direction:column;gap:4px;">
+      ${rows.map(({c, cd, j}) => `
+        <div style="display:flex;align-items:center;gap:10px;padding:8px 10px;background:var(--surface2);border-radius:8px;flex-wrap:wrap;">
+          <span style="background:${cd.colorHex};color:white;padding:2px 8px;border-radius:5px;font-size:11px;font-weight:700;flex-shrink:0;">${cd.name}</span>
+          <span style="font-size:13px;font-weight:700;flex:1;min-width:100px;">${j.title}</span>
+          <span style="font-size:12px;color:var(--muted);flex-shrink:0;">${j.company}</span>
+          <span style="font-size:11px;color:var(--muted);flex-shrink:0;">${j.workType||''}</span>
+          ${j.stage && j.stage!=='none' ? `<span style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:5px;background:white;border:1px solid var(--border);">${j.stage}</span>` : ''}
+          ${j.starred ? '<span>⭐</span>' : ''}
+          <button onclick="switchPanel('${c}')" style="font-size:11px;font-weight:700;padding:3px 8px;border-radius:5px;border:1.5px solid ${cd.colorHex};background:white;color:${cd.colorHex};cursor:pointer;flex-shrink:0;">View →</button>
+          ${type==='dismissed' ? `<button onclick="restoreJob('${c}','${j._id}')" style="font-size:11px;font-weight:700;padding:3px 8px;border-radius:5px;border:1.5px solid var(--green);background:white;color:var(--green);cursor:pointer;flex-shrink:0;">↩ Restore</button>` : ''}
+        </div>`).join('')}
+    </div>`;
+  results.innerHTML = html;
+}
   const at = CONFIG.airtable;
   const site = CONFIG.site || { emoji: '💼', title: 'Career Hub' };
   return `
@@ -2082,6 +2314,53 @@ function restoreJob(c, id) {
   toast(`↩ Job restored to ${CONFIG.candidates[c].name}'s list`);
 }
 
+function toggleLinkedInAlerts(c) {
+  const panel = document.getElementById('linkedin-alerts-'+c);
+  const icon = document.getElementById('li-toggle-icon-'+c);
+  if (!panel) return;
+  const open = panel.style.display === 'none';
+  panel.style.display = open ? 'block' : 'none';
+  if (icon) icon.textContent = open ? '▴' : '▾';
+}
+
+function showDismissedModal(c) {
+  const cd = CONFIG.candidates[c];
+  const dismissed = (cd.jobs||[]).filter(j=>j.dismissed);
+  if (!dismissed.length) { toast('No dismissed jobs'); return; }
+  const body = dismissed.map(j => `
+    <div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);flex-wrap:wrap;">
+      <div style="flex:1;min-width:120px;">
+        <div style="font-size:13px;font-weight:700;color:var(--text)">${j.title}</div>
+        <div style="font-size:12px;color:var(--muted)">${j.company} · ${j.location||''}</div>
+      </div>
+      <button onclick="restoreJobCandidate('${c}','${j._id}')"
+        style="font-size:11px;font-weight:700;padding:4px 12px;border-radius:6px;border:1.5px solid ${cd.colorHex};background:white;color:${cd.colorHex};cursor:pointer;flex-shrink:0;">
+        ↩ Restore
+      </button>
+    </div>`).join('');
+  document.getElementById('modal-title').textContent = '🗑 Dismissed Jobs';
+  document.getElementById('modal-body').innerHTML = `
+    <div style="font-size:12px;color:var(--muted);margin-bottom:12px;">These jobs were removed. Click Restore to add them back.</div>
+    ${body}`;
+  openModal('generic-modal');
+}
+
+function restoreJobCandidate(c, id) {
+  const j = CONFIG.candidates[c].jobs.find(x => x._id === id);
+  if (!j) return;
+  j.dismissed = false;
+  j.isNew = true;
+  saveConfig();
+  renderCandidatePanel(c);
+  showDismissedModal(c);
+  toast('↩ Job restored');
+}
+
+function scrollToTop() {
+  const main = document.getElementById('main-content');
+  if (main) main.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
 // ═══════════════════════════════════════════════════════════════
 //  SITE CUSTOMIZATION
 // ═══════════════════════════════════════════════════════════════
@@ -2165,52 +2444,8 @@ function renderLoginScreen() {
       <div class="user-btn" data-u="${c}" onclick="selectUser('${c}')">
         <div class="user-avatar" style="background:${cd.colorHex}">${cd.name[0]}</div>
         ${cd.name}
-        <div class="login-job-count" id="lc-${c}">— jobs</div>
       </div>`;
   }).join('');
-  updateLoginCounts();
-}
-
-// ═══════════════════════════════════════════════════════════════
-//  HOVER PREVIEW
-// ═══════════════════════════════════════════════════════════════
-const tooltip = () => document.getElementById('card-preview-tooltip');
-
-function showCardPreview(e, c, id) {
-  const t = tooltip();
-  if (!t || window.innerWidth < 768) return;
-  const cd = CONFIG.candidates[c];
-  const j = (cd?.jobs||[]).find(x => x._id === id);
-  if (!j || !cd) return;
-  const quals = j.qualifications?.length
-    ? `<ul class="preview-quals">${j.qualifications.slice(0,4).map(q=>`<li>${q}</li>`).join('')}</ul>` : '';
-  t.innerHTML = `
-    <div class="preview-title" style="color:${cd.colorHex}">${j.title}</div>
-    <div class="preview-company">${j.company} · ${j.location||''}${j.workType?' · '+j.workType:''}${j.salary?' · '+j.salary:''}</div>
-    ${j.description ? `<div class="preview-desc">${j.description}</div>` : ''}
-    ${quals}
-    ${j.benefits ? `<div style="font-size:11px;color:var(--muted);margin-top:6px;"><strong>Benefits:</strong> ${j.benefits}</div>` : ''}`;
-  positionTooltip(e);
-  t.classList.add('visible');
-}
-
-function positionTooltip(e) {
-  const t = tooltip();
-  if (!t) return;
-  const x = e.clientX + 16;
-  const y = e.clientY - 20;
-  const vw = window.innerWidth;
-  const vh = window.innerHeight;
-  t.style.left = (x + 340 > vw ? x - 360 : x) + 'px';
-  t.style.top  = (y + 380 > vh ? vh - 400 : y) + 'px';
-}
-
-function moveCardPreview(e) {
-  if (tooltip()?.classList.contains('visible')) positionTooltip(e);
-}
-
-function hideCardPreview() {
-  tooltip()?.classList.remove('visible');
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -2245,6 +2480,13 @@ function buildSidebar(c, cd, isAdmin) {
       <span class="skill-remove" onclick="removeSkill('${c}','${s}')" title="Remove">×</span>
     </span>`).join('');
 
+  const jobs = (cd.jobs||[]).filter(j=>!j.dismissed);
+  const totalJobs = jobs.length;
+  const starredJobs = jobs.filter(j=>j.starred).length;
+  const appliedJobs = jobs.filter(j=>j.applied).length;
+  const newJobs = jobs.filter(j=>j.isNew).length;
+  const dismissedJobs = (cd.jobs||[]).filter(j=>j.dismissed).length;
+
   return `
     <div class="profile-section">
       <div class="profile-name" style="color:${colorHex}">
@@ -2252,13 +2494,11 @@ function buildSidebar(c, cd, isAdmin) {
         <span class="edit-icon" onclick="toggleBioEdit('${c}')" title="Edit bio">✏️</span>
       </div>
 
-      <!-- Editable subtitle/role line -->
       <div class="profile-role" id="role-display-${c}" onclick="toggleRoleEdit('${c}')" title="Click to edit" style="cursor:pointer;">${cd.role} <span style="font-size:10px;opacity:.4">✏️</span></div>
       <input class="skill-input" id="role-edit-${c}" value="${cd.role}" 
              style="display:none;width:100%;margin-bottom:6px;font-size:12px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;"
              onblur="saveRole('${c}',this.value)" onkeydown="if(event.key==='Enter')this.blur()">
 
-      <!-- Bio with cleanup button -->
       <div style="position:relative;">
         <div class="profile-bio" id="bio-display-${c}">${cd.bio}</div>
         <textarea class="editable-bio" id="bio-edit-${c}" onblur="saveBio('${c}',this.value)">${cd.bio}</textarea>
@@ -2277,11 +2517,8 @@ function buildSidebar(c, cd, isAdmin) {
         </div>
       </div>
 
-      <!-- Skills with suggest button -->
-      <div class="section-label">
-        Skills & Keywords
-        <span class="tip">?<span class="tip-bubble">Add any skills or keywords here. The AI uses these when searching for jobs — the more accurate, the better your matches. Click × to remove any skill.</span></span>
-      </div>
+      <div class="section-label">Skills & Keywords</div>
+      <div style="font-size:11px;color:var(--muted);margin:-8px 0 8px;">These keywords are included in every job search</div>
       <div class="skills-container" id="skills-${c}">${skills}</div>
       <div class="skill-add-row">
         <input class="skill-input" id="skill-new-${c}" placeholder="Add a skill..." maxlength="30">
@@ -2296,10 +2533,8 @@ function buildSidebar(c, cd, isAdmin) {
         <div id="skill-suggestion-chips-${c}" style="display:flex;flex-wrap:wrap;gap:5px;"></div>
       </div>
 
-      <div class="section-label">
-        Search Targets
-        <span class="tip">?<span class="tip-bubble">Tells the AI what roles and industries to look for. Click "Edit search targets" below to customize. Broader targets = more variety; specific targets = more focused results.</span></span>
-      </div>
+      <div class="section-label">Search Targets</div>
+      <div style="font-size:11px;color:var(--muted);margin:-8px 0 8px;">Be specific — Claude searches for exactly what you describe here</div>
       <div style="font-size:12px;color:var(--text2);line-height:1.6;background:${cd.lt};padding:10px 12px;border-radius:8px;margin-bottom:4px;">
         <div id="targets-display-${c}">${cd.searchAreas}</div>
         <textarea class="editable-bio" id="targets-edit-${c}" style="background:white;margin-top:6px;" onblur="saveTargets('${c}',this.value)">${cd.searchAreas}</textarea>
@@ -2307,27 +2542,52 @@ function buildSidebar(c, cd, isAdmin) {
       <button class="skill-remove" style="font-size:12px;color:var(--muted);cursor:pointer;background:none;border:none;padding:0;margin-top:2px" onclick="toggleTargetEdit('${c}')">✏️ Edit search targets</button>
 
       <div class="section-label">Stats</div>
-      <div class="stat-row"><span class="stat-key">Total Jobs</span><span class="stat-val" id="stat-total-${c}">${(cd.jobs||[]).filter(j=>!j.dismissed).length}</span></div>
-      <div class="stat-row"><span class="stat-key">⭐ Starred</span><span class="stat-val" id="stat-starred-${c}">${(cd.jobs||[]).filter(j=>j.starred).length}</span></div>
-      <div class="stat-row"><span class="stat-key">✅ Applied</span><span class="stat-val" id="stat-applied-${c}">${(cd.jobs||[]).filter(j=>j.applied).length}</span></div>
-      <div class="stat-row"><span class="stat-key">🆕 New</span>
+      <div class="stat-row stat-clickable" onclick="filterJobs('${c}','all',null)" title="Show all jobs">
+        <span class="stat-key">Total Jobs</span><span class="stat-val" id="stat-total-${c}">${totalJobs}</span>
+      </div>
+      <div class="stat-row stat-clickable" onclick="filterJobs('${c}','starred',null)" title="Show starred jobs">
+        <span class="stat-key">⭐ Starred</span><span class="stat-val" id="stat-starred-${c}">${starredJobs}</span>
+      </div>
+      <div class="stat-row stat-clickable" onclick="filterJobs('${c}','applied',null)" title="Show applied jobs">
+        <span class="stat-key">✅ Applied</span><span class="stat-val" id="stat-applied-${c}">${appliedJobs}</span>
+      </div>
+      <div class="stat-row stat-clickable" onclick="filterJobs('${c}','new',null)" title="Show new jobs">
+        <span class="stat-key">🆕 New</span>
         <span style="display:flex;align-items:center;gap:6px;">
-          <span class="stat-val" id="stat-new-${c}">${(cd.jobs||[]).filter(j=>j.isNew).length}</span>
-          ${(cd.jobs||[]).filter(j=>j.isNew).length > 0 ? `<button onclick="clearNewBadges('${c}')" style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:5px;border:1px solid var(--border);background:var(--surface2);color:var(--muted);cursor:pointer;" title="Mark all as seen">Clear</button>` : ''}
+          <span class="stat-val" id="stat-new-${c}">${newJobs}</span>
+          ${newJobs > 0 ? `<button onclick="event.stopPropagation();clearNewBadges('${c}')" style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:5px;border:1px solid var(--border);background:var(--surface2);color:var(--muted);cursor:pointer;">Clear</button>` : ''}
         </span>
       </div>
-      <div class="stat-row"><span class="stat-key">🔎 Last Searched</span><span class="stat-val" id="stat-lastsearch-${c}">${cd.lastSearched ? new Date(cd.lastSearched).toLocaleDateString('en-US',{month:'short',day:'numeric'}) : 'Never'}</span></div>
-      <div class="stat-row"><span class="stat-key">🔗 Self-Added</span><span class="stat-val">${(cd.jobs||[]).filter(j=>j.userAdded).length}</span></div>
+      <div class="stat-row">
+        <span class="stat-key">🔎 Last Searched</span>
+        <span class="stat-val" id="stat-lastsearch-${c}">${cd.lastSearched ? new Date(cd.lastSearched).toLocaleDateString('en-US',{month:'short',day:'numeric'}) : 'Never'}</span>
+      </div>
+      ${dismissedJobs > 0 ? `
+      <div class="stat-row stat-clickable" onclick="showDismissedModal('${c}')" title="View dismissed jobs">
+        <span class="stat-key">🗑 Dismissed</span><span class="stat-val" style="color:var(--muted)">${dismissedJobs}</span>
+      </div>` : ''}
     </div>
 
     <div class="action-section">
-      <div class="section-label" style="margin-top:0">
-        LinkedIn Job Alerts
-        <span class="tip">?<span class="tip-bubble">Set these up on LinkedIn to get daily emails whenever new matching jobs are posted — completely free, works 24/7 even when you're not actively searching.</span></span>
+      <button class="sidebar-btn" style="background:${colorHex};color:white;border:none" id="ai-search-btn-${c}" onclick="aiSearch('${c}')">
+        🔍 Search for New Jobs
+      </button>
+      <div style="font-size:11px;color:var(--muted);text-align:center;margin-top:-4px;">
+        Uses your skills, bio &amp; targets above · ~15 sec
       </div>
-      <div style="background:${cd.lt};border-radius:8px;padding:10px 12px;margin-bottom:8px;">
-        <div style="font-size:11px;color:var(--text2);line-height:1.6;margin-bottom:8px;">
-          Go to <a href="https://www.linkedin.com/jobs/" target="_blank" style="color:${colorHex};font-weight:700;">LinkedIn Jobs</a> → search each term below → click <strong>Set alert</strong>. You'll get daily emails for new matches.
+
+      <button class="sidebar-btn btn-secondary" onclick="toggleAddJob('${c}')">
+        ➕ Add a Job You Found
+      </button>
+
+      <!-- Collapsed LinkedIn alerts -->
+      <div class="linkedin-alerts-toggle" onclick="toggleLinkedInAlerts('${c}')">
+        <span>🔔 Set Up LinkedIn Job Alerts</span>
+        <span id="li-toggle-icon-${c}">▾</span>
+      </div>
+      <div id="linkedin-alerts-${c}" style="display:none;">
+        <div style="font-size:11px;color:var(--text2);line-height:1.6;margin-bottom:8px;padding:0 2px;">
+          Go to <a href="https://www.linkedin.com/jobs/" target="_blank" style="color:${colorHex};font-weight:700;">LinkedIn Jobs</a> → search each term → click <strong>Set alert</strong> for daily email notifications.
         </div>
         ${(LINKEDIN_ALERTS[c]||[]).map(a => `
           <div style="display:flex;align-items:center;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border);">
@@ -2337,31 +2597,12 @@ function buildSidebar(c, cd, isAdmin) {
             </div>
             <a href="https://www.linkedin.com/jobs/search/?keywords=${encodeURIComponent(a.search)}&f_WT=2&f_TPR=r86400" 
                target="_blank"
-               style="font-size:11px;font-weight:700;color:${colorHex};text-decoration:none;white-space:nowrap;margin-left:8px;background:white;border:1.5px solid ${colorHex};border-radius:6px;padding:3px 8px;"
-               title="Search LinkedIn for: ${a.search}">
+               style="font-size:11px;font-weight:700;color:${colorHex};text-decoration:none;white-space:nowrap;margin-left:8px;background:white;border:1.5px solid ${colorHex};border-radius:6px;padding:3px 8px;">
               Search ↗
             </a>
           </div>`).join('')}
       </div>
 
-      <button class="sidebar-btn" style="background:${colorHex};color:white;border:none" id="ai-search-btn-${c}" onclick="aiSearch('${c}')">
-        🔍 Search for New Jobs
-      </button>
-      <div style="font-size:11px;color:var(--muted);text-align:center;margin-top:-4px;display:flex;align-items:center;justify-content:center;gap:4px;">
-        Finds 10–15 live openings · ~15 sec
-        <span class="tip">?<span class="tip-bubble">Searches real job boards using AI. Results update every time you click — each search may surface different openings. Run it multiple times to build a bigger list.</span></span>
-      </div>
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-top:2px">
-        <span id="sync-badge-${c}" class="sync-badge sync-off">⚡ Local only</span>
-      </div>
-      <button class="sidebar-btn btn-secondary" onclick="toggleAddJob('${c}')">
-        ➕ Add a Job You Found
-        <span class="tip" style="background:var(--border);border-color:var(--muted)">?<span class="tip-bubble">Paste any job URL from LinkedIn, Indeed, or a company website. We'll try to fill in the details automatically — or you can type them in manually.</span></span>
-      </button>
-      <button class="sidebar-btn btn-secondary" onclick="openResumeModal('${c}')">
-        📄 Import Resume
-        <span class="tip" style="background:var(--border);border-color:var(--muted)">?<span class="tip-bubble">Paste your resume text and AI will extract your skills and update your profile summary. Helps the job search find better matches for you.</span></span>
-      </button>
       ${isAdmin ? `<button class="sidebar-btn btn-secondary" onclick="clearJobs('${c}')">🗑 Clear All Jobs</button>` : ''}
     </div>`;
 }
@@ -2380,7 +2621,10 @@ function buildMainContent(c, cd, isAdmin) {
           <button class="fbt star-on" onclick="filterJobs('${c}','starred',this)" style="background:white;color:var(--text2);border-color:var(--border)">⭐ Starred</button>
           <button class="fbt" onclick="filterJobs('${c}','applied',this)" style="background:white;color:var(--text2)">✅ Applied</button>
         </div>
-        <span class="tip" style="margin-left:2px">?<span class="tip-bubble">Filter your job list. Click a filter to narrow results. Click "All" to show everything again. Starred = jobs you saved. Applied = jobs you've sent a resume to.</span></span>
+        <div class="view-toggle">
+          <button class="view-btn active" id="view-list-${c}" onclick="setView('${c}','list',this)" title="List view">☰</button>
+          <button class="view-btn" id="view-kanban-${c}" onclick="setView('${c}','kanban',this)" title="Pipeline view">⊞</button>
+        </div>
       </div>
     </div>
 
@@ -2410,6 +2654,14 @@ function buildMainContent(c, cd, isAdmin) {
           <input class="form-input" id="job-url-${c}" placeholder="https://..." type="url">
           <button class="submit-btn" style="background:${cd.colorHex};color:white;white-space:nowrap" onclick="scrapeUrl('${c}')">🔗 Fetch Details</button>
         </div>
+      </div>
+
+      <!-- Paste fallback — shown when URL fetch fails -->
+      <div id="paste-fallback-${c}" style="display:none;background:var(--gold-lt);border:1.5px solid var(--gold);border-radius:10px;padding:12px 14px;margin-bottom:12px;">
+        <div style="font-size:12px;font-weight:700;color:#92600a;margin-bottom:6px;">⚠️ Couldn't read that page (login required)</div>
+        <div style="font-size:11px;color:var(--muted);margin-bottom:8px;">Copy and paste the full job description text below — we'll extract the details from that instead.</div>
+        <textarea id="paste-desc-${c}" class="form-textarea" placeholder="Paste the full job description here..." style="min-height:100px;margin-bottom:8px;font-size:12px;"></textarea>
+        <button id="parse-desc-btn-${c}" class="submit-btn" style="background:${cd.colorHex};color:white;padding:7px 14px;font-size:12px;" onclick="parseJobDescription('${c}')">✓ Extract Details</button>
       </div>
 
       <div class="or-divider">or fill in manually</div>
@@ -2868,14 +3120,19 @@ Return ONLY this JSON array structure (no markdown, no text before or after):
 // ═══════════════════════════════════════════════════════════════
 //  RENDER JOB CARDS
 // ═══════════════════════════════════════════════════════════════
-function renderJobCards(c, filter='all') {
+// Track pagination state per candidate+filter
+const pageState = {};
+
+function renderJobCards(c, filter='all', page=0) {
   const cd = CONFIG.candidates[c];
   const container = document.getElementById('cards-container-'+c);
   const metaEl = document.getElementById('results-meta-'+c);
   const countEl = document.getElementById('result-count-'+c);
   const newEl = document.getElementById('result-new-'+c);
+  const PAGE_SIZE = 10;
 
   let jobs = (cd.jobs||[]).filter(j => !j.dismissed);
+  const allUnfiltered = [...jobs];
 
   // Apply filter
   if (filter === 'remote') jobs = jobs.filter(j => (j.workType||'').toLowerCase() === 'remote');
@@ -2884,39 +3141,82 @@ function renderJobCards(c, filter='all') {
   else if (filter === 'new') jobs = jobs.filter(j => j.isNew);
   else if (filter === 'starred') jobs = jobs.filter(j => j.starred);
   else if (filter === 'applied') jobs = jobs.filter(j => j.applied);
+  else if (filter === 'pipeline') jobs = jobs.filter(j => j.stage && j.stage !== 'none');
+
+  // Store current page
+  pageState[c] = { filter, page, total: jobs.length };
 
   // Update stats
-  const all = (cd.jobs||[]).filter(j=>!j.dismissed);
-  if (metaEl) metaEl.style.display = all.length ? 'flex' : 'none';
-  if (countEl) countEl.textContent = `${all.length} jobs`;
-  if (newEl) newEl.textContent = `${all.filter(j=>j.isNew).length} new`;
-
-  // Update sidebar stats
-  const statTotal = document.getElementById('stat-total-'+c);
-  const statStarred = document.getElementById('stat-starred-'+c);
-  const statApplied = document.getElementById('stat-applied-'+c);
-  if (statTotal) statTotal.textContent = all.length;
-  if (statStarred) statStarred.textContent = all.filter(j=>j.starred).length;
-  if (statApplied) statApplied.textContent = all.filter(j=>j.applied).length;
-
-  // Tab count
-  const ntab = document.getElementById('ntab-'+c);
-  if (ntab) ntab.textContent = all.length;
+  if (metaEl) metaEl.style.display = allUnfiltered.length ? 'flex' : 'none';
+  if (countEl) countEl.textContent = `${allUnfiltered.length} jobs`;
+  if (newEl) newEl.textContent = `${allUnfiltered.filter(j=>j.isNew).length} new`;
+  updateSidebarStats(c);
 
   if (!jobs.length) {
-    container.innerHTML = `<div class="empty-state"><div class="empty-icon">${filter==='starred'?'⭐':filter==='applied'?'✅':'🔍'}</div><div class="empty-title">No ${filter==='all'?'jobs':filter+' jobs'} yet</div><div class="empty-sub">${filter==='all'?'Click AI Search Jobs or add one manually':'Change filter or add more jobs'}</div></div>`;
+    const hiddenCount = allUnfiltered.length - jobs.length;
+    container.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon">${filter==='starred'?'⭐':filter==='applied'?'✅':filter==='new'?'🆕':'🔍'}</div>
+        <div class="empty-title">No ${filter==='all'?'jobs':filter+' jobs'} yet</div>
+        <div class="empty-sub">${
+          filter==='all'
+            ? 'Click "Search for New Jobs" to find openings, or add one manually.'
+            : `No jobs match this filter.${hiddenCount?` ${hiddenCount} job${hiddenCount>1?'s':''} in other categories.`:''}`
+        }</div>
+        ${filter==='all' ? `<button class="sidebar-btn" style="background:${cd.colorHex};color:white;border:none;margin-top:16px;max-width:220px" onclick="aiSearch('${c}')">🔍 Search for New Jobs</button>` : ''}
+      </div>`;
     return;
   }
 
-  container.innerHTML = `<div class="cards">${jobs.map(j => buildCard(j, c, cd)).join('')}</div>`;
+  // Paginate
+  const visible = jobs.slice(0, (page + 1) * PAGE_SIZE);
+  const remaining = jobs.length - visible.length;
+
+  container.innerHTML = `
+    <div class="cards">${visible.map(j => buildCard(j, c, cd)).join('')}</div>
+    ${remaining > 0
+      ? `<div class="load-more-row">
+           <button class="load-more-btn" style="border-color:${cd.colorHex};color:${cd.colorHex}" onclick="renderJobCards('${c}','${filter}',${page+1})">
+             Show ${Math.min(remaining, PAGE_SIZE)} more jobs <span style="opacity:.6">(${remaining} remaining)</span>
+           </button>
+         </div>`
+      : jobs.length > PAGE_SIZE
+        ? `<div class="end-of-list">
+             <div class="end-icon">✓</div>
+             <div class="end-text">You've seen all ${jobs.length} jobs${filter!=='all'?' matching this filter':''}</div>
+             ${filter!=='all' ? `<button onclick="filterJobs('${c}','all',null)" style="margin-top:8px;font-size:12px;font-weight:700;padding:5px 14px;border-radius:6px;border:1.5px solid var(--border);background:white;color:var(--text2);cursor:pointer;">Show all jobs</button>` : `<button class="sidebar-btn" style="background:${cd.colorHex};color:white;border:none;margin-top:12px;max-width:220px" onclick="aiSearch('${c}')">🔍 Search for More Jobs</button>`}
+           </div>`
+        : ''
+    }`;
 }
 
 function buildCard(j, c, cd) {
   const safeId = (j._id||'').replace(/[^a-z0-9]/gi,'_');
   const wtClass = { Remote:'jb-remote', Hybrid:'jb-hybrid', 'On-site':'jb-onsite', Travel:'jb-travel' }[j.workType]||'jb-hybrid';
-  const mcClass = j.matchScore==='Strong Match'?'jb-strong':j.matchScore==='Growth Opportunity'?'jb-good':'jb-good';
   const quals = (j.qualifications||[]).map(q=>`<li>${q}</li>`).join('');
   const tags = (j.tags||[]).map(t=>`<span class="jb jb-salary">${t}</span>`).join('');
+
+  // Match gauge
+  const matchMap = { 'Strong Match': { pct: 95, color: '#1e7a4e', label: 'Strong Match' }, 'Good Match': { pct: 65, color: '#b45309', label: 'Good Match' }, 'Growth Opportunity': { pct: 40, color: '#6b2d6b', label: 'Growth Opportunity' } };
+  const match = matchMap[j.matchScore] || { pct: 65, color: '#888', label: j.matchScore || 'Match' };
+  const matchGauge = `
+    <div class="match-gauge" title="${match.label}">
+      <div class="match-gauge-track">
+        <div class="match-gauge-bar" style="width:${match.pct}%;background:${match.color}"></div>
+      </div>
+      <span class="match-gauge-label" style="color:${match.color}">${match.label}</span>
+    </div>`;
+
+  // Company research links
+  const co = encodeURIComponent(j.company||'');
+  const companyLinks = j.company ? `
+    <div class="company-research-links">
+      <span style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;">Research:</span>
+      ${j.companyUrl ? `<a href="${j.companyUrl}" target="_blank" rel="noopener" class="co-link" title="Company website">🌐 Website</a>` : `<a href="https://www.google.com/search?q=${co}+official+site" target="_blank" rel="noopener" class="co-link" title="Find company website">🌐 Site</a>`}
+      <a href="https://www.glassdoor.com/Search/Results.htm?keyword=${co}" target="_blank" rel="noopener" class="co-link" title="Glassdoor reviews">⭐ Glassdoor</a>
+      <a href="https://www.linkedin.com/company/${co.toLowerCase().replace(/%20/g,'-')}" target="_blank" rel="noopener" class="co-link" title="LinkedIn company page">💼 LinkedIn</a>
+      <a href="https://www.google.com/search?q=${co}+company+reviews+2024" target="_blank" rel="noopener" class="co-link" title="Google reviews">🔍 Reviews</a>
+    </div>` : '';
 
   return `
 <div class="job-card ${j.starred?'starred':''} ${j.applied?'applied':''} ${j.userAdded?'user-added':''}" 
@@ -2925,15 +3225,26 @@ function buildCard(j, c, cd) {
      data-worktype="${(j.workType||'').toLowerCase()}"
      data-new="${j.isNew?'true':'false'}"
      data-starred="${j.starred?'true':'false'}"
-     data-applied="${j.applied?'true':'false'}"
-     onmouseenter="showCardPreview(event,'${c}','${j._id}')"
-     onmousemove="moveCardPreview(event)"
-     onmouseleave="hideCardPreview()">
+     data-applied="${j.applied?'true':'false'}">
   <div class="card-top-stripe" style="background:${cd.colorHex}${j.userAdded?';background:var(--green)':''}"></div>
   <div class="card-body">
     <div class="card-row1">
       <div class="card-title-block">
-        <div class="card-title">${j.title}</div>
+        <div class="card-title-wrap">
+          <div class="card-title">${j.title}</div>
+          <div class="card-preview-tooltip">
+            <div class="preview-title">${j.title}</div>
+            <div class="preview-meta">
+              <span>${j.company||''}</span>
+              ${j.location?`<span>📍 ${j.location}</span>`:''}
+              ${j.workType?`<span>· ${j.workType}</span>`:''}
+              ${j.salary?`<span>· ${j.salary}</span>`:''}
+            </div>
+            ${j.description?`<div class="preview-desc">${j.description}</div>`:''}
+            ${(j.qualifications||[]).length?`<ul class="preview-quals">${(j.qualifications||[]).slice(0,4).map(q=>`<li>${q}</li>`).join('')}</ul>`:''}
+            ${j.benefits?`<div style="font-size:11px;color:var(--muted);margin-top:6px;"><strong>Benefits:</strong> ${j.benefits}</div>`:''}
+          </div>
+        </div>
         <div class="card-company">
           ${j.company}
           ${j.location ? `<span class="card-location">📍 ${j.location}</span>` : ''}
@@ -2942,20 +3253,21 @@ function buildCard(j, c, cd) {
         </div>
       </div>
       <div class="card-actions">
-        <button class="ca-btn star ${j.starred?'on':''}" onclick="toggleStar('${c}','${j._id}',this)" title="⭐ Star this job to save it as a priority">⭐</button>
-        <button class="ca-btn applied-btn ${j.applied?'on':''}" onclick="toggleApplied('${c}','${j._id}',this)" title="✅ Mark as Applied — tracks that you've sent your resume">✅</button>
-        <button class="ca-btn dismiss" onclick="dismissCard('${c}','${j._id}')" title="✕ Not interested — removes this job from your list">✕</button>
-        ${j.userAdded ? `<button class="ca-btn del" onclick="deleteJob('${c}','${j._id}')" title="🗑 Permanently delete this job you added">🗑</button>` : ''}
+        <button class="ca-btn star ${j.starred?'on':''}" onclick="toggleStar('${c}','${j._id}',this)" title="⭐ Star this job">⭐</button>
+        <button class="ca-btn applied-btn ${j.applied?'on':''}" onclick="toggleApplied('${c}','${j._id}',this)" title="✅ Mark as Applied">✅</button>
+        <button class="ca-btn dismiss" onclick="dismissCard('${c}','${j._id}')" title="✕ Not interested">✕</button>
+        ${j.userAdded ? `<button class="ca-btn del" onclick="deleteJob('${c}','${j._id}')" title="🗑 Delete">🗑</button>` : ''}
       </div>
     </div>
     <div class="badge-row">
       <span class="jb ${wtClass}">${j.workType||'Unknown'}</span>
-      <span class="jb ${mcClass}">${j.matchScore||'Match'}</span>
       ${j.isNew ? '<span class="jb jb-new">🆕 New</span>' : ''}
       ${j.salary&&j.salary!=='Not listed'&&j.salary!=='Competitive' ? `<span class="jb jb-salary">💰 ${j.salary}</span>` : ''}
       ${tags}
     </div>
+    ${matchGauge}
     <div class="card-desc">${j.description||''}</div>
+    ${companyLinks}
     <div class="card-footer">
       <div class="card-footer-left">
         <a class="apply-link" style="background:${cd.colorHex}" href="${j.applyUrl || buildLinkedInUrl(j.title, j.company)}" target="_blank" rel="noopener">
@@ -2987,6 +3299,15 @@ function buildCard(j, c, cd) {
         <div class="detail-box-text">${j.benefits||'See listing for details.'}</div>
       </div>
     </div>
+
+    <!-- AI Tools -->
+    <div class="ai-tools-row">
+      <button class="ai-tool-btn" onclick="generateCoverLetter('${c}','${j._id}')" id="cl-btn-${safeId}">✏️ Cover Letter Draft</button>
+      <button class="ai-tool-btn" onclick="generateInterviewPrep('${c}','${j._id}')" id="ip-btn-${safeId}">🎯 Interview Prep</button>
+      <button class="ai-tool-btn" onclick="generateResumeTips('${c}','${j._id}')" id="rt-btn-${safeId}">📋 Resume Tips</button>
+    </div>
+    <div id="ai-tool-output-${safeId}" style="display:none;"></div>
+
     <div class="notes-label">
       📝 Your Notes
       <span class="notes-saved-flash" id="notesflash-${safeId}">✓ Saved</span>
@@ -3000,6 +3321,104 @@ function buildCard(j, c, cd) {
 // ═══════════════════════════════════════════════════════════════
 //  CARD INTERACTIONS
 // ═══════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════
+//  AI CARD TOOLS — Cover letter, Interview prep, Resume tips
+// ═══════════════════════════════════════════════════════════════
+async function runAiCardTool(c, id, type) {
+  const cd = CONFIG.candidates[c];
+  const j = (cd?.jobs||[]).find(x=>x._id===id);
+  if (!j) return;
+  const safeId = id.replace(/[^a-z0-9]/gi,'_');
+  const output = document.getElementById('ai-tool-output-'+safeId);
+  const btnId = { cover:'cl-btn', interview:'ip-btn', resume:'rt-btn' }[type]+'-'+safeId;
+  const btn = document.getElementById(btnId);
+  if (!output || !btn) return;
+
+  const labels = { cover:'✏️ Cover Letter Draft', interview:'🎯 Interview Prep Notes', resume:'📋 Resume Tailoring Tips' };
+  const disclaimers = {
+    cover: 'This is a starting point only — rewrite in your own voice before sending. AI-generated letters are easy to spot.',
+    interview: 'Practice these out loud. Your real answers will be better than anything written here.',
+    resume: 'These are suggestions to consider — only make changes that are genuinely true about you.'
+  };
+
+  const prompts = {
+    cover: `Write a SHORT cover letter draft (3 short paragraphs) for this person applying to this job.
+
+Candidate: ${cd.name}
+Bio: ${cd.bio}
+Skills: ${(cd.skills||[]).join(', ')}
+
+Job: ${j.title} at ${j.company}
+Description: ${j.description}
+
+Write it in first person. Be specific about why their background fits. Keep it under 200 words. Format as plain text, no subject line.`,
+
+    interview: `Generate 6 likely interview questions for this role, with brief bullet-point answer hints based on this candidate's background.
+
+Candidate: ${cd.name}
+Background: ${cd.bio}
+Skills: ${(cd.skills||[]).join(', ')}
+
+Job: ${j.title} at ${j.company}
+Description: ${j.description}
+
+Format:
+Q1: [question]
+• [answer hint based on their background]
+
+Keep each hint to 1-2 bullet points. Focus on behavioral and role-specific questions.`,
+
+    resume: `Give 4-5 specific resume tailoring suggestions for this candidate applying to this role.
+
+Candidate: ${cd.name}
+Current skills listed: ${(cd.skills||[]).join(', ')}
+Background: ${cd.bio}
+
+Job: ${j.title} at ${j.company}
+Requirements: ${(j.qualifications||[]).join(', ')}
+Description: ${j.description}
+
+Focus on: which skills to emphasize, what language from the job posting to mirror, what to reorder or highlight. Be specific and actionable. Number each suggestion.`
+  };
+
+  btn.disabled = true;
+  btn.textContent = '⏳ Generating...';
+  output.style.display = 'block';
+  output.innerHTML = `<div class="ai-tool-output"><div class="ai-tool-output-header">${labels[type]}</div><div style="color:var(--muted);font-style:italic;">Generating...</div></div>`;
+
+  try {
+    const res = await fetch(WORKER_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 600,
+        messages: [{ role: 'user', content: prompts[type] }]
+      })
+    });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error.message);
+    const text = (data.content||[]).find(b=>b.type==='text')?.text?.trim();
+    output.innerHTML = `
+      <div class="ai-tool-output">
+        <div class="ai-tool-output-header">
+          ${labels[type]}
+          <button onclick="document.getElementById('ai-tool-output-${safeId}').style.display='none'" style="font-size:10px;padding:2px 6px;border-radius:4px;border:1px solid var(--border);background:white;cursor:pointer;">✕</button>
+        </div>
+        ${text||'No output generated.'}
+        <div class="ai-tool-disclaimer">⚠️ ${disclaimers[type]}</div>
+      </div>`;
+  } catch(e) {
+    output.innerHTML = `<div class="ai-tool-output" style="color:var(--red)">Error: ${e.message}</div>`;
+  }
+  btn.disabled = false;
+  btn.textContent = { cover:'✏️ Cover Letter Draft', interview:'🎯 Interview Prep', resume:'📋 Resume Tips' }[type];
+}
+
+function generateCoverLetter(c, id) { runAiCardTool(c, id, 'cover'); }
+function generateInterviewPrep(c, id) { runAiCardTool(c, id, 'interview'); }
+function generateResumeTips(c, id) { runAiCardTool(c, id, 'resume'); }
+
 function toggleCardDetail(safeId) {
   const el = document.getElementById('cdetail-'+safeId);
   const btn = el.previousElementSibling?.querySelector('.toggle-btn');
@@ -3123,7 +3542,15 @@ async function scrapeUrl(c) {
   const url = document.getElementById('job-url-'+c).value.trim();
   if (!url) { toast('Paste a URL first'); return; }
 
+  const btn = document.querySelector(`button[onclick="scrapeUrl('${c}')"]`);
+  if (btn) { btn.textContent = '⏳ Fetching...'; btn.disabled = true; }
   toast('🔍 Fetching job details...');
+
+  const showPasteFallback = () => {
+    const fb = document.getElementById('paste-fallback-'+c);
+    if (fb) fb.style.display = 'block';
+    if (btn) { btn.textContent = '🔗 Fetch Details'; btn.disabled = false; }
+  };
 
   try {
     const res = await fetch(WORKER_URL, {
@@ -3148,11 +3575,76 @@ Return ONLY a JSON object (no markdown) with these fields:
   "benefits": "key benefits mentioned"
 }
 
-If you cannot access the URL, search for the job title and company to find similar info.`
+If you cannot access the URL due to login requirements, return: {"error": "login_required"}`
         }]
       })
     });
 
+    const data = await res.json();
+    let raw = '';
+    for (const b of (data.content||[])) { if (b.type==='text') raw += b.text; }
+    const m = raw.match(/\{[\s\S]*\}/);
+    if (m) {
+      const j = JSON.parse(m[0]);
+      if (j.error === 'login_required') {
+        toast('This page requires a login — paste the job description below instead');
+        showPasteFallback();
+        document.getElementById('jf-url2-'+c).value = url;
+      } else {
+        document.getElementById('jf-title-'+c).value = j.title||'';
+        document.getElementById('jf-company-'+c).value = j.company||'';
+        document.getElementById('jf-location-'+c).value = j.location||'';
+        document.getElementById('jf-salary-'+c).value = j.salary||'';
+        document.getElementById('jf-desc-'+c).value = j.description||'';
+        document.getElementById('jf-url2-'+c).value = url;
+        const wt = document.getElementById('jf-worktype-'+c);
+        if (j.workType) wt.value = j.workType;
+        toast('✓ Details fetched! Review and save.');
+      }
+    } else {
+      document.getElementById('jf-url2-'+c).value = url;
+      toast('Could not read this page — paste the job description below');
+      showPasteFallback();
+    }
+  } catch(e) {
+    document.getElementById('jf-url2-'+c).value = url;
+    toast('Fetch failed — paste the job description below instead');
+    showPasteFallback();
+  }
+  if (btn) { btn.textContent = '🔗 Fetch Details'; btn.disabled = false; }
+}
+
+async function parseJobDescription(c) {
+  const text = document.getElementById('paste-desc-'+c)?.value?.trim();
+  if (!text) { toast('Paste the job description first'); return; }
+  const btn = document.getElementById('parse-desc-btn-'+c);
+  if (btn) { btn.textContent = '⏳ Reading...'; btn.disabled = true; }
+
+  try {
+    const res = await fetch(WORKER_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 800,
+        messages: [{
+          role: 'user',
+          content: `Extract job details from this job posting text. Return ONLY a JSON object:
+{
+  "title": "job title",
+  "company": "company name",
+  "location": "location or Remote",
+  "workType": "Remote or Hybrid or On-site or Travel",
+  "salary": "salary range or Competitive",
+  "description": "2-3 sentence summary of the role",
+  "benefits": "key benefits if mentioned"
+}
+
+JOB POSTING:
+${text.substring(0, 3000)}`
+        }]
+      })
+    });
     const data = await res.json();
     let raw = '';
     for (const b of (data.content||[])) { if (b.type==='text') raw += b.text; }
@@ -3164,18 +3656,17 @@ If you cannot access the URL, search for the job title and company to find simil
       document.getElementById('jf-location-'+c).value = j.location||'';
       document.getElementById('jf-salary-'+c).value = j.salary||'';
       document.getElementById('jf-desc-'+c).value = j.description||'';
-      document.getElementById('jf-url2-'+c).value = url;
       const wt = document.getElementById('jf-worktype-'+c);
       if (j.workType) wt.value = j.workType;
-      toast('✓ Job details fetched! Review and save.');
+      document.getElementById('paste-fallback-'+c).style.display = 'none';
+      toast('✓ Details extracted! Review and save.');
     } else {
-      document.getElementById('jf-url2-'+c).value = url;
-      toast('Could not parse — please fill in manually');
+      toast('Could not parse — fill in manually below');
     }
   } catch(e) {
-    document.getElementById('jf-url2-'+c).value = url;
-    toast('Fetch failed — fill in manually');
+    toast('Parse failed — fill in manually');
   }
+  if (btn) { btn.textContent = '✓ Extract Details'; btn.disabled = false; }
 }
 
 function addJobManual(c) {
@@ -3304,6 +3795,79 @@ ${text.substring(0, 3000)}`
 //  FILTERS
 // ═══════════════════════════════════════════════════════════════
 let currentFilter = {};
+
+// ═══════════════════════════════════════════════════════════════
+//  VIEW TOGGLE — List / Pipeline kanban
+// ═══════════════════════════════════════════════════════════════
+const viewState = {};
+
+function setView(c, view, btn) {
+  viewState[c] = view;
+  // Update toggle buttons
+  document.getElementById('view-list-'+c)?.classList.toggle('active', view==='list');
+  document.getElementById('view-kanban-'+c)?.classList.toggle('active', view==='kanban');
+  if (view === 'kanban') {
+    renderKanban(c);
+  } else {
+    const ps = pageState[c] || {};
+    renderJobCards(c, ps.filter||'all', 0);
+  }
+}
+
+function renderKanban(c) {
+  const cd = CONFIG.candidates[c];
+  const container = document.getElementById('cards-container-'+c);
+  if (!container) return;
+
+  const stages = [
+    { key:'none',        label:'Untracked',    color:'#888' },
+    { key:'researching', label:'Researching',  color:'#3b5bdb' },
+    { key:'applied',     label:'Applied',      color:'#1e7a4e' },
+    { key:'interview',   label:'Interview',    color:'#b45309' },
+    { key:'offer',       label:'Offer',        color:'#155724' },
+    { key:'declined',    label:'Declined',     color:'#c0392b' },
+  ];
+
+  const jobs = (cd.jobs||[]).filter(j=>!j.dismissed);
+
+  const cols = stages.map(s => {
+    const colJobs = jobs.filter(j => (j.stage||'none') === s.key);
+    const cards = colJobs.map(j => `
+      <div class="kanban-card" onclick="jumpToJob('${c}','${j._id}')" title="Click to view in list">
+        <div class="kanban-card-title">${j.title}</div>
+        <div class="kanban-card-company">${j.company}</div>
+        ${j.starred ? '<span style="font-size:10px;">⭐</span>' : ''}
+      </div>`).join('');
+
+    return `
+      <div class="kanban-col">
+        <div class="kanban-col-header" style="color:${s.color};border-bottom-color:${s.color}">
+          ${s.label}
+          <span class="kanban-count" style="color:${s.color}">${colJobs.length}</span>
+        </div>
+        ${cards || `<div class="kanban-empty">No jobs</div>`}
+      </div>`;
+  });
+
+  container.innerHTML = `<div class="kanban-board">${cols.join('')}</div>
+    <div style="font-size:11px;color:var(--muted);text-align:center;padding:8px 0;">
+      Click any card to view it in list view · Update stage using the "Track progress" dropdown on each job card
+    </div>`;
+}
+
+function jumpToJob(c, id) {
+  // Switch to list view and scroll to that card
+  setView(c, 'list', null);
+  setTimeout(() => {
+    const safeId = id.replace(/[^a-z0-9]/gi,'_');
+    const el = document.getElementById('jcard-'+safeId);
+    if (el) {
+      el.scrollIntoView({ behavior:'smooth', block:'center' });
+      el.style.outline = '2px solid '+CONFIG.candidates[c].colorHex;
+      setTimeout(() => el.style.outline = '', 2000);
+    }
+  }, 200);
+}
 
 function filterJobs(c, type, btn) {
   document.querySelectorAll(`#filters-${c} .fbt`).forEach(b => {
@@ -3647,6 +4211,15 @@ applySiteTitle();
 renderLoginScreen();
 updateLoginCounts();
 selectUser(activeCandidates()[0] || 'm');
+
+// Back to top scroll watcher
+const mainEl = document.getElementById('main-content');
+const backBtn = document.getElementById('back-to-top');
+if (mainEl && backBtn) {
+  mainEl.addEventListener('scroll', () => {
+    backBtn.classList.toggle('visible', mainEl.scrollTop > 300);
+  });
+}
 </script>
 </body>
 </html>
