@@ -3082,6 +3082,10 @@ async function aiSearch(c) {
       if (!parsed.length) throw new Error('Could not read results — try again');
     }
 
+    console.log('[CareerHub] Jobs parsed from response:', parsed.length);
+    console.log('[CareerHub] First job title:', parsed[0]?.title);
+    console.log('[CareerHub] Last job title:', parsed[parsed.length-1]?.title);
+
     // Deduplicate against existing
     const existingKeys = new Set((cd.jobs||[]).map(j => `${j.title}||${j.company}`));
     const newJobs = parsed.filter(j => j.title && j.company && !existingKeys.has(`${j.title}||${j.company}`));
