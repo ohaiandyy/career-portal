@@ -3049,8 +3049,11 @@ async function aiSearch(c) {
     const data = await res.json();
     if (data.error) throw new Error(data.error.message);
 
-    let raw = '['; // prefilled assistant turn starts the array
+    let raw = '';
     for (const b of (data.content||[])) { if (b.type === 'text') raw += b.text; }
+    // Prefilled assistant turn means model continues from '[' — prepend it back
+    // but strip any leading '[' the model may have accidentally repeated
+    raw = '[' + raw.replace(/^\s*\[/, '');
 
     // DEBUG
     console.log('[CareerHub] stop_reason:', data.stop_reason, '| output_tokens:', data.usage?.output_tokens, '| raw_len:', raw.length);
@@ -3225,10 +3228,10 @@ Find genuinely new openings — different companies, different industries, diffe
   return `${searches}
 ${exclusionClause}
 
-Return ${count} real open jobs as a JSON array. Continue from the [ already started. Each object on ONE line:
+Return ${count} real open jobs as a JSON array. No markdown, no text outside the array. Each object on ONE line:
 {"title":"Title","company":"Company","location":"Remote","workType":"Remote","salary":"$X","matchScore":"Strong Match","description":"20-30 words max","qualifications":["req 1","req 2","req 3"],"applyUrl":"https://url","source":"LinkedIn","isNew":true,"tags":["Remote","Industry"]}
 
-End the array with ]. No text outside the array.`;
+Start your response with [ and end with ].`;
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -3341,8 +3344,9 @@ async function fetchMoreJobs(c) {
     const data = await res.json();
     if (data.error) throw new Error(data.error.message);
 
-    let raw = '[';
+    let raw = '';
     for (const b of (data.content||[])) { if (b.type === 'text') raw += b.text; }
+    raw = '[' + raw.replace(/^\s*\[/, '');
 
     let parsed = [];
     // Strategy 1: clean parse
