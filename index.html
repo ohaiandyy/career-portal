@@ -1630,7 +1630,7 @@ body.font-xl .card-title { font-size: calc(var(--base-font) + 1px); }
     <p style="font-size:13px;color:var(--muted);margin-bottom:14px;">
       Paste your resume text below. The AI will extract key skills and update your profile.
     </p>
-    <textarea class="form-textarea" id="resume-text" style="min-height:180px;width:100%;margin-bottom:12px;" placeholder="Paste resume text here..."></textarea>
+    <textarea spellcheck="true" class="form-textarea" id="resume-text" style="min-height:180px;width:100%;margin-bottom:12px;" placeholder="Paste resume text here..."></textarea>
     <button class="submit-btn" id="resume-parse-btn" style="width:100%;padding:12px;" onclick="parseResume()">
       🤖 Parse Resume & Update Profile
     </button>
@@ -2190,11 +2190,11 @@ function renderAdminSidebar() {
         <div style="display:flex;gap:8px;margin-bottom:8px;">
           <div style="flex:0 0 52px;">
             <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:3px;">Emoji</div>
-            <input id="site-emoji" value="${site.emoji}" maxlength="4" style="width:100%;padding:5px 6px;border-radius:6px;border:1.5px solid var(--border);font-size:18px;text-align:center;" oninput="updateSiteTitle()">
+            <input spellcheck="true" id="site-emoji" value="${site.emoji}" maxlength="4" style="width:100%;padding:5px 6px;border-radius:6px;border:1.5px solid var(--border);font-size:18px;text-align:center;" oninput="updateSiteTitle()">
           </div>
           <div style="flex:1">
             <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:3px;">Site Name</div>
-            <input id="site-title" value="${site.title}" style="width:100%;padding:5px 8px;border-radius:6px;border:1.5px solid var(--border);font-size:13px;font-weight:700;" oninput="updateSiteTitle()">
+            <input spellcheck="true" id="site-title" value="${site.title}" style="width:100%;padding:5px 8px;border-radius:6px;border:1.5px solid var(--border);font-size:13px;font-weight:700;" oninput="updateSiteTitle()">
           </div>
         </div>
         <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;">Sidebar Width</div>
@@ -2220,13 +2220,13 @@ function renderAdminSidebar() {
         }).join('')}
         <button onclick="showAddCandidateForm()" style="width:100%;margin-top:10px;padding:7px;border-radius:8px;border:1.5px dashed var(--border);background:white;color:var(--text2);font-size:12px;font-weight:700;cursor:pointer;">+ Add New User</button>
         <div id="add-candidate-form" style="display:none;margin-top:10px;">
-          <input id="nc-name" placeholder="Full name" style="width:100%;padding:6px 8px;border-radius:6px;border:1.5px solid var(--border);font-size:12px;margin-bottom:6px;">
-          <input id="nc-role" placeholder="Subtitle (e.g. RN · 10+ Years)" style="width:100%;padding:6px 8px;border-radius:6px;border:1.5px solid var(--border);font-size:12px;margin-bottom:6px;">
+          <input spellcheck="true" id="nc-name" placeholder="Full name" style="width:100%;padding:6px 8px;border-radius:6px;border:1.5px solid var(--border);font-size:12px;margin-bottom:6px;">
+          <input spellcheck="true" id="nc-role" placeholder="Subtitle (e.g. RN · 10+ Years)" style="width:100%;padding:6px 8px;border-radius:6px;border:1.5px solid var(--border);font-size:12px;margin-bottom:6px;">
           <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
             <label style="font-size:11px;font-weight:700;color:var(--muted);">Color:</label>
             <input type="color" id="nc-color" value="#1a4b8c" style="width:36px;height:28px;border:1.5px solid var(--border);border-radius:6px;cursor:pointer;padding:2px;">
           </div>
-          <input id="nc-pin" placeholder="4-digit PIN" maxlength="4" style="width:100%;padding:6px 8px;border-radius:6px;border:1.5px solid var(--border);font-size:12px;margin-bottom:8px;">
+          <input spellcheck="true" id="nc-pin" placeholder="4-digit PIN" maxlength="4" style="width:100%;padding:6px 8px;border-radius:6px;border:1.5px solid var(--border);font-size:12px;margin-bottom:8px;">
           <div style="display:flex;gap:6px;">
             <button onclick="addCandidate()" style="flex:1;padding:7px;border-radius:7px;border:none;background:var(--admin);color:white;font-size:12px;font-weight:700;cursor:pointer;">Add User</button>
             <button onclick="document.getElementById('add-candidate-form').style.display='none'" style="flex:1;padding:7px;border-radius:7px;border:1.5px solid var(--border);background:white;color:var(--muted);font-size:12px;font-weight:700;cursor:pointer;">Cancel</button>
@@ -2256,7 +2256,7 @@ function renderAdminSidebar() {
           </div>
           <div>
             <div style="font-size:10px;font-weight:700;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;margin-bottom:4px;">Base ID</div>
-            <input class="form-input" id="at-base" placeholder="appXXX..." value="${at?.baseId||''}" style="font-size:12px;padding:6px 10px;">
+            <input spellcheck="true" class="form-input" id="at-base" placeholder="appXXX..." value="${at?.baseId||''}" style="font-size:12px;padding:6px 10px;">
           </div>
           <div style="display:flex;gap:6px;flex-wrap:wrap;">
             <button class="submit-btn" style="background:var(--admin);color:white;padding:7px 12px;font-size:12px;flex:1" onclick="saveAirtable()">Save & Test</button>
@@ -2522,13 +2522,13 @@ function buildSidebar(c, cd, isAdmin) {
       </div>
 
       <div class="profile-role" id="role-display-${c}" onclick="toggleRoleEdit('${c}')" title="Click to edit" style="cursor:pointer;">${cd.role} <span style="font-size:10px;opacity:.4">✏️</span></div>
-      <input class="skill-input" id="role-edit-${c}" value="${cd.role}" 
+      <input spellcheck="true" class="skill-input" id="role-edit-${c}" value="${cd.role}" 
              style="display:none;width:100%;margin-bottom:6px;font-size:12px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;"
              onblur="saveRole('${c}',this.value)" onkeydown="if(event.key==='Enter')this.blur()">
 
       <div style="position:relative;">
         <div class="profile-bio" id="bio-display-${c}">${cd.bio}</div>
-        <textarea class="editable-bio" id="bio-edit-${c}" onblur="saveBio('${c}',this.value)">${cd.bio}</textarea>
+        <textarea spellcheck="true" class="editable-bio" id="bio-edit-${c}" onblur="saveBio('${c}',this.value)">${cd.bio}</textarea>
         <div id="bio-cleanup-wrap-${c}" style="display:none;gap:6px;margin-top:6px;flex-wrap:wrap;">
           <button onclick="cleanupBio('${c}')" id="bio-cleanup-btn-${c}"
             style="font-size:11px;font-weight:700;padding:4px 10px;border-radius:6px;border:1.5px solid ${colorHex};background:white;color:${colorHex};cursor:pointer;">
@@ -2548,7 +2548,7 @@ function buildSidebar(c, cd, isAdmin) {
       <div style="font-size:11px;color:var(--muted);margin:-8px 0 8px;">These keywords are included in every job search</div>
       <div class="skills-container" id="skills-${c}">${skills}</div>
       <div class="skill-add-row">
-        <input class="skill-input" id="skill-new-${c}" placeholder="Add a skill..." maxlength="30">
+        <input spellcheck="true" class="skill-input" id="skill-new-${c}" placeholder="Add a skill..." maxlength="30">
         <button class="add-skill-btn" style="background:${colorHex}" onclick="addSkill('${c}', document.getElementById('skill-new-${c}').value)">+</button>
       </div>
       <button onclick="suggestSkills('${c}')" id="suggest-skills-btn-${c}"
@@ -2564,7 +2564,7 @@ function buildSidebar(c, cd, isAdmin) {
       <div style="font-size:11px;color:var(--muted);margin:-8px 0 8px;">Be specific — Claude searches for exactly what you describe here</div>
       <div style="font-size:12px;color:var(--text2);line-height:1.6;background:${cd.lt};padding:10px 12px;border-radius:8px;margin-bottom:4px;">
         <div id="targets-display-${c}">${cd.searchAreas}</div>
-        <textarea class="editable-bio" id="targets-edit-${c}" style="background:white;margin-top:6px;" onblur="saveTargets('${c}',this.value)">${cd.searchAreas}</textarea>
+        <textarea spellcheck="true" class="editable-bio" id="targets-edit-${c}" style="background:white;margin-top:6px;" onblur="saveTargets('${c}',this.value)">${cd.searchAreas}</textarea>
       </div>
       <button class="skill-remove" style="font-size:12px;color:var(--muted);cursor:pointer;background:none;border:none;padding:0;margin-top:2px" onclick="toggleTargetEdit('${c}')">✏️ Edit search targets</button>
 
@@ -2688,7 +2688,7 @@ function buildMainContent(c, cd, isAdmin) {
         <div style="display:flex;gap:8px;flex-wrap:wrap;">
           ${activeCandidates().map(x => `
             <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;font-weight:600;padding:7px 12px;border-radius:8px;border:1.5px solid var(--border);background:${x===c?CONFIG.candidates[x].colorHex:'white'};color:${x===c?'white':'var(--text2)'};transition:all .15s">
-              <input type="radio" name="admin-target-${c}" value="${x}" ${x===c?'checked':''} style="display:none" onchange="document.getElementById('admin-add-target-${c}').value=this.value">
+              <input spellcheck="true" type="radio" name="admin-target-${c}" value="${x}" ${x===c?'checked':''} style="display:none" onchange="document.getElementById('admin-add-target-${c}').value=this.value">
               ${CONFIG.candidates[x].name}
             </label>`).join('')}
         </div>
@@ -2707,7 +2707,7 @@ function buildMainContent(c, cd, isAdmin) {
       <div id="paste-fallback-${c}" style="display:none;background:var(--gold-lt);border:1.5px solid var(--gold);border-radius:10px;padding:12px 14px;margin-bottom:12px;">
         <div style="font-size:12px;font-weight:700;color:#92600a;margin-bottom:6px;">⚠️ Couldn't read that page (login required)</div>
         <div style="font-size:11px;color:var(--muted);margin-bottom:8px;">Copy and paste the full job description text below — we'll extract the details from that instead.</div>
-        <textarea id="paste-desc-${c}" class="form-textarea" placeholder="Paste the full job description here..." style="min-height:100px;margin-bottom:8px;font-size:12px;"></textarea>
+        <textarea spellcheck="true" id="paste-desc-${c}" class="form-textarea" placeholder="Paste the full job description here..." style="min-height:100px;margin-bottom:8px;font-size:12px;"></textarea>
         <button id="parse-desc-btn-${c}" class="submit-btn" style="background:${cd.colorHex};color:white;padding:7px 14px;font-size:12px;" onclick="parseJobDescription('${c}')">✓ Extract Details</button>
       </div>
 
@@ -2716,15 +2716,15 @@ function buildMainContent(c, cd, isAdmin) {
       <div class="form-grid">
         <div class="form-group">
           <div class="form-label">Job Title *</div>
-          <input class="form-input" id="jf-title-${c}" placeholder="e.g. HR Director">
+          <input spellcheck="true" class="form-input" id="jf-title-${c}" placeholder="e.g. HR Director">
         </div>
         <div class="form-group">
           <div class="form-label">Company *</div>
-          <input class="form-input" id="jf-company-${c}" placeholder="Company name">
+          <input spellcheck="true" class="form-input" id="jf-company-${c}" placeholder="Company name">
         </div>
         <div class="form-group">
           <div class="form-label">Location</div>
-          <input class="form-input" id="jf-location-${c}" placeholder="Remote / Phoenix, AZ">
+          <input spellcheck="true" class="form-input" id="jf-location-${c}" placeholder="Remote / Phoenix, AZ">
         </div>
         <div class="form-group">
           <div class="form-label">Work Type</div>
@@ -2737,19 +2737,19 @@ function buildMainContent(c, cd, isAdmin) {
         </div>
         <div class="form-group">
           <div class="form-label">Salary / Pay Range</div>
-          <input class="form-input" id="jf-salary-${c}" placeholder="e.g. $120K–$150K">
+          <input spellcheck="true" class="form-input" id="jf-salary-${c}" placeholder="e.g. $120K–$150K">
         </div>
         <div class="form-group">
           <div class="form-label">Source / Job Board</div>
-          <input class="form-input" id="jf-source-${c}" placeholder="LinkedIn, Indeed, Company site...">
+          <input spellcheck="true" class="form-input" id="jf-source-${c}" placeholder="LinkedIn, Indeed, Company site...">
         </div>
         <div class="form-group full">
           <div class="form-label">Description</div>
-          <textarea class="form-textarea" id="jf-desc-${c}" placeholder="What does the role do and why does it fit?"></textarea>
+          <textarea spellcheck="true" class="form-textarea" id="jf-desc-${c}" placeholder="What does the role do and why does it fit?"></textarea>
         </div>
         <div class="form-group full">
           <div class="form-label">Apply URL</div>
-          <input class="form-input" id="jf-url2-${c}" placeholder="https://...">
+          <input spellcheck="true" class="form-input" id="jf-url2-${c}" placeholder="https://...">
         </div>
       </div>
 
@@ -3568,7 +3568,7 @@ function buildCard(j, c, cd) {
       📝 Your Notes
       <span class="notes-saved-flash" id="notesflash-${safeId}">✓ Saved</span>
     </div>
-    <textarea class="card-notes" placeholder="Add notes, contacts, interview dates..." 
+    <textarea spellcheck="true" class="card-notes" placeholder="Add notes, contacts, interview dates..." 
               onchange="saveNote('${c}','${j._id}',this.value,'${safeId}')">${j.notes||''}</textarea>
   </div>
 </div>`;
@@ -4326,7 +4326,7 @@ function showSettings() {
         </div>
         <div class="form-group">
           <div class="form-label">Base ID</div>
-          <input class="form-input" id="at-base" placeholder="app..." value="${at.baseId||''}" style="font-size:12px">
+          <input spellcheck="true" class="form-input" id="at-base" placeholder="app..." value="${at.baseId||''}" style="font-size:12px">
         </div>
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
