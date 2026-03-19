@@ -1413,6 +1413,10 @@ body.font-xl .card-title { font-size: calc(var(--base-font) + 1px); }
 .load-more-row { display:flex; justify-content:center; padding:20px 0 8px; }
 .load-more-btn { padding:10px 24px; border-radius:10px; border:2px solid; background:white; font-family:'Nunito',sans-serif; font-size:13px; font-weight:700; cursor:pointer; transition:all .15s; }
 .load-more-btn:hover { background:var(--surface2); }
+.fetch-more-row { display:flex; justify-content:center; padding:24px 0 8px; }
+.fetch-more-btn { background:none; border:none; font-family:'Nunito',sans-serif; font-size:13px; font-weight:700; cursor:pointer; opacity:.6; transition:opacity .15s; padding:6px 12px; border-radius:8px; }
+.fetch-more-btn:hover { opacity:1; background:var(--surface2); }
+.fetch-more-btn:disabled { cursor:not-allowed; }
 .end-of-list { text-align:center; padding:24px 16px; display:flex; flex-direction:column; align-items:center; gap:4px; }
 .end-icon { font-size:24px; margin-bottom:4px; }
 .end-text { font-size:13px; font-weight:600; color:var(--text2); }
@@ -2570,10 +2574,10 @@ function buildSidebar(c, cd, isAdmin) {
 
     <div class="action-section">
       <button class="sidebar-btn" style="background:${colorHex};color:white;border:none" id="ai-search-btn-${c}" onclick="aiSearch('${c}')">
-        ${(cd.jobs||[]).filter(j=>!j.dismissed).length === 0 ? '🔍 Search for Jobs' : '🔍 Find More Jobs'}
+        🔍 Search for Jobs
       </button>
       <div style="font-size:11px;color:var(--muted);text-align:center;margin-top:-4px;">
-        ${(cd.jobs||[]).filter(j=>!j.dismissed).length === 0 ? '~20 openings · first search' : '~10 fresh picks · avoids duplicates'} · ~15 sec
+        Finds ~15–20 live openings · ~15 sec
       </div>
 
       <button class="sidebar-btn btn-secondary" onclick="toggleAddJob('${c}')">
@@ -3035,21 +3039,22 @@ async function aiSearch(c) {
         max_tokens: isFirstSearch ? 10000 : 6000,
         tools: [{ type: 'web_search_20250305', name: 'web_search' }],
         system: buildSystemPrompt(c, cd),
-        messages: [{ role: 'user', content: buildUserPrompt(c, cd, isFirstSearch) }]
+        messages: [
+          { role: 'user', content: buildUserPrompt(c, cd, isFirstSearch) },
+          { role: 'assistant', content: '[' }
+        ]
       })
     });
 
     const data = await res.json();
     if (data.error) throw new Error(data.error.message);
 
-    let raw = '';
+    let raw = '['; // prefilled assistant turn starts the array
     for (const b of (data.content||[])) { if (b.type === 'text') raw += b.text; }
 
-    // DEBUG — open browser console to see what the API returned
-    console.log('[CareerHub] Raw response length:', raw.length, 'chars');
-    console.log('[CareerHub] stop_reason:', data.stop_reason);
-    console.log('[CareerHub] usage:', JSON.stringify(data.usage));
-    console.log('[CareerHub] Raw snippet (first 500 chars):', raw.substring(0, 500));
+    // DEBUG
+    console.log('[CareerHub] stop_reason:', data.stop_reason, '| output_tokens:', data.usage?.output_tokens, '| raw_len:', raw.length);
+    console.log('[CareerHub] snippet:', raw.substring(0, 300));
 
     // Extract JSON array — be lenient about where it starts/ends
     const match = raw.match(/\[[\s\S]*\]/);
@@ -3191,13 +3196,17 @@ PRIORITIZE these fresh industries not yet covered: ${freshIndustries[c] || 'indu
 Find genuinely new openings — different companies, different industries, different role angles.`;
   }
 
-  return `Search the web for: ${queryMap[c] || cd.searchAreas}
+  const searches = isFirstSearch ? `Run these 2 web searches, combine all results:
+1. "${queryMap[c] || cd.searchAreas}"
+2. "${queryMap[c] || cd.searchAreas} hiring 2026"` : `Search for: ${queryMap[c] || cd.searchAreas}`;
+
+  return `${searches}
 ${exclusionClause}
 
-Find ${count} real open job postings. Use web search. Then output ONLY this JSON array (no markdown, no text outside the array):
-[{"title":"Job Title","company":"Company","location":"Remote","workType":"Remote","salary":"$X","matchScore":"Strong Match","description":"Under 40 words: role summary + why this candidate fits","qualifications":["req 1","req 2","req 3"],"applyUrl":"https://url","source":"LinkedIn","isNew":true,"tags":["Remote","Industry"]}]
+Return ${count} real open jobs as a JSON array. Continue from the [ already started. Each object on ONE line:
+{"title":"Title","company":"Company","location":"Remote","workType":"Remote","salary":"$X","matchScore":"Strong Match","description":"20-30 words max","qualifications":["req 1","req 2","req 3"],"applyUrl":"https://url","source":"LinkedIn","isNew":true,"tags":["Remote","Industry"]}
 
-Each object on one line. Start output with [ and end with ]. Nothing else.`;
+End the array with ]. No text outside the array.`;
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -3257,22 +3266,111 @@ function renderJobCards(c, filter='all', page=0) {
   const visible = jobs.slice(0, (page + 1) * PAGE_SIZE);
   const remaining = jobs.length - visible.length;
 
+  const showFetchMore = remaining === 0 && filter === 'all';
+
   container.innerHTML = `
-    <div class="cards">${visible.map(j => buildCard(j, c, cd)).join('')}</div>
+    <div class="cards" id="cards-list-${c}">${visible.map(j => buildCard(j, c, cd)).join('')}</div>
     ${remaining > 0
       ? `<div class="load-more-row">
            <button class="load-more-btn" style="border-color:${cd.colorHex};color:${cd.colorHex}" onclick="renderJobCards('${c}','${filter}',${page+1})">
-             Show ${Math.min(remaining, PAGE_SIZE)} more jobs <span style="opacity:.6">(${remaining} remaining)</span>
+             Show ${Math.min(remaining, PAGE_SIZE)} more <span style="opacity:.5">(${remaining} left)</span>
            </button>
          </div>`
-      : jobs.length > PAGE_SIZE
-        ? `<div class="end-of-list">
-             <div class="end-icon">✓</div>
-             <div class="end-text">You've seen all ${jobs.length} jobs${filter!=='all'?' matching this filter':''}</div>
-             ${filter!=='all' ? `<button onclick="filterJobs('${c}','all',null)" style="margin-top:8px;font-size:12px;font-weight:700;padding:5px 14px;border-radius:6px;border:1.5px solid var(--border);background:white;color:var(--text2);cursor:pointer;">Show all jobs</button>` : `<button class="sidebar-btn" style="background:${cd.colorHex};color:white;border:none;margin-top:12px;max-width:220px" onclick="aiSearch('${c}')">🔍 Search for More Jobs</button>`}
+      : showFetchMore
+        ? `<div class="fetch-more-row" id="fetch-more-row-${c}">
+             <button class="fetch-more-btn" id="fetch-more-btn-${c}" style="color:${cd.colorHex}" onclick="fetchMoreJobs('${c}')">
+               + Load 10 more jobs
+             </button>
            </div>`
-        : ''
+        : filter !== 'all'
+          ? `<div style="text-align:center;padding:16px 0;">
+               <button onclick="filterJobs('${c}','all',null)" style="font-size:12px;font-weight:700;padding:5px 14px;border-radius:6px;border:1.5px solid var(--border);background:white;color:var(--text2);cursor:pointer;">Show all jobs</button>
+             </div>`
+          : ''
     }`;
+}
+
+// ── Inline "load 10 more" — background search, appends cards without full re-render ──
+async function fetchMoreJobs(c) {
+  const cd = CONFIG.candidates[c];
+  const btn = document.getElementById('fetch-more-btn-'+c);
+  const row = document.getElementById('fetch-more-row-'+c);
+  if (!btn) return;
+
+  btn.disabled = true;
+  btn.innerHTML = '<span style="display:inline-flex;align-items:center;gap:6px;"><span style="width:11px;height:11px;border:2px solid currentColor;border-top-color:transparent;border-radius:50%;animation:spin .7s linear infinite;display:inline-block"></span>Finding jobs...</span>';
+
+  try {
+    const res = await fetch(WORKER_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 6000,
+        tools: [{ type: 'web_search_20250305', name: 'web_search' }],
+        system: buildSystemPrompt(c, cd),
+        messages: [
+          { role: 'user', content: buildUserPrompt(c, cd, false) },
+          { role: 'assistant', content: '[' }
+        ]
+      })
+    });
+
+    const data = await res.json();
+    if (data.error) throw new Error(data.error.message);
+
+    let raw = '[';
+    for (const b of (data.content||[])) { if (b.type === 'text') raw += b.text; }
+
+    let parsed = [];
+    try { parsed = JSON.parse(raw); } catch(e) {
+      (raw.match(/\{[\s\S]*?\}(?=\s*[,\]]|\s*$)/g)||[]).forEach(s => {
+        try { const j = JSON.parse(s); if (j.title && j.company) parsed.push(j); } catch(_) {}
+      });
+    }
+
+    const existingKeys = new Set((cd.jobs||[]).map(j => `${j.title}||${j.company}`));
+    const newJobs = parsed.filter(j => j.title && j.company && !existingKeys.has(`${j.title}||${j.company}`));
+
+    if (!newJobs.length) {
+      btn.disabled = false;
+      btn.innerHTML = '+ Load 10 more jobs';
+      toast('No new results found — try again later');
+      return;
+    }
+
+    newJobs.forEach(j => {
+      j._id = `${c}-${Date.now()}-${Math.random().toString(36).substr(2,5)}`;
+      j._addedAt = Date.now();
+      j.isNew = true;
+    });
+
+    cd.jobs = [...cd.jobs, ...newJobs];
+    cd.lastSearched = Date.now();
+    saveConfig();
+    updateSidebarStats(c);
+
+    // Append new cards inline — no full re-render flicker
+    const list = document.getElementById('cards-list-'+c);
+    if (list) {
+      newJobs.forEach(j => {
+        const wrap = document.createElement('div');
+        wrap.innerHTML = buildCard(j, c, cd);
+        list.appendChild(wrap.firstElementChild);
+      });
+    }
+
+    // Reset the button
+    if (row) row.innerHTML = `<button class="fetch-more-btn" id="fetch-more-btn-${c}" style="color:${cd.colorHex}" onclick="fetchMoreJobs('${c}')">+ Load 10 more jobs</button>`;
+
+    toast(`✅ ${newJobs.length} more jobs added`);
+    if (CONFIG.airtable?.enabled) syncToAirtable(newJobs, c).catch(()=>{});
+
+  } catch(err) {
+    btn.disabled = false;
+    btn.innerHTML = '+ Load 10 more jobs';
+    toast('Search failed — try again');
+  }
 }
 
 function buildCard(j, c, cd) {
