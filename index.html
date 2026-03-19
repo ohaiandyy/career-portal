@@ -1435,6 +1435,31 @@ body.font-xl .card-title { font-size: calc(var(--base-font) + 1px); }
 .fetch-more-btn { background:none; border:none; font-family:'Nunito',sans-serif; font-size:13px; font-weight:700; cursor:pointer; opacity:.6; transition:opacity .15s; padding:6px 12px; border-radius:8px; }
 .fetch-more-btn:hover { opacity:1; background:var(--surface2); }
 .fetch-more-btn:disabled { cursor:not-allowed; }
+
+/* ── Onboarding Wizard ── */
+.wiz-step {
+  flex:1; text-align:center; padding:8px 4px;
+  font-size:11px; font-weight:700; color:var(--muted);
+  background:var(--surface2); border-right:1px solid var(--border);
+  transition:all .2s; cursor:default;
+}
+.wiz-step:last-child { border-right:none; }
+.wiz-step.active { background:var(--admin); color:white; }
+.wiz-step.done { background:var(--green-lt); color:var(--green); }
+
+.wiz-swatch {
+  width:32px; height:32px; border-radius:8px; cursor:pointer;
+  border:3px solid transparent; transition:all .15s; flex-shrink:0;
+}
+.wiz-swatch.selected { border-color:var(--text); box-shadow:0 0 0 2px white inset; }
+.wiz-swatch:hover { transform:scale(1.1); }
+
+.wiz-tab {
+  padding:7px 16px; border-radius:8px; border:1.5px solid var(--border);
+  background:white; font-family:'Nunito',sans-serif; font-size:12px;
+  font-weight:700; cursor:pointer; color:var(--text2); transition:all .15s;
+}
+.wiz-tab.active { background:var(--admin); color:white; border-color:var(--admin); }
 .end-of-list { text-align:center; padding:24px 16px; display:flex; flex-direction:column; align-items:center; gap:4px; }
 .end-icon { font-size:24px; margin-bottom:4px; }
 .end-text { font-size:13px; font-weight:600; color:var(--text2); }
@@ -1782,6 +1807,155 @@ body.font-xl .card-title { font-size: calc(var(--base-font) + 1px); }
   </div>
 </div>
 
+<!-- Onboarding Wizard Modal -->
+<div class="modal-overlay" id="wizard-modal">
+  <div class="modal" style="max-width:640px;">
+
+    <!-- Progress steps -->
+    <div style="display:flex;gap:0;margin-bottom:24px;border-radius:10px;overflow:hidden;border:1.5px solid var(--border);" id="wizard-progress">
+      <div class="wiz-step active" data-step="1">1 · About</div>
+      <div class="wiz-step" data-step="2">2 · Background</div>
+      <div class="wiz-step" data-step="3">3 · Review</div>
+      <div class="wiz-step" data-step="4">4 · Finish</div>
+    </div>
+
+    <!-- STEP 1: Basic info -->
+    <div id="wiz-step-1">
+      <div class="modal-title" style="margin-bottom:16px;">👤 Who are we setting up?</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
+        <div class="form-group full" style="grid-column:1/-1;">
+          <div class="form-label">Full Name *</div>
+          <input spellcheck="true" class="form-input" id="wiz-name" placeholder="e.g. Sarah Johnson">
+        </div>
+        <div class="form-group">
+          <div class="form-label">Current / Recent Title</div>
+          <input spellcheck="true" class="form-input" id="wiz-title" placeholder="e.g. RN · 15 Years">
+        </div>
+        <div class="form-group">
+          <div class="form-label">Location</div>
+          <input spellcheck="true" class="form-input" id="wiz-location" placeholder="e.g. Phoenix, AZ">
+        </div>
+        <div class="form-group">
+          <div class="form-label">Minimum Salary Target</div>
+          <input spellcheck="true" class="form-input" id="wiz-salary" placeholder="e.g. $80,000">
+        </div>
+        <div class="form-group">
+          <div class="form-label">Work Preference</div>
+          <select class="form-select" id="wiz-remote">
+            <option value="remote">Remote only</option>
+            <option value="hybrid">Remote or Hybrid</option>
+            <option value="travel">Open to travel</option>
+            <option value="any">Any / flexible</option>
+          </select>
+        </div>
+        <div class="form-group" style="grid-column:1/-1;">
+          <div class="form-label">Profile Color</div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;" id="wiz-color-swatches">
+            <div class="wiz-swatch selected" data-color="#1a4b8c" style="background:#1a4b8c" onclick="selectWizColor('#1a4b8c')"></div>
+            <div class="wiz-swatch" data-color="#6b2d6b" style="background:#6b2d6b" onclick="selectWizColor('#6b2d6b')"></div>
+            <div class="wiz-swatch" data-color="#1e7a4e" style="background:#1e7a4e" onclick="selectWizColor('#1e7a4e')"></div>
+            <div class="wiz-swatch" data-color="#b45309" style="background:#b45309" onclick="selectWizColor('#b45309')"></div>
+            <div class="wiz-swatch" data-color="#c0392b" style="background:#c0392b" onclick="selectWizColor('#c0392b')"></div>
+            <div class="wiz-swatch" data-color="#2980b9" style="background:#2980b9" onclick="selectWizColor('#2980b9')"></div>
+            <div class="wiz-swatch" data-color="#8e44ad" style="background:#8e44ad" onclick="selectWizColor('#8e44ad')"></div>
+            <div class="wiz-swatch" data-color="#16a085" style="background:#16a085" onclick="selectWizColor('#16a085')"></div>
+            <input type="color" id="wiz-color-custom" value="#1a4b8c" title="Custom color" oninput="selectWizColor(this.value)" style="width:36px;height:36px;border:2px solid var(--border);border-radius:8px;cursor:pointer;padding:2px;">
+          </div>
+          <input type="hidden" id="wiz-color" value="#1a4b8c">
+        </div>
+      </div>
+      <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:8px;">
+        <button class="cancel-btn" onclick="closeModal('wizard-modal')">Cancel</button>
+        <button class="submit-btn" style="background:var(--admin);color:white;padding:10px 24px;" onclick="wizNext(1)">Next →</button>
+      </div>
+    </div>
+
+    <!-- STEP 2: Background -->
+    <div id="wiz-step-2" style="display:none;">
+      <div class="modal-title" style="margin-bottom:8px;">📋 Tell us about their background</div>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:14px;">Paste a resume or answer a few quick questions — whichever is easier.</p>
+      <div style="display:flex;gap:8px;margin-bottom:14px;">
+        <button class="wiz-tab active" id="wiz-tab-resume" onclick="switchWizTab('resume')">📄 Paste Resume</button>
+        <button class="wiz-tab" id="wiz-tab-questions" onclick="switchWizTab('questions')">💬 Answer Questions</button>
+      </div>
+      <div id="wiz-bg-resume">
+        <textarea spellcheck="true" class="form-textarea" id="wiz-resume-text" style="min-height:200px;font-size:12px;" placeholder="Paste the full resume text here — the more detail the better..."></textarea>
+      </div>
+      <div id="wiz-bg-questions" style="display:none;">
+        <div style="display:flex;flex-direction:column;gap:10px;">
+          <div class="form-group">
+            <div class="form-label">Most recent job title and industry?</div>
+            <input spellcheck="true" class="form-input" id="wiz-q1" placeholder="e.g. Registered Nurse in hospice care for 20 years">
+          </div>
+          <div class="form-group">
+            <div class="form-label">Top 5 skills or areas of expertise?</div>
+            <input spellcheck="true" class="form-input" id="wiz-q2" placeholder="e.g. patient care, care coordination, Medicare compliance, team leadership">
+          </div>
+          <div class="form-group">
+            <div class="form-label">What kinds of roles are they targeting?</div>
+            <input spellcheck="true" class="form-input" id="wiz-q3" placeholder="e.g. Remote Case Manager RN, Utilization Management Nurse, Clinical Consultant">
+          </div>
+          <div class="form-group">
+            <div class="form-label">Industries or companies to focus on? (optional)</div>
+            <input spellcheck="true" class="form-input" id="wiz-q4" placeholder="e.g. insurance companies, telehealth startups, consulting firms">
+          </div>
+          <div class="form-group">
+            <div class="form-label">Anything else the AI should know? (optional)</div>
+            <input spellcheck="true" class="form-input" id="wiz-q5" placeholder="e.g. wants fully remote, no nights/weekends, open to travel for right pay">
+          </div>
+        </div>
+      </div>
+      <div style="display:flex;justify-content:space-between;gap:8px;margin-top:14px;">
+        <button class="cancel-btn" onclick="wizBack(2)">← Back</button>
+        <button class="submit-btn" id="wiz-gen-btn" style="background:var(--admin);color:white;padding:10px 24px;" onclick="wizGenerate()">🤖 Generate Profile →</button>
+      </div>
+    </div>
+
+    <!-- STEP 3: Preview -->
+    <div id="wiz-step-3" style="display:none;">
+      <div class="modal-title" style="margin-bottom:8px;">✨ Review Generated Profile</div>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:14px;">Everything below is editable — fix anything before saving.</p>
+      <div style="display:flex;flex-direction:column;gap:12px;">
+        <div class="form-group">
+          <div class="form-label">Bio / Summary</div>
+          <textarea spellcheck="true" class="form-textarea" id="wiz-gen-bio" style="min-height:90px;font-size:13px;"></textarea>
+        </div>
+        <div class="form-group">
+          <div class="form-label">Skills (comma-separated)</div>
+          <textarea spellcheck="true" class="form-textarea" id="wiz-gen-skills" style="min-height:60px;font-size:13px;"></textarea>
+        </div>
+        <div class="form-group">
+          <div class="form-label">Search Targets (roles + industries)</div>
+          <textarea spellcheck="true" class="form-textarea" id="wiz-gen-targets" style="min-height:60px;font-size:13px;"></textarea>
+        </div>
+      </div>
+      <div style="display:flex;justify-content:space-between;gap:8px;margin-top:14px;">
+        <button class="cancel-btn" onclick="wizBack(3)">← Back</button>
+        <button class="submit-btn" style="background:var(--admin);color:white;padding:10px 24px;" onclick="wizNext(3)">Looks Good →</button>
+      </div>
+    </div>
+
+    <!-- STEP 4: PIN + finish -->
+    <div id="wiz-step-4" style="display:none;">
+      <div class="modal-title" style="margin-bottom:8px;">🔐 Almost done!</div>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:14px;">Set a PIN and create the profile. Share the PIN with them directly — they can change it later in Settings.</p>
+      <div style="background:var(--surface2);border-radius:10px;padding:14px;margin-bottom:16px;" id="wiz-summary"></div>
+      <div class="form-group" style="margin-bottom:8px;">
+        <div class="form-label">4-Digit PIN *</div>
+        <div style="display:flex;gap:10px;align-items:center;">
+          <input class="form-input" id="wiz-pin" maxlength="4" placeholder="1234" style="max-width:120px;font-family:Lora,serif;font-size:22px;font-weight:700;letter-spacing:.2em;text-align:center;">
+          <button onclick="document.getElementById('wiz-pin').value=String(Math.floor(1000+Math.random()*9000))" style="font-size:11px;font-weight:700;padding:6px 10px;border-radius:6px;border:1.5px solid var(--border);background:white;color:var(--text2);cursor:pointer;">🎲 Random</button>
+        </div>
+      </div>
+      <div style="display:flex;justify-content:space-between;gap:8px;margin-top:20px;">
+        <button class="cancel-btn" onclick="wizBack(4)">← Back</button>
+        <button class="submit-btn" style="background:var(--green);color:white;padding:11px 28px;font-size:14px;" onclick="wizFinish()">✅ Create Profile</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -1866,6 +2040,10 @@ function loadConfig() {
       Object.keys(CONFIG.candidates).forEach(c => {
         if (parsed.candidates?.[c]) {
           CONFIG.candidates[c] = { ...CONFIG.candidates[c], ...parsed.candidates[c] };
+          // Strip hardcoded fallback jobs (identified by -fb- in their _id)
+          if (CONFIG.candidates[c].jobs) {
+            CONFIG.candidates[c].jobs = CONFIG.candidates[c].jobs.filter(j => !j._id || !j._id.includes('-fb-'));
+          }
         }
       });
       // Load any extra candidates added by admin
@@ -2263,20 +2441,7 @@ function renderAdminSidebar() {
             <button onclick="resetJobs('${c}')" title="Reset all jobs for ${cd.name}" style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:5px;border:1.5px solid var(--gold);background:white;color:#92600a;cursor:pointer;">🔄 Reset</button>
           </div>`;
         }).join('')}
-        <button onclick="showAddCandidateForm()" style="width:100%;margin-top:10px;padding:7px;border-radius:8px;border:1.5px dashed var(--border);background:white;color:var(--text2);font-size:12px;font-weight:700;cursor:pointer;">+ Add New User</button>
-        <div id="add-candidate-form" style="display:none;margin-top:10px;">
-          <input spellcheck="true" id="nc-name" placeholder="Full name" style="width:100%;padding:6px 8px;border-radius:6px;border:1.5px solid var(--border);font-size:12px;margin-bottom:6px;">
-          <input spellcheck="true" id="nc-role" placeholder="Subtitle (e.g. RN · 10+ Years)" style="width:100%;padding:6px 8px;border-radius:6px;border:1.5px solid var(--border);font-size:12px;margin-bottom:6px;">
-          <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
-            <label style="font-size:11px;font-weight:700;color:var(--muted);">Color:</label>
-            <input type="color" id="nc-color" value="#1a4b8c" style="width:36px;height:28px;border:1.5px solid var(--border);border-radius:6px;cursor:pointer;padding:2px;">
-          </div>
-          <input spellcheck="true" id="nc-pin" placeholder="4-digit PIN" maxlength="4" style="width:100%;padding:6px 8px;border-radius:6px;border:1.5px solid var(--border);font-size:12px;margin-bottom:8px;">
-          <div style="display:flex;gap:6px;">
-            <button onclick="addCandidate()" style="flex:1;padding:7px;border-radius:7px;border:none;background:var(--admin);color:white;font-size:12px;font-weight:700;cursor:pointer;">Add User</button>
-            <button onclick="document.getElementById('add-candidate-form').style.display='none'" style="flex:1;padding:7px;border-radius:7px;border:1.5px solid var(--border);background:white;color:var(--muted);font-size:12px;font-weight:700;cursor:pointer;">Cancel</button>
-          </div>
-        </div>
+        <button onclick="openWizard()" style="width:100%;margin-top:10px;padding:9px;border-radius:8px;border:1.5px dashed var(--border);background:white;color:var(--admin);font-size:12px;font-weight:700;cursor:pointer;">✨ Add New User</button>
       </div>
 
       <div class="pin-manage" style="margin-bottom:14px;">
@@ -2459,37 +2624,207 @@ function toggleCandidateActive(c) {
   toast(`${cd.name} is now ${cd.active ? 'visible' : 'hidden'}`);
 }
 
-function showAddCandidateForm() {
-  document.getElementById('add-candidate-form').style.display = 'block';
+// ── Onboarding Wizard ────────────────────────────────────────────────────────
+let _wizData = {};
+
+function openWizard() {
+  _wizData = { color: '#1a4b8c', step: 1 };
+  // Reset all steps
+  [1,2,3,4].forEach(i => {
+    const el = document.getElementById('wiz-step-'+i);
+    if (el) el.style.display = i === 1 ? 'block' : 'none';
+  });
+  // Reset form fields
+  ['wiz-name','wiz-title','wiz-location','wiz-salary','wiz-resume-text',
+   'wiz-q1','wiz-q2','wiz-q3','wiz-q4','wiz-q5','wiz-gen-bio','wiz-gen-skills','wiz-gen-targets','wiz-pin']
+    .forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+  document.getElementById('wiz-remote').value = 'remote';
+  selectWizColor('#1a4b8c');
+  updateWizProgress(1);
+  switchWizTab('resume');
+  openModal('wizard-modal');
 }
 
-function addCandidate() {
-  const name = document.getElementById('nc-name')?.value?.trim();
-  const role = document.getElementById('nc-role')?.value?.trim() || '';
-  const color = document.getElementById('nc-color')?.value || '#1a4b8c';
-  const pin = document.getElementById('nc-pin')?.value?.trim();
+function updateWizProgress(step) {
+  document.querySelectorAll('.wiz-step').forEach(el => {
+    const s = parseInt(el.dataset.step);
+    el.classList.remove('active','done');
+    if (s === step) el.classList.add('active');
+    else if (s < step) el.classList.add('done');
+  });
+}
 
-  if (!name) { toast('Name is required'); return; }
-  if (!pin || pin.length !== 4) { toast('PIN must be 4 digits'); return; }
+function selectWizColor(color) {
+  _wizData.color = color;
+  document.getElementById('wiz-color').value = color;
+  document.querySelectorAll('.wiz-swatch').forEach(el => {
+    el.classList.toggle('selected', el.dataset.color === color);
+  });
+}
 
-  // Generate a unique key from name
-  const key = name.toLowerCase().replace(/[^a-z0-9]/g,'').substring(0,8) + Date.now().toString().slice(-3);
+function switchWizTab(tab) {
+  document.getElementById('wiz-bg-resume').style.display = tab === 'resume' ? 'block' : 'none';
+  document.getElementById('wiz-bg-questions').style.display = tab === 'questions' ? 'block' : 'none';
+  document.getElementById('wiz-tab-resume').classList.toggle('active', tab === 'resume');
+  document.getElementById('wiz-tab-questions').classList.toggle('active', tab === 'questions');
+  _wizData.bgTab = tab;
+}
+
+function wizNext(from) {
+  if (from === 1) {
+    const name = document.getElementById('wiz-name').value.trim();
+    if (!name) { toast('Name is required'); return; }
+    _wizData.name = name;
+    _wizData.title = document.getElementById('wiz-title').value.trim();
+    _wizData.location = document.getElementById('wiz-location').value.trim() || 'United States';
+    _wizData.salary = document.getElementById('wiz-salary').value.trim();
+    _wizData.remote = document.getElementById('wiz-remote').value;
+  }
+  if (from === 3) {
+    _wizData.bio = document.getElementById('wiz-gen-bio').value.trim();
+    _wizData.skills = document.getElementById('wiz-gen-skills').value.split(',').map(s=>s.trim()).filter(Boolean);
+    _wizData.searchAreas = document.getElementById('wiz-gen-targets').value.trim();
+    // Populate summary on step 4
+    const color = _wizData.color;
+    document.getElementById('wiz-summary').innerHTML = `
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+        <div style="width:40px;height:40px;border-radius:50%;background:${color};color:white;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:800;">${_wizData.name[0]}</div>
+        <div>
+          <div style="font-weight:700;font-size:15px;">${_wizData.name}</div>
+          <div style="font-size:12px;color:var(--muted);">${_wizData.title||'New User'} · ${_wizData.location}</div>
+        </div>
+      </div>
+      <div style="font-size:12px;color:var(--text2);line-height:1.6;">${_wizData.bio?.substring(0,120)}...</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:6px;">${_wizData.skills?.slice(0,6).join(' · ')}</div>`;
+  }
+  const next = from + 1;
+  document.getElementById('wiz-step-'+from).style.display = 'none';
+  document.getElementById('wiz-step-'+next).style.display = 'block';
+  updateWizProgress(next);
+}
+
+function wizBack(from) {
+  const prev = from - 1;
+  document.getElementById('wiz-step-'+from).style.display = 'none';
+  document.getElementById('wiz-step-'+prev).style.display = 'block';
+  updateWizProgress(prev);
+}
+
+async function wizGenerate() {
+  const btn = document.getElementById('wiz-gen-btn');
+  btn.disabled = true;
+  btn.textContent = '🤖 Generating...';
+
+  // Build context from whichever input they used
+  let context = '';
+  if (_wizData.bgTab === 'questions') {
+    const q = (id) => document.getElementById(id)?.value?.trim() || '';
+    context = `Background Q&A:
+- Recent role: ${q('wiz-q1')}
+- Top skills: ${q('wiz-q2')}
+- Target roles: ${q('wiz-q3')}
+- Target industries: ${q('wiz-q4')}
+- Additional notes: ${q('wiz-q5')}`;
+  } else {
+    context = 'RESUME:\n' + (document.getElementById('wiz-resume-text')?.value?.trim() || '').substring(0, 4000);
+  }
+
+  const remoteLabel = {remote:'100% remote strongly preferred', hybrid:'remote or hybrid OK', travel:'open to travel for right pay', any:'flexible on location'}[_wizData.remote] || 'flexible';
+
+  try {
+    const res = await fetch(WORKER_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 1500,
+        messages: [{
+          role: 'user',
+          content: `Create a job search profile for a new portal user. Return ONLY JSON (no markdown):
+{
+  "bio": "3-4 sentence first-person professional summary highlighting transferable skills and what they are targeting",
+  "skills": ["skill1","skill2","skill3",...],
+  "searchTargets": "comma-separated list of target roles and industries, written as: Role Title 1, Role Title 2 — at [industry types]"
+}
+
+PERSON: ${_wizData.name}
+LOCATION: ${_wizData.location}
+WORK PREF: ${remoteLabel}
+SALARY TARGET: ${_wizData.salary || 'not specified'}
+
+${context}
+
+Rules:
+- Bio must be first-person, professional, and specific to their actual background
+- Extract 10-15 concrete transferable skills from their experience
+- Search targets should be realistic roles they can get with their background, across multiple industries
+- Be explicit about why their background qualifies them for non-obvious roles`
+        }]
+      })
+    });
+
+    const data = await res.json();
+    let raw = '';
+    for (const b of (data.content||[])) { if (b.type==='text') raw += b.text; }
+    const m = raw.match(/\{[\s\S]*\}/);
+    if (!m) throw new Error('Could not generate profile — try again');
+
+    const parsed = JSON.parse(m[0]);
+    document.getElementById('wiz-gen-bio').value = parsed.bio || '';
+    document.getElementById('wiz-gen-skills').value = (parsed.skills||[]).join(', ');
+    document.getElementById('wiz-gen-targets').value = parsed.searchTargets || '';
+
+    // Advance to step 3
+    document.getElementById('wiz-step-2').style.display = 'none';
+    document.getElementById('wiz-step-3').style.display = 'block';
+    updateWizProgress(3);
+
+  } catch(e) {
+    toast('Generation failed: ' + e.message);
+  }
+
+  btn.disabled = false;
+  btn.textContent = '🤖 Generate Profile →';
+}
+
+function wizFinish() {
+  const pin = document.getElementById('wiz-pin').value.trim();
+  if (!pin || pin.length !== 4 || !/^\d{4}$/.test(pin)) { toast('Enter a valid 4-digit PIN'); return; }
+  if (pin === '0000') { toast('0000 is reserved for Admin'); return; }
+
+  const key = _wizData.name.toLowerCase().replace(/[^a-z0-9]/g,'').substring(0,8) + Date.now().toString().slice(-3);
+  const color = _wizData.color || '#1a4b8c';
 
   CONFIG.candidates[key] = {
-    name, active: true,
-    color: color, colorHex: color,
+    name: _wizData.name,
+    active: true,
+    color: color,
+    colorHex: color,
     lt: color + '22',
-    role: role || `${name} · New User`,
-    bio: `${name} is currently searching for new opportunities.`,
-    skills: [], prefs: {}, searchAreas: '',
+    role: _wizData.title || `${_wizData.name} · New User`,
+    bio: _wizData.bio || '',
+    skills: _wizData.skills || [],
+    prefs: {
+      remote: _wizData.remote === 'remote' || _wizData.remote === 'hybrid',
+      hybrid: _wizData.remote === 'hybrid' || _wizData.remote === 'any',
+      travel: _wizData.remote === 'travel',
+      location: _wizData.location,
+      minSalary: parseInt((_wizData.salary||'').replace(/[^0-9]/g,'')) || 0
+    },
+    searchAreas: _wizData.searchAreas || '',
     jobs: []
   };
   CONFIG.pins[key] = pin;
-  saveConfig();
+  saveConfig(true);
+  closeModal('wizard-modal');
   renderLoginScreen();
   renderOverview();
-  toast(`✅ ${name} added!`);
+  toast(`✅ ${_wizData.name} added! PIN: ${pin}`);
 }
+
+// Keep old addCandidate as no-op fallback
+function showAddCandidateForm() { openWizard(); }
+function addCandidate() { wizFinish(); }
 
 function editCandidate(c) {
   const cd = CONFIG.candidates[c];
@@ -2641,7 +2976,7 @@ function buildSidebar(c, cd, isAdmin) {
         🔍 Search for Jobs
       </button>
       <div style="font-size:11px;color:var(--muted);text-align:center;margin-top:-4px;">
-        Finds ~15–20 live openings · ~15 sec
+        Finds ~20 live openings · ~15 sec
       </div>
 
       <button class="sidebar-btn btn-secondary" onclick="toggleAddJob('${c}')">
@@ -3069,10 +3404,22 @@ const LINKEDIN_ALERTS = {
 // ═══════════════════════════════════════════════════════════════
 //  AI SEARCH — Single clean search, 10-15 focused results
 // ═══════════════════════════════════════════════════════════════
+const _searchCooldowns = {};
 async function aiSearch(c) {
   const cd = CONFIG.candidates[c];
   const btn = document.getElementById('ai-search-btn-'+c);
   const container = document.getElementById('cards-container-'+c);
+
+  // 30-second cooldown to prevent accidental repeated searches
+  const now = Date.now();
+  const lastSearch = _searchCooldowns[c] || 0;
+  const cooldown = 30000;
+  if (now - lastSearch < cooldown) {
+    const remaining = Math.ceil((cooldown - (now - lastSearch)) / 1000);
+    toast(`Please wait ${remaining}s before searching again`);
+    return;
+  }
+  _searchCooldowns[c] = now;
 
   // Mark all existing as not-new before this session
   (cd.jobs||[]).forEach(j => j.isNew = false);
@@ -3225,8 +3572,20 @@ async function aiSearch(c) {
   else renderJobCards(c);
   }
 
-  btn.disabled = false;
-  btn.innerHTML = '🔍 Search for New Jobs';
+  // Re-enable with countdown so user knows when they can search again
+  let countdown = 30;
+  btn.disabled = true;
+  btn.innerHTML = `🔍 Search again in ${countdown}s`;
+  const tick = setInterval(() => {
+    countdown--;
+    if (countdown <= 0) {
+      clearInterval(tick);
+      btn.disabled = false;
+      btn.innerHTML = '🔍 Search for Jobs';
+    } else {
+      btn.innerHTML = `🔍 Search again in ${countdown}s`;
+    }
+  }, 1000);
 }
 
 // What the AI is told about the candidate
@@ -3394,8 +3753,8 @@ async function fetchMoreJobs(c) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 6000,
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 5000,
         tools: [{ type: 'web_search_20250305', name: 'web_search' }],
         system: buildSystemPrompt(c, cd),
         messages: [
@@ -4698,37 +5057,7 @@ function toast(msg) {
 //  FALLBACK JOBS (shown when API unavailable)
 // ═══════════════════════════════════════════════════════════════
 function loadFallback(c) {
-  const fallbacks = {
-    m: [
-      { title:'HR Director',company:'Rippling',location:'Remote',workType:'Remote',salary:'$120K–$150K',matchScore:'Strong Match',description:'Leads HR strategy, payroll (Paycom), compliance, and talent acquisition across a multi-state organization. Michael\'s Paycom depth and 20-year multi-site HR leadership transfer completely outside healthcare.',qualifications:['8+ years HR leadership','HRIS/Paycom expertise','Multi-state employment law','PHR or SPHR preferred'],benefits:'Medical/dental/vision, 401(k) match, remote, generous PTO',applyUrl:'https://www.linkedin.com/jobs/search/?keywords=HR+Director+remote',source:'LinkedIn',isNew:true,tags:['Remote','HR','Tech'] },
-      { title:'VP of Operations',company:'Apex Group',location:'Remote',workType:'Remote',salary:'$150K–$200K',matchScore:'Strong Match',description:'Oversees multi-site operational P&L, team leadership, and compliance for a scaling organization. PE-backed companies recruit executives with proven startup-to-scale experience — exactly Michael\'s background.',qualifications:['10+ years multi-site ops leadership','P&L ownership','Process improvement mindset','Board/investor comfort'],benefits:'Executive base + bonus, equity participation, full benefits',applyUrl:'https://www.linkedin.com/jobs/search/?keywords=VP+Operations+remote',source:'LinkedIn',isNew:true,tags:['Remote','Executive','High Pay'] },
-      { title:'Chief Compliance Officer',company:'Fidelity Investments',location:'Remote',workType:'Remote',salary:'$130K–$165K',matchScore:'Strong Match',description:'Directs enterprise compliance across federal/state regulations. Michael\'s 20 years navigating Medicare/Medicaid/CoP compliance maps directly to any regulated industry — financial services, insurance, and energy face identical complexity.',qualifications:['7+ years compliance leadership','Regulated industry experience','Policy/training development','CCEP helpful'],benefits:'401(k), full benefits, bonus, flexible remote',applyUrl:'https://www.indeed.com/jobs?q=Chief+Compliance+Officer+remote',source:'Indeed',isNew:false,tags:['Compliance','Finance','Remote'] },
-      { title:'CIO / IT Director',company:'Nextiva',location:'Remote or Hybrid Phoenix',workType:'Hybrid',salary:'$130K–$175K',matchScore:'Good Match',description:'Leads IT strategy, infrastructure, and vendor management for a 50–500 person organization. Michael built and managed full IT infrastructure for multiple hospice locations — identical skills for any business at similar scale.',qualifications:['IT leadership or hands-on infrastructure management','Vendor/budget management','Security awareness','Scaling technology with business growth'],benefits:'Executive benefits, equity possible, hybrid flexibility',applyUrl:'https://www.linkedin.com/jobs/search/?keywords=CIO+IT+Director+remote+Arizona',source:'LinkedIn',isNew:true,tags:['CIO','IT','Hybrid'] },
-      { title:'Director of Operations — Multi-location',company:'ServiceMaster Brands',location:'Remote or Hybrid AZ',workType:'Hybrid',salary:'$110K–$145K',matchScore:'Strong Match',description:'Oversees operations across 10-50+ locations — exactly what Michael did for years. Multi-unit franchise and retail operations require identical skills: compliance, HR, vendor management, budgets, and troubleshooting at scale.',qualifications:['Multi-site operations management','HR and compliance oversight','Budget management','Systems thinking'],benefits:'Bonus structure, car allowance, full benefits',applyUrl:'https://www.indeed.com/jobs?q=Director+Operations+multi-site',source:'Indeed',isNew:false,tags:['Operations','Multi-site','Any Industry'] }
-    ],
-    l: [
-      { title:'Case Manager RN — Work From Home',company:'CVS Health / Aetna',location:'Remote (AZ)',workType:'Remote',salary:'$54K–$117K',matchScore:'Strong Match',description:'100% remote telephonic case management for health plan members. M-F standard hours. Lisa\'s 30 years of clinical expertise and care coordination far exceeds requirements — her hospice skills transfer directly to payer-side case management.',qualifications:['Active unrestricted RN license','3+ years clinical experience','2+ years case management preferred','BSN preferred'],benefits:'401(k), affordable medical/dental/vision, EAP, no travel',applyUrl:'https://cvshealth.wd1.myworkdayjobs.com/en-US/cvs_health_careers',source:'CVS Health',isNew:true,tags:['100% Remote','RN Required','Insurance'] },
-      { title:'Utilization Management Nurse',company:'Humana',location:'Remote',workType:'Remote',salary:'$80K–$110K',matchScore:'Strong Match',description:'Reviews clinical cases for medical necessity — fully remote, M-F, no patient-facing work. Lisa\'s Medicare/Medicaid knowledge and clinical judgment are exactly what UM teams need. Provider-to-payer pivot using identical skills with dramatically less stress.',qualifications:['Active RN license','3+ years clinical experience','UM/case management preferred','Independent work style'],benefits:'Full Humana benefits, 401(k), structured hours',applyUrl:'https://careers.humana.com/',source:'Humana',isNew:false,tags:['Remote','Payer Side','Lower Stress'] },
-      { title:'Joint Commission Surveyor — Home & Hospice',company:'The Joint Commission',location:'Remote + National Travel',workType:'Hybrid',salary:'$115,000',matchScore:'Strong Match',description:'Surveys hospice and home care agencies for accreditation compliance. Lisa\'s executive director experience gives her a rare perspective — she\'s been surveyed dozens of times. TJC pays $115K flat with all travel fully covered.',qualifications:['Active RN license','5+ years hospice/home care experience','Management experience preferred','Comfortable ~75% travel'],benefits:'$115K flat, all travel covered, annual CE week, full benefits',applyUrl:'https://careers-jointcommission.icims.com/jobs/7074/',source:'Joint Commission',isNew:false,tags:['$115K','Travel','RN Required'] },
-      { title:'Telehealth Clinical Lead',company:'Teladoc / MDLive / Included Health',location:'Remote',workType:'Remote',salary:'$85K–$125K',matchScore:'Good Match',description:'Leads clinical protocols and quality oversight for a virtual care platform without managing a physical facility. Lisa\'s clinical depth, QAPI expertise, and executive leadership make her a strong candidate in the rapidly expanding telehealth sector.',qualifications:['Active RN license','Clinical leadership experience','Quality/compliance background','Virtual care comfort'],benefits:'Remote, tech company benefits, growth track',applyUrl:'https://www.linkedin.com/jobs/search/?keywords=telehealth+clinical+lead+RN+remote',source:'LinkedIn',isNew:true,tags:['Remote','Telehealth','New Industry'] }
-    ],
-    s: [
-      { title:'Corporate Trainer — Financial Services',company:'Voya Financial',location:'Remote',workType:'Remote',salary:'$70K–$100K',matchScore:'Strong Match',description:'Financial services firms actively recruit former teachers for training roles because classroom management, curriculum design, and engagement skills are exactly what they need — and pay is significantly higher than education.',qualifications:['Bachelor\'s degree','2+ years facilitation or teaching','Strong presentation skills','LMS experience a plus'],benefits:'Remote, 401(k), medical/dental, tuition reimbursement',applyUrl:'https://www.indeed.com/jobs?q=corporate+trainer+remote+financial+services',source:'Indeed',isNew:false,tags:['Remote','Finance','Career Change'] },
-      { title:'L&D Specialist / Learning Experience Designer',company:'Workiva',location:'Remote',workType:'Remote',salary:'$75K–$105K',matchScore:'Strong Match',description:'Builds employee onboarding, product training, and L&D programs. Tech companies love former teachers — the skills are identical except the audience is employees. Shannon\'s behavioral psych background is a bonus differentiator.',qualifications:['Teaching or training background','Curriculum design skills','LMS platform comfort','Instructional design fundamentals'],benefits:'Tech benefits: equity, unlimited PTO, home office stipend',applyUrl:'https://www.linkedin.com/jobs/search/?keywords=learning+development+specialist+remote',source:'LinkedIn',isNew:true,tags:['Remote','Tech','L&D'] },
-      { title:'Sr. Implementation Consultant, Clinical',company:'Homecare Homebase (HCHB)',location:'Remote + Weekly Travel',workType:'Travel',salary:'$75K–$100K + Per Diem',matchScore:'Strong Match',description:'Mon-Fri travel to client sites delivering EHR training to home health staff. Shannon\'s teaching background + hospice social work knowledge = rare combination. Per diem adds substantial income on top of base salary.',qualifications:['Healthcare or training experience','Willing to travel Mon-Fri weekly','Strong facilitation skills','Hospice/home health knowledge preferred'],benefits:'All travel covered, daily per diem, full benefits',applyUrl:'https://hchb.com/about-us/careers/',source:'HCHB',isNew:true,tags:['Travel','EHR','High Total Comp'] },
-      { title:'Instructional Designer',company:'Mayo Clinic',location:'Remote (US)',workType:'Remote',salary:'$70K–$100K',matchScore:'Good Match',description:'Creates eLearning modules, facilitator guides, and job aids using adult learning principles. Shannon\'s curriculum development and lesson planning skills translate directly. Bridge: learn Articulate Storyline/Rise to build a portfolio quickly.',qualifications:['Bachelor\'s in education or psychology','Curriculum development experience','Articulate Storyline/Rise preferred','Adult learning theory understanding'],benefits:'Full Mayo Clinic benefits, 100% remote, stable employer',applyUrl:'https://jobs.mayoclinic.org/',source:'Mayo Clinic',isNew:false,tags:['Remote','eLearning','Portfolio Needed'] }
-    ]
-  };
-
-  const jobs = (fallbacks[c]||[]).map(j => ({
-    ...j,
-    _id: `${c}-fb-${Date.now()}-${Math.random().toString(36).substr(2,4)}`
-  }));
-
-  const existing = new Set((CONFIG.candidates[c].jobs||[]).map(j=>`${j.title}||${j.company}`));
-  const unique = jobs.filter(j => !existing.has(`${j.title}||${j.company}`));
-  CONFIG.candidates[c].jobs = [...unique, ...(CONFIG.candidates[c].jobs||[])];
-  saveConfig();
+  // Fallback removed — show empty state prompting first real search
   renderJobCards(c);
 }
 
