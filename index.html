@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <!-- ============================================================
      The Job Hunts — Career Portal
-     Version: 5.1
-     Updated: 2026-03-18
+     Version: 5.2
+     Updated: 2026-03-19
      Changes: AI search fixes (depth-tracking parser, prefill trick),
               Load More (Haiku), onboarding wizard, resume import with
               undo, saved flash, rate limiting, archive/restore users,
@@ -1717,11 +1717,15 @@ body.font-xl .card-title { font-size: calc(var(--base-font) + 1px); }
       <div class="help-section-title">🔐 Signing In</div>
       <div class="help-item">
         <div class="help-item-icon">👤</div>
-        <div class="help-item-text"><strong>Select your name</strong> on the login screen, enter your 4-digit PIN, and hit Sign In. Each person only sees their own jobs — no one else's.</div>
+        <div class="help-item-text"><strong>Select your name</strong> on the login screen, enter your 4-digit PIN, and hit Sign In. Each person only sees their own jobs and profile — no one else's data is visible.</div>
+      </div>
+      <div class="help-item">
+        <div class="help-item-icon">🔑</div>
+        <div class="help-item-text"><strong>Forgot your PIN?</strong> Go to Settings → Change My PIN to update it yourself. Or ask your Admin to reset it.</div>
       </div>
       <div class="help-item">
         <div class="help-item-icon">⚙️</div>
-        <div class="help-item-text"><strong>Admin login</strong> can see all three candidates, edit everyone's profiles, change PINs, and export data. Use Settings → Change PINs to update any PIN.</div>
+        <div class="help-item-text"><strong>Admin login</strong> (PIN: ask your administrator) — sees all candidates, edits profiles, manages users, and exports data.</div>
       </div>
     </div>
 
@@ -1729,15 +1733,19 @@ body.font-xl .card-title { font-size: calc(var(--base-font) + 1px); }
       <div class="help-section-title">🔍 Finding Jobs</div>
       <div class="help-item">
         <div class="help-item-icon">🔍</div>
-        <div class="help-item-text"><strong>Search for New Jobs</strong> — click this button and wait 10–20 seconds. The AI searches live job boards and returns 10–15 real current openings tailored to your profile. Each search may return different results, so you can run it multiple times to build up your list.</div>
+        <div class="help-item-text"><strong>Search for Jobs</strong> — click this in the sidebar and wait ~15 seconds. The AI searches live job boards and returns ~20 real openings tailored to your profile. A 30-second cooldown prevents accidental double-searches.</div>
       </div>
       <div class="help-item">
         <div class="help-item-icon">➕</div>
-        <div class="help-item-text"><strong>Add a Job You Found</strong> — paste any job URL (LinkedIn, Indeed, company site) and click "Fetch Details" to auto-fill the form. Or fill it in manually. Great for jobs you spot yourself anywhere online.</div>
+        <div class="help-item-text"><strong>Load 10 More Jobs</strong> — appears at the bottom of your list after the first search. Runs a fresh AI search focused on different companies and industries you haven't seen yet.</div>
+      </div>
+      <div class="help-item">
+        <div class="help-item-icon">🔗</div>
+        <div class="help-item-text"><strong>Add a Job You Found</strong> — paste any job URL (LinkedIn, Indeed, company site) and click "Fetch Details" to auto-fill the form. Or fill it in manually.</div>
       </div>
       <div class="help-item">
         <div class="help-item-icon">🔎</div>
-        <div class="help-item-text"><strong>Filters</strong> at the top let you narrow down by Remote, Hybrid, Travel, New (added this session), Starred, or Applied. Click any filter — click again or click "All" to reset.</div>
+        <div class="help-item-text"><strong>Filters</strong> at the top narrow results by Remote, Hybrid, Travel, Starred, or Applied. Click any filter to activate — click All to reset.</div>
       </div>
     </div>
 
@@ -1745,59 +1753,59 @@ body.font-xl .card-title { font-size: calc(var(--base-font) + 1px); }
       <div class="help-section-title">📋 Managing Jobs</div>
       <div class="help-item">
         <div class="help-item-icon">⭐</div>
-        <div class="help-item-text"><strong>Star a job</strong> to save it as a priority. Starred jobs are highlighted in gold and show up under the ⭐ Starred filter. Use this for roles you definitely want to apply to.</div>
+        <div class="help-item-text"><strong>Star</strong> a job to mark it as a priority. Starred jobs are highlighted gold and appear under the ⭐ Starred filter.</div>
       </div>
       <div class="help-item">
         <div class="help-item-icon">✅</div>
-        <div class="help-item-text"><strong>Mark Applied</strong> after you send in your resume. The card turns green and it shows in the ✅ Applied filter so you can track where you've applied.</div>
+        <div class="help-item-text"><strong>Mark Applied</strong> after you send your resume. The card turns green and appears under ✅ Applied so you can track where you've applied.</div>
+      </div>
+      <div class="help-item">
+        <div class="help-item-icon">📋</div>
+        <div class="help-item-text"><strong>Track Progress</strong> — use the dropdown on each card to move a job through stages: Researching → Applied → Interview → Offer. Click "Job Tracker" at the top right to see your full pipeline as a board.</div>
       </div>
       <div class="help-item">
         <div class="help-item-icon">✕</div>
-        <div class="help-item-text"><strong>Dismiss</strong> a job you're not interested in — it slides out of the list. Dismissed jobs don't come back unless you clear and re-search.</div>
+        <div class="help-item-text"><strong>Dismiss</strong> a job to remove it from your list. A 5-second undo button appears immediately after — or restore dismissed jobs any time by clicking "🗑 Dismissed" in your sidebar stats.</div>
       </div>
       <div class="help-item">
         <div class="help-item-icon">▾</div>
-        <div class="help-item-text"><strong>Details</strong> button on each card expands to show qualifications, benefits, and a private notes field. Notes are only visible to you (and Admin).</div>
+        <div class="help-item-text"><strong>Details</strong> expands a card to show qualifications, benefits, and a private notes field. Notes are saved automatically and only visible to you and Admin.</div>
       </div>
     </div>
 
     <div class="help-section">
-      <div class="help-section-title">✏️ Editing Your Profile</div>
+      <div class="help-section-title">✏️ Your Profile</div>
       <div class="help-item">
         <div class="help-item-icon">✏️</div>
-        <div class="help-item-text"><strong>Edit your bio</strong> by clicking the pencil icon next to your name. Click outside the text box to save. Your bio is used by the AI when searching for jobs — keeping it accurate helps find better matches.</div>
+        <div class="help-item-text"><strong>Edit your bio</strong> — click directly on your bio text to edit it. Your bio is used by the AI when searching — keep it current and specific for better results.</div>
       </div>
       <div class="help-item">
         <div class="help-item-icon">🏷️</div>
-        <div class="help-item-text"><strong>Skills & Keywords</strong> — type a skill and press Enter (or click +) to add it. Click × on any skill to remove it. The more accurate your skills list, the better the AI job matches.</div>
+        <div class="help-item-text"><strong>Skills & Keywords</strong> — type a skill and press Enter to add it. Click × to remove. More accurate skills = better AI job matches. Use "✨ Suggest More Skills" to let AI recommend additions.</div>
       </div>
       <div class="help-item">
         <div class="help-item-icon">🎯</div>
-        <div class="help-item-text"><strong>Search Targets</strong> — the text below your skills tells the AI what roles and industries to look for. Click "Edit search targets" to customize it. You can be as broad or specific as you like.</div>
+        <div class="help-item-text"><strong>Search Targets</strong> — the most important field. Tells the AI exactly what roles and industries to find. Click "✏️ Edit" to customize, or use "✨ Help me write this" to have AI generate it from your profile. Be specific — "HR Director / CHRO, VP Operations — tech, finance, consulting" works better than "HR jobs."</div>
       </div>
-    </div>
-
-    <div class="help-section">
-      <div class="help-section-title">📄 Resume Import</div>
       <div class="help-item">
         <div class="help-item-icon">📄</div>
-        <div class="help-item-text"><strong>Import Resume</strong> (Admin only) — in the Admin sidebar under Manage Users, click 📄 Resume next to any candidate to paste their resume. The AI extracts skills and rewrites their profile summary automatically. One-time setup tool.</div>
+        <div class="help-item-text"><strong>Update Profile from Resume</strong> — paste your resume text and AI will extract your skills and rewrite your bio. Shows a before/after preview so you can approve changes. Includes a 10-second undo after applying.</div>
       </div>
     </div>
 
     <div class="help-section">
-      <div class="help-section-title">💾 Saving & Syncing</div>
+      <div class="help-section-title">💾 Saving & Data</div>
       <div class="help-item">
         <div class="help-item-icon">💾</div>
-        <div class="help-item-text"><strong>Auto-save</strong> — everything saves automatically to your browser. You don't need to click save anywhere.</div>
+        <div class="help-item-text"><strong>Auto-save</strong> — everything saves automatically. The "✓ Saved" indicator in the header confirms each save. No manual save button needed.</div>
       </div>
       <div class="help-item">
         <div class="help-item-icon">⚡</div>
-        <div class="help-item-text"><strong>Airtable sync</strong> (optional) — if Admin has connected Airtable in Settings, your jobs automatically back up to the cloud so they're accessible on any device. If not connected, data stays in this browser only.</div>
+        <div class="help-item-text"><strong>Data lives in your browser</strong> — jobs, notes, and profile are stored locally. Connect Airtable in Admin Settings to sync across devices.</div>
       </div>
       <div class="help-item">
         <div class="help-item-icon">📊</div>
-        <div class="help-item-text"><strong>Export CSV</strong> (Admin only) — downloads all jobs across all three candidates as a spreadsheet you can open in Excel or Google Sheets.</div>
+        <div class="help-item-text"><strong>Export CSV</strong> (Admin only) — downloads all jobs across all candidates as a spreadsheet for Excel or Google Sheets.</div>
       </div>
     </div>
 
@@ -1972,7 +1980,7 @@ body.font-xl .card-title { font-size: calc(var(--base-font) + 1px); }
 //  CLOUDFLARE WORKER — API proxy URL
 //  Update this if you ever redeploy your Worker
 // ═══════════════════════════════════════════════════════════════
-const VERSION = '5.1';
+const VERSION = '5.2';
 const WORKER_URL = 'https://career-hub-api.andy-dao-91-aaf.workers.dev';
 
 // ═══════════════════════════════════════════════════════════════
@@ -2917,7 +2925,6 @@ function buildSidebar(c, cd, isAdmin) {
     <div class="profile-section">
       <div class="profile-name" style="color:${colorHex}">
         ${cd.name}
-        <span class="edit-icon" onclick="toggleBioEdit('${c}')" title="Edit bio">✏️</span>
       </div>
 
       <div class="profile-role" id="role-display-${c}" onclick="toggleRoleEdit('${c}')" title="Click to edit" style="cursor:pointer;">${cd.role} <span style="font-size:10px;opacity:.4">✏️</span></div>
@@ -2926,7 +2933,10 @@ function buildSidebar(c, cd, isAdmin) {
              onblur="saveRole('${c}',this.value)" onkeydown="if(event.key==='Enter')this.blur()">
 
       <div style="position:relative;">
-        <div class="profile-bio" id="bio-display-${c}">${cd.bio}</div>
+        <div class="profile-bio" id="bio-display-${c}" onclick="toggleBioEdit('${c}')" title="Click to edit bio" style="cursor:pointer;">
+          ${cd.bio}
+          <span style="font-size:10px;color:var(--muted);opacity:.5;margin-left:4px;white-space:nowrap;">✏️ edit bio</span>
+        </div>
         <textarea spellcheck="true" class="editable-bio" id="bio-edit-${c}" onblur="saveBio('${c}',this.value)">${cd.bio}</textarea>
         <div id="bio-cleanup-wrap-${c}" style="display:none;gap:6px;margin-top:6px;flex-wrap:wrap;">
           <button onclick="cleanupBio('${c}')" id="bio-cleanup-btn-${c}"
@@ -2963,9 +2973,15 @@ function buildSidebar(c, cd, isAdmin) {
       <div style="font-size:11px;color:var(--muted);margin:-8px 0 8px;">Be specific — Claude searches for exactly what you describe here</div>
       <div style="font-size:12px;color:var(--text2);line-height:1.6;background:${cd.lt};padding:10px 12px;border-radius:8px;margin-bottom:4px;">
         <div id="targets-display-${c}">${cd.searchAreas}</div>
-        <textarea spellcheck="true" class="editable-bio" id="targets-edit-${c}" style="background:white;margin-top:6px;" onblur="saveTargets('${c}',this.value)">${cd.searchAreas}</textarea>
+        <textarea spellcheck="true" class="editable-bio" id="targets-edit-${c}" style="background:white;margin-top:6px;font-size:inherit;" onblur="saveTargets('${c}',this.value)">${cd.searchAreas}</textarea>
       </div>
-      <button class="skill-remove" style="font-size:12px;color:var(--muted);cursor:pointer;background:none;border:none;padding:0;margin-top:2px" onclick="toggleTargetEdit('${c}')">✏️ Edit search targets</button>
+      <div style="display:flex;gap:8px;align-items:center;margin-top:4px;flex-wrap:wrap;">
+        <button class="skill-remove" style="font-size:12px;color:var(--muted);cursor:pointer;background:none;border:none;padding:0;" onclick="toggleTargetEdit('${c}')">✏️ Edit</button>
+        <button onclick="aiWriteTargets('${c}')" id="targets-ai-btn-${c}"
+          style="font-size:11px;font-weight:700;padding:3px 10px;border-radius:6px;border:1.5px solid ${colorHex};background:white;color:${colorHex};cursor:pointer;">
+          ✨ Help me write this
+        </button>
+      </div>
 
       <div class="section-label">Stats</div>
       <div class="stat-row stat-clickable" onclick="filterJobs('${c}','all',null)" title="Show all jobs">
@@ -2984,18 +3000,22 @@ function buildSidebar(c, cd, isAdmin) {
           <span class="stat-val" id="stat-lastsearch-${c}">${cd.lastSearched ? new Date(cd.lastSearched).toLocaleDateString('en-US',{month:'short',day:'numeric'}) : 'Never'}</span>
         </span>
       </div>
-      ${dismissedJobs > 0 ? `
-      <div class="stat-row stat-clickable" onclick="showDismissedModal('${c}')" title="View dismissed jobs">
-        <span class="stat-key">🗑 Dismissed</span><span class="stat-val" style="color:var(--muted)">${dismissedJobs}</span>
-      </div>` : ''}
+      <div class="stat-row stat-clickable" onclick="showDismissedModal('${c}')" title="View & restore dismissed jobs" style="${dismissedJobs > 0 ? '' : 'opacity:.4'}">
+        <span class="stat-key">🗑 Dismissed</span>
+        <span style="display:flex;align-items:center;gap:6px;">
+          <span class="stat-val" style="color:var(--muted)">${dismissedJobs}</span>
+          ${dismissedJobs > 0 ? `<span style="font-size:10px;color:var(--muted);font-weight:700;">↩ restore</span>` : ''}
+        </span>
+      </div>
     </div>
 
     <div class="action-section">
       <button class="sidebar-btn" style="background:${colorHex};color:white;border:none" id="ai-search-btn-${c}" onclick="aiSearch('${c}')">
         🔍 Search for Jobs
       </button>
-      <div style="font-size:11px;color:var(--muted);text-align:center;margin-top:-4px;">
-        Finds ~20 live openings · ~15 sec
+      <div style="font-size:11px;color:var(--muted);text-align:center;margin-top:-4px;line-height:1.5;">
+        Finds ~20 live openings · ~15 sec<br>
+        <span style="font-size:10px;opacity:.7;">✨ AI searches real job boards using your profile</span>
       </div>
 
       <button class="sidebar-btn btn-secondary" onclick="toggleAddJob('${c}')">
@@ -3164,8 +3184,6 @@ function buildMainContent(c, cd, isAdmin) {
     <!-- Results -->
     <div id="results-meta-${c}" class="results-meta" style="display:none">
       <span class="result-count" id="result-count-${c}">0 jobs</span>
-      <span>·</span>
-      <span id="result-new-${c}">0 new</span>
     </div>
 
     <div id="cards-container-${c}">
@@ -3438,7 +3456,7 @@ async function aiSearch(c) {
     toast(`Please wait ${remaining}s before searching again`);
     return;
   }
-  _searchCooldowns[c] = now;
+  // Don't stamp cooldown yet — only stamp after a successful search
 
   // Mark all existing as not-new before this session
   (cd.jobs||[]).forEach(j => j.isNew = false);
@@ -3560,7 +3578,8 @@ async function aiSearch(c) {
     if (!cd.jobs) cd.jobs = [];
     cd.jobs = [...newJobs, ...cd.jobs];
 
-    // Save timestamp
+    // Save timestamp + stamp cooldown (only on success)
+    _searchCooldowns[c] = Date.now();
     cd.lastSearched = Date.now();
     saveConfig(true);
 
@@ -3591,20 +3610,25 @@ async function aiSearch(c) {
   else renderJobCards(c);
   }
 
-  // Re-enable with countdown so user knows when they can search again
-  let countdown = 30;
-  btn.disabled = true;
-  btn.innerHTML = `🔍 Search again in ${countdown}s`;
-  const tick = setInterval(() => {
-    countdown--;
-    if (countdown <= 0) {
-      clearInterval(tick);
-      btn.disabled = false;
-      btn.innerHTML = '🔍 Search for Jobs';
-    } else {
-      btn.innerHTML = `🔍 Search again in ${countdown}s`;
-    }
-  }, 1000);
+  // Only show countdown if search actually succeeded (cooldown was stamped)
+  if (_searchCooldowns[c] && Date.now() - _searchCooldowns[c] < 5000) {
+    let countdown = 30;
+    btn.disabled = true;
+    btn.innerHTML = `🔍 Search again in ${countdown}s`;
+    const tick = setInterval(() => {
+      countdown--;
+      if (countdown <= 0) {
+        clearInterval(tick);
+        btn.disabled = false;
+        btn.innerHTML = '🔍 Search for Jobs';
+      } else {
+        btn.innerHTML = `🔍 Search again in ${countdown}s`;
+      }
+    }, 1000);
+  } else {
+    btn.disabled = false;
+    btn.innerHTML = '🔍 Search for Jobs';
+  }
 }
 
 // What the AI is told about the candidate
@@ -4166,7 +4190,13 @@ function dismissCard(c, id) {
     setTimeout(() => { card.remove(); updateSidebarStats(c); }, 300);
   }
   saveConfig();
-  toast('Job dismissed');
+  // Undo toast — 5 seconds to recover accidental dismissals
+  showUndoToast('Job dismissed', () => {
+    j.dismissed = false;
+    saveConfig();
+    renderJobCards(c, currentFilter[c]||'all');
+    toast('↩ Job restored');
+  }, 5000);
 }
 
 function deleteJob(c, id) {
@@ -4213,6 +4243,59 @@ function setStage(c, id, select) {
     const labels = { researching:'🔍 Researching', applied:'📤 Applied', interview:'📅 Interview scheduled', offer:'🎉 Offer received', declined:'✕ Declined' };
     toast(labels[newStage] + ' — ' + new Date().toLocaleDateString('en-US',{month:'short',day:'numeric'}));
   }
+}
+
+async function aiWriteTargets(c) {
+  const cd = CONFIG.candidates[c];
+  const btn = document.getElementById('targets-ai-btn-'+c);
+  if (!btn) return;
+  btn.disabled = true;
+  btn.textContent = '⏳ Writing...';
+
+  try {
+    const res = await fetch(WORKER_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 300,
+        messages: [{
+          role: 'user',
+          content: `Write a job search targets string for this person's portal profile. It should list specific role titles and industries to search across.
+
+Name: ${cd.name}
+Current bio: ${cd.bio?.substring(0,400)}
+Current skills: ${(cd.skills||[]).join(', ')}
+Current targets: ${cd.searchAreas || 'none set'}
+
+Return ONLY the search targets string — no explanation, no markdown, no quotes. Format exactly like this example:
+HR Director / CHRO, VP Operations, CIO / IT Director, Chief Compliance Officer — ANY industry (tech, finance, SaaS, logistics, consulting, manufacturing)
+
+Make it specific, realistic for their background, and cover multiple role types and industries.`
+        }]
+      })
+    });
+    const data = await res.json();
+    let result = '';
+    for (const b of (data.content||[])) { if (b.type==='text') result += b.text; }
+    result = result.trim().replace(/^["']|["']$/g,'');
+
+    if (result) {
+      // Show in the edit field for review before saving
+      const editEl = document.getElementById('targets-edit-'+c);
+      const displayEl = document.getElementById('targets-display-'+c);
+      if (editEl) {
+        editEl.value = result;
+        editEl.classList.add('visible');
+        if (displayEl) displayEl.style.display = 'none';
+      }
+      toast('✨ Review the suggested targets above — click outside to save');
+    }
+  } catch(e) {
+    toast('Could not generate targets — try again');
+  }
+  btn.disabled = false;
+  btn.textContent = '✨ Help me write this';
 }
 
 function clearNewBadges(c) {
