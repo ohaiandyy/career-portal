@@ -3032,7 +3032,7 @@ async function aiSearch(c) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         model: 'claude-sonnet-4-20250514',
-        max_tokens: isFirstSearch ? 8000 : 5000,
+        max_tokens: isFirstSearch ? 10000 : 6000,
         tools: [{ type: 'web_search_20250305', name: 'web_search' }],
         system: buildSystemPrompt(c, cd),
         messages: [{ role: 'user', content: buildUserPrompt(c, cd, isFirstSearch) }]
@@ -3045,6 +3045,12 @@ async function aiSearch(c) {
     let raw = '';
     for (const b of (data.content||[])) { if (b.type === 'text') raw += b.text; }
 
+    // DEBUG — open browser console to see what the API returned
+    console.log('[CareerHub] Raw response length:', raw.length, 'chars');
+    console.log('[CareerHub] stop_reason:', data.stop_reason);
+    console.log('[CareerHub] usage:', JSON.stringify(data.usage));
+    console.log('[CareerHub] Raw snippet (first 500 chars):', raw.substring(0, 500));
+
     // Extract JSON array — be lenient about where it starts/ends
     const match = raw.match(/\[[\s\S]*\]/);
     if (!match) throw new Error('No results returned — try again');
@@ -3053,12 +3059,26 @@ async function aiSearch(c) {
     try {
       parsed = JSON.parse(match[0]);
     } catch(e) {
-      // Partial-parse fallback: salvage any complete job objects even if array was truncated
-      const objRegex = /\{(?:[^{}]|\{[^{}]*\})*\}/g;
-      const objMatches = match[0].match(objRegex) || [];
-      objMatches.forEach(s => {
-        try { const j = JSON.parse(s); if (j.title && j.company) parsed.push(j); } catch(_) {}
+      // Partial-parse fallback: salvage every complete {...} object individually
+      // Works for both pretty-printed and compact single-line-per-object formats
+      const objRegex = /\{[^{}]*(?:\{[^{}]*\}[^{}]*)*/g;
+      const candidates = match[0].match(/\{[\s\S]*?\}(?=\s*[,\]]|\s*$)/g) || [];
+      candidates.forEach(s => {
+        try {
+          // Ensure object closes properly
+          const j = JSON.parse(s.endsWith('}') ? s : s + '}');
+          if (j.title && j.company) parsed.push(j);
+        } catch(_) {}
       });
+      if (!parsed.length) {
+        // Last resort: line-by-line parse for compact format
+        match[0].split('\n').forEach(line => {
+          const trimmed = line.trim().replace(/^,/, '').replace(/,$/, '');
+          if (trimmed.startsWith('{') && trimmed.includes('"title"')) {
+            try { const j = JSON.parse(trimmed); if (j.title && j.company) parsed.push(j); } catch(_) {}
+          }
+        });
+      }
       if (!parsed.length) throw new Error('Could not read results — try again');
     }
 
@@ -3114,19 +3134,19 @@ async function aiSearch(c) {
 // What the AI is told about the candidate
 function buildSystemPrompt(c, cd) {
   const skills = (cd.skills || []).join(', ');
-  return `You are a career search expert. Find REAL, CURRENTLY OPEN job postings. Today is March 2026.
+  return `You are a job search assistant. Your ONLY job is to search for real open jobs and return them as a compact JSON array.
 
-CANDIDATE: ${cd.name}
-LOCATION: ${cd.prefs?.location || 'Phoenix, AZ'} — prefers remote; open to travel for the right pay
-BACKGROUND: ${cd.bio.substring(0, 500)}
-KEY SKILLS: ${skills}
-TARGET ROLES & INDUSTRIES: ${cd.searchAreas}
+CANDIDATE: ${cd.name} | ${cd.prefs?.location || 'Phoenix, AZ'}
+SKILLS: ${skills}
+TARGETS: ${cd.searchAreas}
+REMOTE RULE: ${c === 'm' ? 'Remote preferred; hybrid OK at $130K+' : c === 'l' ? 'Remote only' : 'Remote or travel OK'}
 
-RULES:
-- Find jobs across ANY industry — tech, finance, logistics, retail, consulting, manufacturing, insurance. Do NOT default to healthcare-only results.
-- Each description must explain WHY this specific candidate's background qualifies, even without direct industry experience. Be explicit about the skill transfer.
-- Remote work rules: ${c === 'm' ? 'Remote strongly preferred. Hybrid only if $130K+. On-site only $150K+.' : c === 'l' ? 'Must be fully remote or minimal travel.' : 'Remote preferred; heavy travel okay for high compensation.'}
-- Return ONLY a raw JSON array. No markdown. No backticks. No explanation before or after. Start with [ and end with ].`;
+OUTPUT RULES — CRITICAL:
+1. Return ONLY a JSON array. No markdown. No backticks. No text before or after. Start with [ end with ]
+2. Keep each description under 40 words
+3. Keep qualifications to 3 items max
+4. No benefits field needed — omit it to save space
+5. Search across ANY industry — tech, finance, logistics, retail, consulting, insurance, manufacturing`;
 }
 
 // What the AI is asked to do
@@ -3167,30 +3187,13 @@ PRIORITIZE these fresh industries not yet covered: ${freshIndustries[c] || 'indu
 Find genuinely new openings — different companies, different industries, different role angles.`;
   }
 
-  return `Search the web now for current job openings using searches like: ${queryMap[c] || cd.searchAreas}
+  return `Search the web for: ${queryMap[c] || cd.searchAreas}
 ${exclusionClause}
 
-Find exactly ${count} REAL, currently open job postings spread across different companies and industries. Use web search to verify they exist.
+Find ${count} real open job postings. Use web search. Then output ONLY this JSON array (no markdown, no text outside the array):
+[{"title":"Job Title","company":"Company","location":"Remote","workType":"Remote","salary":"$X","matchScore":"Strong Match","description":"Under 40 words: role summary + why this candidate fits","qualifications":["req 1","req 2","req 3"],"applyUrl":"https://url","source":"LinkedIn","isNew":true,"tags":["Remote","Industry"]}]
 
-Return ONLY this JSON array structure (no markdown, no text before or after):
-[
-  {
-    "title": "exact job title from posting",
-    "company": "real company name",
-    "location": "Remote or City, State",
-    "workType": "Remote",
-    "salary": "salary if listed or Competitive",
-    "matchScore": "Strong Match",
-    "description": "2-3 sentences: what the role does + specifically why this candidate's background transfers here",
-    "qualifications": ["requirement 1", "requirement 2", "requirement 3", "requirement 4"],
-    "benefits": "key benefits and perks",
-    "applyUrl": "https://direct-link-to-job-posting",
-    "datePosted": "e.g. 2 days ago or Mar 15 2026",
-    "source": "LinkedIn / Indeed / Company careers page",
-    "isNew": true,
-    "tags": ["Remote", "Industry", "Role type"]
-  }
-]`;
+Each object on one line. Start output with [ and end with ]. Nothing else.`;
 }
 
 // ═══════════════════════════════════════════════════════════════
