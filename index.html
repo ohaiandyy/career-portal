@@ -3060,36 +3060,58 @@ async function aiSearch(c) {
     const match = raw.match(/\[[\s\S]*\]/);
     if (!match) throw new Error('No results returned — try again');
 
+    // Bulletproof multi-strategy parser
     let parsed = [];
-    try {
-      parsed = JSON.parse(match[0]);
-    } catch(e) {
-      // Partial-parse fallback: salvage every complete {...} object individually
-      // Works for both pretty-printed and compact single-line-per-object formats
-      const objRegex = /\{[^{}]*(?:\{[^{}]*\}[^{}]*)*/g;
-      const candidates = match[0].match(/\{[\s\S]*?\}(?=\s*[,\]]|\s*$)/g) || [];
-      candidates.forEach(s => {
-        try {
-          // Ensure object closes properly
-          const j = JSON.parse(s.endsWith('}') ? s : s + '}');
-          if (j.title && j.company) parsed.push(j);
-        } catch(_) {}
-      });
-      if (!parsed.length) {
-        // Last resort: line-by-line parse for compact format
-        match[0].split('\n').forEach(line => {
-          const trimmed = line.trim().replace(/^,/, '').replace(/,$/, '');
-          if (trimmed.startsWith('{') && trimmed.includes('"title"')) {
-            try { const j = JSON.parse(trimmed); if (j.title && j.company) parsed.push(j); } catch(_) {}
+
+    // Strategy 1: clean parse
+    try { parsed = JSON.parse(match[0]); } catch(_) {}
+
+    // Strategy 2: extract each {...} block individually, handling multi-line pretty-print
+    if (!parsed.length) {
+      // Split on object boundaries — find every top-level { ... } block
+      const raw2 = match[0];
+      let depth = 0, start = -1;
+      for (let i = 0; i < raw2.length; i++) {
+        if (raw2[i] === '{') { if (depth === 0) start = i; depth++; }
+        else if (raw2[i] === '}') {
+          depth--;
+          if (depth === 0 && start !== -1) {
+            const chunk = raw2.slice(start, i + 1);
+            try {
+              const j = JSON.parse(chunk);
+              if (j.title && j.company) parsed.push(j);
+            } catch(_) {
+              // Try sanitizing smart quotes and apostrophes
+              try {
+                const clean = chunk
+                  .replace(/[‘’]/g, "'")
+                  .replace(/[“”]/g, '"')
+                  .replace(/\n/g, ' ')
+                  .replace(/,\s*}/g, '}')
+                  .replace(/,\s*]/g, ']');
+                const j = JSON.parse(clean);
+                if (j.title && j.company) parsed.push(j);
+              } catch(__) {}
+            }
+            start = -1;
           }
-        });
+        }
       }
-      if (!parsed.length) throw new Error('Could not read results — try again');
     }
 
-    console.log('[CareerHub] Jobs parsed from response:', parsed.length);
-    console.log('[CareerHub] First job title:', parsed[0]?.title);
-    console.log('[CareerHub] Last job title:', parsed[parsed.length-1]?.title);
+    // Strategy 3: sanitize the whole array and retry
+    if (!parsed.length) {
+      try {
+        const sanitized = match[0]
+          .replace(/[‘’]/g, "\'")
+          .replace(/[“”]/g, '\"')
+          .replace(/,(\s*[}\]])/g, '$1');
+        parsed = JSON.parse(sanitized);
+      } catch(_) {}
+    }
+
+    if (!parsed.length) throw new Error('Could not read results — try again');
+    console.log('[CareerHub] Parsed', parsed.length, 'jobs');
 
     // Deduplicate against existing
     const existingKeys = new Set((cd.jobs||[]).map(j => `${j.title}||${j.company}`));
@@ -3323,10 +3345,31 @@ async function fetchMoreJobs(c) {
     for (const b of (data.content||[])) { if (b.type === 'text') raw += b.text; }
 
     let parsed = [];
-    try { parsed = JSON.parse(raw); } catch(e) {
-      (raw.match(/\{[\s\S]*?\}(?=\s*[,\]]|\s*$)/g)||[]).forEach(s => {
-        try { const j = JSON.parse(s); if (j.title && j.company) parsed.push(j); } catch(_) {}
-      });
+    // Strategy 1: clean parse
+    try { parsed = JSON.parse(raw); } catch(_) {}
+    // Strategy 2: depth-tracking per-object extractor
+    if (!parsed.length) {
+      let depth = 0, start = -1;
+      for (let i = 0; i < raw.length; i++) {
+        if (raw[i] === '{') { if (depth === 0) start = i; depth++; }
+        else if (raw[i] === '}') {
+          depth--;
+          if (depth === 0 && start !== -1) {
+            const chunk = raw.slice(start, i + 1);
+            try {
+              const j = JSON.parse(chunk);
+              if (j.title && j.company) parsed.push(j);
+            } catch(_) {
+              try {
+                const clean = chunk.replace(/[‘’]/g,"'").replace(/[“”]/g,'"').replace(/\n/g,' ').replace(/,\s*}/g,'}');
+                const j = JSON.parse(clean);
+                if (j.title && j.company) parsed.push(j);
+              } catch(__) {}
+            }
+            start = -1;
+          }
+        }
+      }
     }
 
     const existingKeys = new Set((cd.jobs||[]).map(j => `${j.title}||${j.company}`));
