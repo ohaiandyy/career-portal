@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <!-- ============================================================
      The Job Hunts — Career Portal
-     Version: 5.3
+     Version: 5.4
      Updated: 2026-03-19
      Changes: AI search fixes (depth-tracking parser, prefill trick),
               Load More (Haiku), onboarding wizard, resume import with
@@ -560,7 +560,10 @@ header {
   background: var(--bg);
   padding: 12px 0 10px;
   margin-top: -12px;
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1.5px solid var(--border);
+  box-shadow: 0 4px 12px rgba(0,0,0,.06);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
 }
 
 .content-title {
@@ -745,6 +748,16 @@ header {
 .job-card.user-added { border-left: 4px solid var(--green); }
 
 .card-top-stripe { height: 4px; }
+.company-logo {
+  width: 36px; height: 36px; border-radius: 8px;
+  object-fit: contain; border: 1px solid var(--border);
+  background: white; flex-shrink: 0;
+}
+.company-logo-fallback {
+  width: 36px; height: 36px; border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px; font-weight: 800; color: white; flex-shrink: 0;
+}
 
 .card-body { padding: 16px 18px; }
 
@@ -1987,7 +2000,7 @@ body.font-xl .card-title { font-size: calc(var(--base-font) + 1px); }
 //  CLOUDFLARE WORKER — API proxy URL
 //  Update this if you ever redeploy your Worker
 // ═══════════════════════════════════════════════════════════════
-const VERSION = '5.3';
+const VERSION = '5.4';
 const WORKER_URL = 'https://career-hub-api.andy-dao-91-aaf.workers.dev';
 
 // ═══════════════════════════════════════════════════════════════
@@ -3035,6 +3048,32 @@ function buildSidebar(c, cd, isAdmin) {
         📄 Update Profile from Resume
       </button>
 
+      <div class="section-label">Job Preferences
+        <span class="tip">?<span class="tip-bubble">Used by the AI when searching — keep these accurate for better results.</span></span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:7px;margin-bottom:12px;">
+        <div style="display:flex;gap:6px;align-items:center;">
+          <span style="font-size:11px;color:var(--muted);width:72px;flex-shrink:0;">📍 Location</span>
+          <input spellcheck="true" class="skill-input" value="${cd.prefs?.location||''}" placeholder="e.g. Phoenix, AZ" style="flex:1;font-size:12px;"
+            onblur="savePref('${c}','location',this.value)">
+        </div>
+        <div style="display:flex;gap:6px;align-items:center;">
+          <span style="font-size:11px;color:var(--muted);width:72px;flex-shrink:0;">💰 Min Pay</span>
+          <input spellcheck="false" class="skill-input" value="${cd.prefs?.minSalary ? '$'+Number(cd.prefs.minSalary).toLocaleString() : ''}" placeholder="e.g. $80,000" style="flex:1;font-size:12px;"
+            onblur="savePref('${c}','minSalary',this.value)">
+        </div>
+        <div style="display:flex;gap:6px;align-items:center;">
+          <span style="font-size:11px;color:var(--muted);width:72px;flex-shrink:0;">💼 Job Type</span>
+          <select class="skill-input" style="flex:1;font-size:12px;background:white;"
+            onchange="savePref('${c}','jobType',this.value)">
+            <option value="full-time" ${(cd.prefs?.jobType||'full-time')==='full-time'?'selected':''}>Full-time</option>
+            <option value="contract" ${cd.prefs?.jobType==='contract'?'selected':''}>Contract</option>
+            <option value="part-time" ${cd.prefs?.jobType==='part-time'?'selected':''}>Part-time</option>
+            <option value="any" ${cd.prefs?.jobType==='any'?'selected':''}>Any</option>
+          </select>
+        </div>
+      </div>
+
       <!-- Collapsed LinkedIn alerts -->
       <div class="linkedin-alerts-toggle" onclick="toggleLinkedInAlerts('${c}')">
         <span>🔔 Set Up LinkedIn Job Alerts</span>
@@ -3103,7 +3142,10 @@ function buildMainContent(c, cd, isAdmin) {
           </div>
           <div class="view-toggle">
             <button class="view-btn active" id="view-list-${c}" onclick="setView('${c}','list',this)" title="List view">☰ List</button>
-            <button class="view-btn" id="view-tracker-${c}" onclick="setView('${c}','tracker',this)" title="Job Tracker — see all your progress stages">📋 Job Tracker</button>
+            <button class="view-btn" id="view-tracker-${c}" onclick="setView('${c}','tracker',this)" title="Job Tracker — see all your progress stages">
+              📋 Job Tracker
+              ${(cd.jobs||[]).filter(j=>j.stage&&j.stage!=='none'&&!j.dismissed).length > 0 ? `<span style="background:${cd.colorHex};color:white;border-radius:10px;padding:1px 6px;font-size:10px;margin-left:4px;">${(cd.jobs||[]).filter(j=>j.stage&&j.stage!=='none'&&!j.dismissed).length}</span>` : ''}
+            </button>
           </div>
         </div>
       </div>
@@ -3239,6 +3281,16 @@ function toggleRoleEdit(c) {
   edit.style.display = 'block';
   edit.focus();
   edit.select();
+}
+
+function savePref(c, key, val) {
+  if (!CONFIG.candidates[c].prefs) CONFIG.candidates[c].prefs = {};
+  if (key === 'minSalary') {
+    val = parseInt((val||'').replace(/[^0-9]/g,'')) || 0;
+  }
+  CONFIG.candidates[c].prefs[key] = val;
+  saveConfig();
+  toast(`✓ ${key === 'minSalary' ? 'Min salary' : key === 'jobType' ? 'Job type' : 'Location'} updated`);
 }
 
 function saveRole(c, val) {
@@ -3653,6 +3705,9 @@ CANDIDATE: ${cd.name} | ${cd.prefs?.location || 'Phoenix, AZ'}
 SKILLS: ${skills}
 TARGETS: ${cd.searchAreas}
 REMOTE RULE: ${c === 'm' ? 'Remote preferred; hybrid OK at $130K+; on-site OK if $150K+' : c === 'l' ? 'Remote only — no on-site' : 'Remote preferred; open to travel or on-site for right pay'}
+${cd.prefs?.minSalary ? `MIN SALARY: $${Number(cd.prefs.minSalary).toLocaleString()} — do not return roles that pay less than this` : ''}
+${cd.prefs?.location ? `LOCATION: ${cd.prefs.location}` : ''}
+${cd.prefs?.jobType && cd.prefs.jobType !== 'any' ? `JOB TYPE: ${cd.prefs.jobType} only` : ''}
 
 OUTPUT RULES — CRITICAL:
 1. Return ONLY a JSON array. No markdown. No backticks. No text before or after. Start with [ end with ]
@@ -3941,14 +3996,17 @@ function buildCard(j, c, cd) {
   <div class="card-top-stripe" style="background:${cd.colorHex}${j.userAdded?';background:var(--green)':''}"></div>
   <div class="card-body">
     <div class="card-row1">
-      <div class="card-title-block">
-        <div class="card-title">${j.title}</div>
-        <div class="card-company">
-          ${j.company}
-          ${j.location ? `<span class="card-location">📍 ${j.location}</span>` : ''}
-          ${j.datePosted ? `<span class="card-location">🕐 ${j.datePosted}</span>` : ''}
-          ${j.userAdded ? `<span class="jb jb-user">✓ Self-Added</span>` : ''}
-          ${j.applied ? `<span class="jb jb-applied">✅ Applied</span>` : ''}
+      <div style="display:flex;align-items:flex-start;gap:10px;flex:1;min-width:0;">
+        ${(() => { try { const d = new URL(j.applyUrl||'').hostname.replace('www.',''); const skip=['linkedin.com','indeed.com','glassdoor.com','ziprecruiter.com','monster.com','lever.co','greenhouse.io']; return d && !skip.some(s=>d.endsWith(s)) ? `<img src="https://logo.clearbit.com/${d}" class="company-logo" alt="" loading="lazy" onerror="this.style.display='none';this.nextSibling.style.display='flex'"><div class="company-logo-fallback" style="background:${cd.colorHex};display:none">${(j.company||'?')[0].toUpperCase()}</div>` : `<div class="company-logo-fallback" style="background:${cd.colorHex}">${(j.company||'?')[0].toUpperCase()}</div>`; } catch(_){ return `<div class="company-logo-fallback" style="background:${cd.colorHex}">${(j.company||'?')[0].toUpperCase()}</div>`; }})()}
+        <div class="card-title-block">
+          <div class="card-title">${j.title}</div>
+          <div class="card-company">
+            ${j.company}
+            ${j.location ? `<span class="card-location">📍 ${j.location}</span>` : ''}
+            ${j.datePosted ? `<span class="card-location">🕐 ${j.datePosted}</span>` : ''}
+            ${j.userAdded ? `<span class="jb jb-user">✓ Self-Added</span>` : ''}
+            ${j.applied ? `<span class="jb jb-applied">✅ Applied</span>` : ''}
+          </div>
         </div>
       </div>
       <div class="card-actions">
@@ -4738,10 +4796,13 @@ function renderKanban(c) {
   const cols = stages.map(s => {
     const colJobs = jobs.filter(j => (j.stage||'none') === s.key);
     const cards = colJobs.map(j => `
-      <div class="kanban-card" onclick="jumpToJob('${c}','${j._id}')" title="Click to view in list">
+      <div class="kanban-card" onclick="jumpToJob('${c}','${j._id}')" title="Click to view in list view">
         <div class="kanban-card-title">${j.title}</div>
-        <div class="kanban-card-company">${j.company}</div>
-        ${j.starred ? '<span style="font-size:10px;">⭐</span>' : ''}
+        <div class="kanban-card-company">${j.company}${j.location ? ' · ' + j.location : ''}</div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-top:4px;">
+          ${j.salary && j.salary !== 'Competitive' ? `<span style="font-size:10px;color:var(--muted);font-weight:600">${j.salary}</span>` : '<span></span>'}
+          ${j.starred ? '<span style="font-size:10px;">⭐</span>' : ''}
+        </div>
       </div>`).join('');
 
     return `
