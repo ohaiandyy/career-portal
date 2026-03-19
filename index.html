@@ -1096,6 +1096,24 @@ header {
 }
 
 /* Toast */
+.saved-flash {
+  position: fixed;
+  top: 14px;
+  right: 160px;
+  background: var(--green-lt);
+  color: var(--green);
+  border: 1.5px solid #a0d8b8;
+  padding: 5px 12px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  z-index: 300;
+  opacity: 0;
+  transition: opacity .2s;
+  pointer-events: none;
+}
+.saved-flash.show { opacity: 1; }
+
 .toast {
   position: fixed;
   bottom: 20px;
@@ -1559,6 +1577,7 @@ body.font-xl .card-title { font-size: calc(var(--base-font) + 1px); }
       <div class="h-user-badge" id="h-badge"></div>
     </div>
     <div class="header-right">
+      <div class="saved-flash" id="saved-flash">✓ Saved</div>
       <div class="font-size-ctrl" title="Adjust text size">
         <button class="font-btn font-btn-sm active" id="fbtn-normal" onclick="setFontSize('normal')" title="Normal text">A</button>
         <button class="font-btn font-btn-md" id="fbtn-large" onclick="setFontSize('large')" title="Large text">A</button>
@@ -1788,6 +1807,7 @@ function activeCandidates() {
 // Persist config to localStorage
 function saveConfig() {
   localStorage.setItem('portalConfig', JSON.stringify(CONFIG));
+  savedFlash();
 }
 
 function loadConfig() {
@@ -1874,6 +1894,11 @@ function doLogin() {
   const pin = getPin();
   if (pin === CONFIG.pins[selectedUser]) {
     currentUser = selectedUser;
+    // Track last login time per candidate
+    if (currentUser !== 'admin' && CONFIG.candidates[currentUser]) {
+      CONFIG.candidates[currentUser].lastLogin = Date.now();
+      saveConfig();
+    }
     document.getElementById('login-screen').style.display = 'none';
     document.getElementById('app').style.display = 'block';
 
@@ -2110,6 +2135,7 @@ function renderOverview() {
             <div class="ov-stat"><span class="ov-stat-key">✅ Applied</span><span class="ov-stat-val">${applied}</span></div>
             <div class="ov-stat"><span class="ov-stat-key">🔗 Self-Added</span><span class="ov-stat-val">${userAdded}</span></div>
             <div class="ov-stat"><span class="ov-stat-key">🗑 Dismissed</span><span class="ov-stat-val">${dismissed}</span></div>
+            <div class="ov-stat"><span class="ov-stat-key">🕐 Last Login</span><span class="ov-stat-val" style="font-size:12px">${cd.lastLogin ? new Date(cd.lastLogin).toLocaleDateString('en-US',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}) : 'Never'}</span></div>
           </div>
           <button class="sidebar-btn" style="width:100%;margin-top:12px;padding:8px;font-size:12px;background:${cd.colorHex};color:white;border:none;border-radius:8px;cursor:pointer;font-family:Nunito,sans-serif;font-weight:700" onclick="switchPanel('${c}')">View ${cd.name}'s Jobs →</button>
         </div>`;
@@ -2552,18 +2578,11 @@ function buildSidebar(c, cd, isAdmin) {
       <div class="stat-row stat-clickable" onclick="filterJobs('${c}','applied',null)" title="Show applied jobs">
         <span class="stat-key">✅ Applied</span><span class="stat-val" id="stat-applied-${c}">${appliedJobs}</span>
       </div>
-      <div class="stat-row stat-clickable" onclick="filterJobs('${c}','new',null)" title="Show new jobs">
-        <span class="stat-key">🆕 New</span>
-        <span style="display:flex;align-items:center;gap:6px;">
-          <span class="stat-val" id="stat-new-${c}">${newJobs}</span>
-          ${newJobs > 0 ? `<button onclick="event.stopPropagation();clearNewBadges('${c}')" style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:5px;border:1px solid var(--border);background:var(--surface2);color:var(--muted);cursor:pointer;">Clear</button>` : ''}
-        </span>
-      </div>
+
       <div class="stat-row">
         <span class="stat-key">🔎 Last Searched</span>
         <span style="display:flex;align-items:center;gap:6px;">
           <span class="stat-val" id="stat-lastsearch-${c}">${cd.lastSearched ? new Date(cd.lastSearched).toLocaleDateString('en-US',{month:'short',day:'numeric'}) : 'Never'}</span>
-          <button onclick="aiSearch('${c}')" title="Search again for new jobs" style="font-size:11px;padding:2px 7px;border-radius:5px;border:1px solid var(--border);background:var(--surface2);color:var(--muted);cursor:pointer;font-weight:700;">🔄</button>
         </span>
       </div>
       ${dismissedJobs > 0 ? `
@@ -4530,6 +4549,15 @@ document.querySelectorAll('.modal-overlay').forEach(o => {
 //  TOAST
 // ═══════════════════════════════════════════════════════════════
 let toastTimer;
+let _saveFlashTimer = null;
+function savedFlash() {
+  const el = document.getElementById('saved-flash');
+  if (!el) return;
+  el.classList.add('show');
+  clearTimeout(_saveFlashTimer);
+  _saveFlashTimer = setTimeout(() => el.classList.remove('show'), 2000);
+}
+
 function toast(msg) {
   const el = document.getElementById('toast');
   el.textContent = msg;
