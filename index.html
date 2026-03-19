@@ -1,9 +1,18 @@
 <!DOCTYPE html>
+<!-- ============================================================
+     The Job Hunts — Career Portal
+     Version: 5.1
+     Updated: 2026-03-18
+     Changes: AI search fixes (depth-tracking parser, prefill trick),
+              Load More (Haiku), onboarding wizard, resume import with
+              undo, saved flash, rate limiting, archive/restore users,
+              spellcheck, debounced saves, fallback jobs removed
+     ============================================================ -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Career Hub</title>
+<title>The Job Hunts</title>
 <link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;600;700&family=Nunito:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
 /* ═══════════════════════════════════════════════
@@ -1552,7 +1561,7 @@ body.font-xl .card-title { font-size: calc(var(--base-font) + 1px); }
 ═══════════════════════════════════════════════ -->
 <div id="login-screen">
   <div class="login-card">
-    <div class="login-logo">💼 Career Hub</div>
+    <div class="login-logo">💻 The Job Hunts</div>
     <div class="login-sub">Select your profile to continue</div>
 
     <div class="user-selector" id="user-selector">
@@ -1598,7 +1607,7 @@ body.font-xl .card-title { font-size: calc(var(--base-font) + 1px); }
 
   <header>
     <div class="header-left">
-      <div class="h-logo" id="h-logo">💼 Career Hub</div>
+      <div class="h-logo" id="h-logo">💻 The Job Hunts</div>
       <div class="h-user-badge" id="h-badge"></div>
     </div>
     <div class="header-right">
@@ -1963,6 +1972,7 @@ body.font-xl .card-title { font-size: calc(var(--base-font) + 1px); }
 //  CLOUDFLARE WORKER — API proxy URL
 //  Update this if you ever redeploy your Worker
 // ═══════════════════════════════════════════════════════════════
+const VERSION = '5.1';
 const WORKER_URL = 'https://career-hub-api.andy-dao-91-aaf.workers.dev';
 
 // ═══════════════════════════════════════════════════════════════
@@ -1971,7 +1981,7 @@ const WORKER_URL = 'https://career-hub-api.andy-dao-91-aaf.workers.dev';
 let CONFIG = {
   pins: { m: '1111', l: '2222', s: '3333', admin: '0000' },
   airtable: { apiKey: '', baseId: '', enabled: false },
-  site: { title: 'Career Hub', emoji: '💼' },
+  site: { title: 'The Job Hunts', emoji: '💻' },
   uiPrefs: { fontSize: 'normal', sidebarWidth: 300 },
   candidates: {
     m: {
