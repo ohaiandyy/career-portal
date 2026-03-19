@@ -1622,18 +1622,52 @@ body.font-xl .card-title { font-size: calc(var(--base-font) + 1px); }
 
 <!-- Resume Modal -->
 <div class="modal-overlay" id="resume-modal">
-  <div class="modal">
+  <div class="modal" style="max-width:600px;">
     <div class="modal-title">
-      📄 Import Resume
+      📄 Update Profile from Resume
       <span class="close-btn" onclick="closeModal('resume-modal')">✕</span>
     </div>
     <p style="font-size:13px;color:var(--muted);margin-bottom:14px;">
-      Paste your resume text below. The AI will extract key skills and update your profile.
+      Paste your resume below. We'll show you exactly what will change before anything is saved.
     </p>
-    <textarea spellcheck="true" class="form-textarea" id="resume-text" style="min-height:180px;width:100%;margin-bottom:12px;" placeholder="Paste resume text here..."></textarea>
-    <button class="submit-btn" id="resume-parse-btn" style="width:100%;padding:12px;" onclick="parseResume()">
-      🤖 Parse Resume & Update Profile
-    </button>
+    <!-- Step 1: paste -->
+    <div id="resume-step-paste">
+      <textarea spellcheck="true" class="form-textarea" id="resume-text" style="min-height:180px;width:100%;margin-bottom:12px;" placeholder="Paste resume text here..."></textarea>
+      <button class="submit-btn" id="resume-parse-btn" style="width:100%;padding:12px;" onclick="parseResume()">
+        🤖 Preview Changes
+      </button>
+    </div>
+    <!-- Step 2: preview diff -->
+    <div id="resume-step-preview" style="display:none;">
+      <div style="font-size:13px;font-weight:700;color:var(--text2);margin-bottom:10px;">Review what will change:</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;">
+        <div style="background:var(--red-lt);border:1.5px solid #f5c6c1;border-radius:8px;padding:12px;">
+          <div style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.07em;color:var(--red);margin-bottom:6px;">Before</div>
+          <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:4px;">Bio:</div>
+          <div id="resume-preview-old-bio" style="font-size:11px;color:var(--text2);line-height:1.5;margin-bottom:8px;max-height:80px;overflow-y:auto;"></div>
+          <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:4px;">Skills:</div>
+          <div id="resume-preview-old-skills" style="font-size:11px;color:var(--text2);line-height:1.6;"></div>
+        </div>
+        <div style="background:var(--green-lt);border:1.5px solid #a0d8b8;border-radius:8px;padding:12px;">
+          <div style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.07em;color:var(--green);margin-bottom:6px;">After</div>
+          <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:4px;">Bio:</div>
+          <div id="resume-preview-new-bio" style="font-size:11px;color:var(--text2);line-height:1.5;margin-bottom:8px;max-height:80px;overflow-y:auto;"></div>
+          <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:4px;">Skills added:</div>
+          <div id="resume-preview-new-skills" style="font-size:11px;color:var(--green);line-height:1.6;font-weight:600;"></div>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button class="submit-btn" onclick="confirmResumeImport()" style="flex:1;padding:11px;background:var(--green);color:white;">
+          ✓ Apply Changes
+        </button>
+        <button class="cancel-btn" onclick="backToResumePaste()" style="flex:1;padding:11px;">
+          ← Back & Edit
+        </button>
+        <button class="cancel-btn" onclick="closeModal('resume-modal')" style="padding:11px;color:var(--muted);">
+          Cancel
+        </button>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -1713,7 +1747,7 @@ body.font-xl .card-title { font-size: calc(var(--base-font) + 1px); }
       <div class="help-section-title">📄 Resume Import</div>
       <div class="help-item">
         <div class="help-item-icon">📄</div>
-        <div class="help-item-text"><strong>Import Resume</strong> — paste your resume text and the AI will extract your skills and rewrite your profile summary automatically. This is a great way to get your profile set up quickly. You can edit anything it generates.</div>
+        <div class="help-item-text"><strong>Import Resume</strong> (Admin only) — in the Admin sidebar under Manage Users, click 📄 Resume next to any candidate to paste their resume. The AI extracts skills and rewrites their profile summary automatically. One-time setup tool.</div>
       </div>
     </div>
 
@@ -1805,9 +1839,19 @@ function activeCandidates() {
 }
 
 // Persist config to localStorage
-function saveConfig() {
-  localStorage.setItem('portalConfig', JSON.stringify(CONFIG));
-  savedFlash();
+let _saveTimer = null;
+function saveConfig(immediate = false) {
+  if (immediate) {
+    clearTimeout(_saveTimer);
+    localStorage.setItem('portalConfig', JSON.stringify(CONFIG));
+    savedFlash();
+    return;
+  }
+  clearTimeout(_saveTimer);
+  _saveTimer = setTimeout(() => {
+    localStorage.setItem('portalConfig', JSON.stringify(CONFIG));
+    savedFlash();
+  }, 400);
 }
 
 function loadConfig() {
@@ -1897,7 +1941,7 @@ function doLogin() {
     // Track last login time per candidate
     if (currentUser !== 'admin' && CONFIG.candidates[currentUser]) {
       CONFIG.candidates[currentUser].lastLogin = Date.now();
-      saveConfig();
+      saveConfig(true);
     }
     document.getElementById('login-screen').style.display = 'none';
     document.getElementById('app').style.display = 'block';
@@ -2214,6 +2258,7 @@ function renderAdminSidebar() {
             <div style="width:26px;height:26px;border-radius:50%;background:${cd.colorHex};color:white;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;flex-shrink:0;opacity:${isActive?1:.4}">${cd.name[0]}</div>
             <div style="flex:1;font-size:12px;font-weight:700;color:${isActive?'var(--text)':'var(--muted)'};">${cd.name}</div>
             <button onclick="editCandidate('${c}')" style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:5px;border:1.5px solid var(--border);background:white;color:var(--text2);cursor:pointer;">✏️ Edit</button>
+            <button onclick="openResumeModal('${c}')" title="Import resume to auto-fill skills & bio" style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:5px;border:1.5px solid var(--border);background:white;color:var(--text2);cursor:pointer;">📄 Resume</button>
             <button onclick="toggleCandidateActive('${c}')" style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:5px;border:1.5px solid ${isActive?'var(--red)':'var(--green)'};background:white;color:${isActive?'var(--red)':'var(--green)'};cursor:pointer;">${isActive?'Hide':'Show'}</button>
             <button onclick="resetJobs('${c}')" title="Reset all jobs for ${cd.name}" style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:5px;border:1.5px solid var(--gold);background:white;color:#92600a;cursor:pointer;">🔄 Reset</button>
           </div>`;
@@ -2601,6 +2646,9 @@ function buildSidebar(c, cd, isAdmin) {
 
       <button class="sidebar-btn btn-secondary" onclick="toggleAddJob('${c}')">
         ➕ Add a Job You Found
+      </button>
+      <button class="sidebar-btn btn-secondary" onclick="openResumeModal('${c}')" title="Update your bio and skills from your resume">
+        📄 Update Profile from Resume
       </button>
 
       <!-- Collapsed LinkedIn alerts -->
@@ -3075,8 +3123,6 @@ async function aiSearch(c) {
     raw = '[' + raw.replace(/^\s*\[/, '');
 
     // DEBUG
-    console.log('[CareerHub] stop_reason:', data.stop_reason, '| output_tokens:', data.usage?.output_tokens, '| raw_len:', raw.length);
-    console.log('[CareerHub] snippet:', raw.substring(0, 300));
 
     // Extract JSON array — be lenient about where it starts/ends
     const match = raw.match(/\[[\s\S]*\]/);
@@ -3133,7 +3179,6 @@ async function aiSearch(c) {
     }
 
     if (!parsed.length) throw new Error('Could not read results — try again');
-    console.log('[CareerHub] Parsed', parsed.length, 'jobs');
 
     // Deduplicate against existing
     const existingKeys = new Set((cd.jobs||[]).map(j => `${j.title}||${j.company}`));
@@ -3151,7 +3196,7 @@ async function aiSearch(c) {
 
     // Save timestamp
     cd.lastSearched = Date.now();
-    saveConfig();
+    saveConfig(true);
 
     // Sync new jobs to Airtable if connected
     if (CONFIG.airtable?.enabled && CONFIG.airtable?.apiKey && CONFIG.airtable?.baseId && newJobs.length) {
@@ -3413,7 +3458,7 @@ async function fetchMoreJobs(c) {
 
     cd.jobs = [...cd.jobs, ...newJobs];
     cd.lastSearched = Date.now();
-    saveConfig();
+    saveConfig(true);
     updateSidebarStats(c);
 
     // Append new cards inline — no full re-render flicker
@@ -3498,7 +3543,7 @@ function buildCard(j, c, cd) {
     </div>
     <div class="badge-row">
       <span class="jb ${wtClass}">${j.workType||'Unknown'}</span>
-      ${j.isNew ? '<span class="jb jb-new">🆕 New</span>' : ''}
+
       ${j.salary&&j.salary!=='Not listed'&&j.salary!=='Competitive' ? `<span class="jb jb-salary">💰 ${j.salary}</span>` : ''}
       ${tags}
     </div>
@@ -3510,6 +3555,11 @@ function buildCard(j, c, cd) {
         <a class="apply-link" style="background:${cd.colorHex}" href="${j.applyUrl || buildLinkedInUrl(j.title, j.company)}" target="_blank" rel="noopener">
           ${j.applyUrl ? 'Apply Now ↗' : '🔗 Search on LinkedIn ↗'}
         </a>
+        ${j.applyUrl ? `<a href="${buildLinkedInUrl(j.title, j.company)}" target="_blank" rel="noopener"
+          style="display:inline-flex;align-items:center;gap:4px;padding:6px 11px;border-radius:8px;border:1.5px solid var(--border);background:white;font-size:12px;font-weight:700;color:var(--text2);text-decoration:none;"
+          title="Can't find the posting? Search LinkedIn directly">
+          🔗 LinkedIn
+        </a>` : ''}
         <select class="pipeline-select stage-${(j.stage||'none')}" 
                 onchange="setStage('${c}','${j._id}',this)"
                 title="Track your progress · click 📋 Job Tracker to see your board">
@@ -3743,7 +3793,7 @@ function dismissCard(c, id) {
 
 function deleteJob(c, id) {
   CONFIG.candidates[c].jobs = CONFIG.candidates[c].jobs.filter(j=>j._id!==id);
-  saveConfig();
+  saveConfig(true);
   renderJobCards(c);
   toast('Job deleted');
 }
@@ -3793,6 +3843,10 @@ function clearNewBadges(c) {
   renderCandidatePanel(c);
   toast('All new badges cleared');
 }
+
+// Card HTML cache — invalidated when a job changes
+const _cardCache = {};
+function invalidateCard(id) { delete _cardCache[id]; }
 
 function updateSidebarStats(c) {
   const cd = CONFIG.candidates[c];
@@ -4012,10 +4066,24 @@ function addJobManual(c) {
 // ═══════════════════════════════════════════════════════════════
 let resumeTarget = null;
 
+let _resumeUndo = null; // snapshot for undo
+let _resumeParsed = null; // parsed result pending confirmation
+
 function openResumeModal(c) {
   resumeTarget = c;
   document.getElementById('resume-text').value = '';
+  document.getElementById('resume-step-paste').style.display = 'block';
+  document.getElementById('resume-step-preview').style.display = 'none';
+  const btn = document.getElementById('resume-parse-btn');
+  btn.disabled = false;
+  btn.textContent = '🤖 Preview Changes';
   openModal('resume-modal');
+}
+
+function backToResumePaste() {
+  document.getElementById('resume-step-paste').style.display = 'block';
+  document.getElementById('resume-step-preview').style.display = 'none';
+  _resumeParsed = null;
 }
 
 async function parseResume() {
@@ -4026,8 +4094,6 @@ async function parseResume() {
   const btn = document.getElementById('resume-parse-btn');
   btn.disabled = true;
   btn.textContent = '🤖 Parsing...';
-
-  const isFirstSearch = !(cd.jobs || []).filter(j => !j.dismissed).length;
 
   try {
     const res = await fetch(WORKER_URL, {
@@ -4057,27 +4123,71 @@ ${text.substring(0, 3000)}`
     let raw = '';
     for (const b of (data.content||[])) { if (b.type==='text') raw += b.text; }
     const m = raw.match(/\{[\s\S]*\}/);
-    if (m) {
-      const parsed = JSON.parse(m[0]);
-      if (parsed.skills?.length) {
-        CONFIG.candidates[c].skills = [...new Set([...parsed.skills, ...(cd.skills||[])])].slice(0,20);
-      }
-      if (parsed.summary) {
-        CONFIG.candidates[c].bio = parsed.summary + '\n\n' + cd.bio;
-      }
-      saveConfig();
-      closeModal('resume-modal');
-      renderCandidatePanel(c);
-      toast('✓ Resume parsed! Profile updated with extracted skills.');
-    } else {
-      toast('Could not parse resume — try a different format');
-    }
+    if (!m) { toast('Could not read resume — try a different format'); btn.disabled = false; btn.textContent = '🤖 Preview Changes'; return; }
+
+    const parsed = JSON.parse(m[0]);
+    _resumeParsed = parsed;
+
+    // Build preview
+    const existingSkills = cd.skills || [];
+    const newSkills = (parsed.skills || []).filter(s => !existingSkills.map(e=>e.toLowerCase()).includes(s.toLowerCase()));
+    const mergedSkills = [...new Set([...parsed.skills||[], ...existingSkills])].slice(0, 20);
+
+    document.getElementById('resume-preview-old-bio').textContent = cd.bio || '(no bio set)';
+    document.getElementById('resume-preview-old-skills').textContent = existingSkills.join(', ') || '(none)';
+    document.getElementById('resume-preview-new-bio').textContent = parsed.summary || cd.bio;
+    document.getElementById('resume-preview-new-skills').textContent = newSkills.length
+      ? '+ ' + newSkills.join(', ')
+      : '(no new skills to add)';
+
+    // Show preview step
+    document.getElementById('resume-step-paste').style.display = 'none';
+    document.getElementById('resume-step-preview').style.display = 'block';
+
   } catch(e) {
     toast('Parse failed: ' + e.message);
+    btn.disabled = false;
+    btn.textContent = '🤖 Preview Changes';
   }
 
-  btn.disabled = false;
-  btn.textContent = '🤖 Parse Resume & Update Profile';
+  // btn state handled inside try/catch above
+}
+
+function confirmResumeImport() {
+  const c = resumeTarget;
+  const cd = CONFIG.candidates[c];
+  if (!_resumeParsed) return;
+
+  // Snapshot current state for undo
+  _resumeUndo = {
+    c,
+    bio: cd.bio,
+    skills: [...(cd.skills || [])]
+  };
+
+  // Apply changes — replace bio, merge skills
+  const newSkills = [...new Set([...(_resumeParsed.skills||[]), ...(cd.skills||[])])].slice(0, 20);
+  if (_resumeParsed.summary) CONFIG.candidates[c].bio = _resumeParsed.summary;
+  if (newSkills.length) CONFIG.candidates[c].skills = newSkills;
+
+  saveConfig(true);
+  closeModal('resume-modal');
+  renderCandidatePanel(c);
+  _resumeParsed = null;
+
+  // Show undo toast for 10 seconds
+  showUndoToast('✓ Profile updated from resume', undoResumeImport, 10000);
+}
+
+function undoResumeImport() {
+  if (!_resumeUndo) return;
+  const { c, bio, skills } = _resumeUndo;
+  CONFIG.candidates[c].bio = bio;
+  CONFIG.candidates[c].skills = skills;
+  saveConfig(true);
+  renderCandidatePanel(c);
+  _resumeUndo = null;
+  toast('↩ Restored previous bio and skills');
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -4549,6 +4659,24 @@ document.querySelectorAll('.modal-overlay').forEach(o => {
 //  TOAST
 // ═══════════════════════════════════════════════════════════════
 let toastTimer;
+// Undo toast — shows a toast with a clickable Undo button
+let _undoToastTimer = null;
+function showUndoToast(msg, undoFn, dur = 10000) {
+  const el = document.getElementById('toast');
+  if (!el) return;
+  el.innerHTML = `
+    <span>${msg}</span>
+    <button onclick="(${undoFn.toString()})();document.getElementById('toast').style.display='none';"
+      style="margin-left:12px;background:white;color:#1c1c1c;border:none;border-radius:6px;padding:4px 10px;font-size:12px;font-weight:700;cursor:pointer;font-family:Nunito,sans-serif;">
+      ↩ Undo
+    </button>`;
+  el.style.display = 'flex';
+  el.style.alignItems = 'center';
+  el.style.animation = 'slideUp .3s ease';
+  clearTimeout(_undoToastTimer);
+  _undoToastTimer = setTimeout(() => { el.style.display = 'none'; }, dur);
+}
+
 let _saveFlashTimer = null;
 function savedFlash() {
   const el = document.getElementById('saved-flash');
