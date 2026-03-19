@@ -3412,7 +3412,8 @@ async function fetchMoreJobs(c) {
   } catch(err) {
     btn.disabled = false;
     btn.innerHTML = '+ Load 10 more jobs';
-    toast('Search failed — try again');
+    console.error('[CareerHub fetchMoreJobs ERROR]', err.message, err.stack);
+    toast('Search failed: ' + err.message.substring(0, 60));
   }
 }
 
