@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <!-- ============================================================
      The Job Hunts — Career Portal
-     Version: 5.2
+     Version: 5.3
      Updated: 2026-03-19
      Changes: AI search fixes (depth-tracking parser, prefill trick),
               Load More (Haiku), onboarding wizard, resume import with
@@ -554,6 +554,13 @@ header {
   margin-bottom: 18px;
   flex-wrap: wrap;
   gap: 12px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: var(--bg);
+  padding: 12px 0 10px;
+  margin-top: -12px;
+  border-bottom: 1px solid var(--border);
 }
 
 .content-title {
@@ -1980,7 +1987,7 @@ body.font-xl .card-title { font-size: calc(var(--base-font) + 1px); }
 //  CLOUDFLARE WORKER — API proxy URL
 //  Update this if you ever redeploy your Worker
 // ═══════════════════════════════════════════════════════════════
-const VERSION = '5.2';
+const VERSION = '5.3';
 const WORKER_URL = 'https://career-hub-api.andy-dao-91-aaf.workers.dev';
 
 // ═══════════════════════════════════════════════════════════════
@@ -2904,6 +2911,9 @@ function renderCandidatePanel(c) {
   document.getElementById('skill-new-'+c)?.addEventListener('keydown', e => {
     if (e.key === 'Enter') addSkill(c, document.getElementById('skill-new-'+c).value);
   });
+
+  // Always render job cards immediately so returning users see their jobs
+  renderJobCards(c, currentFilter[c] || 'all');
 }
 
 function buildSidebar(c, cd, isAdmin) {
@@ -3060,6 +3070,7 @@ function buildMainContent(c, cd, isAdmin) {
     remote: jobs.filter(j=>(j.workType||'').toLowerCase()==='remote').length,
     hybrid: jobs.filter(j=>(j.workType||'').toLowerCase()==='hybrid').length,
     travel: jobs.filter(j=>(j.workType||'').toLowerCase()==='travel').length,
+    onsite: jobs.filter(j=>['on-site','onsite','on site','in-person','in person'].includes((j.workType||'').toLowerCase())).length,
     starred: jobs.filter(j=>j.starred).length,
     applied: jobs.filter(j=>j.applied).length,
   };
@@ -3075,6 +3086,7 @@ function buildMainContent(c, cd, isAdmin) {
           <button class="fbt" onclick="filterJobs('${c}','remote',this)">Remote${badge(counts.remote)}</button>
           <button class="fbt" onclick="filterJobs('${c}','hybrid',this)">Hybrid${badge(counts.hybrid)}</button>
           <button class="fbt" onclick="filterJobs('${c}','travel',this)">Travel${badge(counts.travel)}</button>
+          <button class="fbt" onclick="filterJobs('${c}','onsite',this)">On-site${badge(counts.onsite)}</button>
           <button class="fbt star-on" onclick="filterJobs('${c}','starred',this)" style="background:white;color:var(--text2);border-color:var(--border)">⭐ Starred${badge(counts.starred)}</button>
           <button class="fbt" onclick="filterJobs('${c}','applied',this)" style="background:white;color:var(--text2)">✅ Applied${badge(counts.applied)}</button>
         </div>
@@ -3083,7 +3095,7 @@ function buildMainContent(c, cd, isAdmin) {
             <select id="sort-select-${c}" onchange="sortJobs('${c}',false)" style="padding:5px 10px;border-radius:8px;border:1.5px solid var(--border);font-family:'Nunito',sans-serif;font-size:12px;font-weight:600;cursor:pointer;background:white;color:var(--text2);">
               <option value="default">Sort: Default</option>
               <option value="match">Best Match</option>
-              <option value="newest">Newest First</option>
+              <option value="newest">Date Added</option>
               <option value="salary">Salary</option>
               <option value="company">Company A–Z</option>
             </select>
@@ -3564,9 +3576,10 @@ async function aiSearch(c) {
 
     if (!parsed.length) throw new Error('Could not read results — try again');
 
-    // Deduplicate against existing
-    const existingKeys = new Set((cd.jobs||[]).map(j => `${j.title}||${j.company}`));
-    const newJobs = parsed.filter(j => j.title && j.company && !existingKeys.has(`${j.title}||${j.company}`));
+    // Deduplicate against existing — normalize to catch near-duplicates
+    const normalize = s => (s||'').toLowerCase().replace(/\b(of|the|a|an|&|and|-|\/|,|\.)/g,' ').replace(/\s+/g,' ').trim();
+    const existingKeys = new Set((cd.jobs||[]).map(j => `${normalize(j.title)}||${normalize(j.company)}`));
+    const newJobs = parsed.filter(j => j.title && j.company && !existingKeys.has(`${normalize(j.title)}||${normalize(j.company)}`));
 
     newJobs.forEach(j => {
       j._id = `${c}-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
@@ -3639,7 +3652,7 @@ function buildSystemPrompt(c, cd) {
 CANDIDATE: ${cd.name} | ${cd.prefs?.location || 'Phoenix, AZ'}
 SKILLS: ${skills}
 TARGETS: ${cd.searchAreas}
-REMOTE RULE: ${c === 'm' ? 'Remote preferred; hybrid OK at $130K+' : c === 'l' ? 'Remote only' : 'Remote or travel OK'}
+REMOTE RULE: ${c === 'm' ? 'Remote preferred; hybrid OK at $130K+; on-site OK if $150K+' : c === 'l' ? 'Remote only — no on-site' : 'Remote preferred; open to travel or on-site for right pay'}
 
 OUTPUT RULES — CRITICAL:
 1. Return ONLY a JSON array. No markdown. No backticks. No text before or after. Start with [ end with ]
@@ -3721,6 +3734,7 @@ function renderJobCards(c, filter='all', page=0) {
   if (filter === 'remote') jobs = jobs.filter(j => (j.workType||'').toLowerCase() === 'remote');
   else if (filter === 'hybrid') jobs = jobs.filter(j => (j.workType||'').toLowerCase() === 'hybrid');
   else if (filter === 'travel') jobs = jobs.filter(j => (j.workType||'').toLowerCase() === 'travel');
+  else if (filter === 'onsite') jobs = jobs.filter(j => ['on-site','onsite','on site','in-person','in person'].includes((j.workType||'').toLowerCase()));
   else if (filter === 'new') jobs = jobs.filter(j => j.isNew);
   else if (filter === 'unreviewed') jobs = jobs.filter(j => !j.starred && !j.applied && (!j.stage || j.stage === 'none'));
   else if (filter === 'starred') jobs = jobs.filter(j => j.starred);
@@ -3842,8 +3856,9 @@ async function fetchMoreJobs(c) {
       }
     }
 
-    const existingKeys = new Set((cd.jobs||[]).map(j => `${j.title}||${j.company}`));
-    const newJobs = parsed.filter(j => j.title && j.company && !existingKeys.has(`${j.title}||${j.company}`));
+    const normalize = s => (s||'').toLowerCase().replace(/\b(of|the|a|an|&|and|-|\/|,|\.)/g,' ').replace(/\s+/g,' ').trim();
+    const existingKeys = new Set((cd.jobs||[]).map(j => `${normalize(j.title)}||${normalize(j.company)}`));
+    const newJobs = parsed.filter(j => j.title && j.company && !existingKeys.has(`${normalize(j.title)}||${normalize(j.company)}`));
 
     if (!newJobs.length) {
       btn.disabled = false;
@@ -3954,7 +3969,8 @@ function buildCard(j, c, cd) {
     ${companyLinks}
     <div class="card-footer">
       <div class="card-footer-left">
-        <a class="apply-link" style="background:${cd.colorHex}" href="${j.applyUrl || buildLinkedInUrl(j.title, j.company)}" target="_blank" rel="noopener">
+        <a class="apply-link" style="background:${cd.colorHex}" href="${j.applyUrl || buildLinkedInUrl(j.title, j.company)}" target="_blank" rel="noopener"
+           onclick="promptApplyStage('${c}','${j._id}')">
           ${j.applyUrl ? 'Apply Now ↗' : '🔗 Search on LinkedIn ↗'}
         </a>
         ${j.applyUrl ? `<a href="${buildLinkedInUrl(j.title, j.company)}" target="_blank" rel="noopener"
@@ -3974,7 +3990,7 @@ function buildCard(j, c, cd) {
         </select>
         <button class="toggle-btn" onclick="toggleCardDetail('${safeId}')">Details ▾</button>
       </div>
-      <span class="card-source">${j.source||''}</span>
+      <span class="card-source">${j.datePosted ? `<span style="margin-right:6px;opacity:.7">${j.datePosted}</span>` : ''}${j.source||''}</span>
     </div>
   </div>
   <div class="card-detail" id="cdetail-${safeId}">
@@ -4197,6 +4213,35 @@ function dismissCard(c, id) {
     renderJobCards(c, currentFilter[c]||'all');
     toast('↩ Job restored');
   }, 5000);
+}
+
+function promptApplyStage(c, id) {
+  const j = CONFIG.candidates[c]?.jobs?.find(x => x._id === id);
+  if (!j) return;
+  // Only prompt if not already marked applied
+  if (j.applied || j.stage === 'applied') return;
+  setTimeout(() => {
+    const cd = CONFIG.candidates[c];
+    showUndoToast(`📤 Did you apply? Mark as Applied`, () => {
+      j.applied = true;
+      j.stage = 'applied';
+      if (!j.stageHistory) j.stageHistory = {};
+      j.stageHistory.applied = Date.now();
+      saveConfig(true);
+      // Update card visual
+      const safeId = id.replace(/[^a-z0-9]/gi,'_');
+      const card = document.getElementById('jcard-'+safeId);
+      if (card) {
+        card.classList.add('applied');
+        const appliedBtn = card.querySelector('.ca-btn.applied-btn');
+        if (appliedBtn) appliedBtn.classList.add('on');
+        const sel = card.querySelector('.pipeline-select');
+        if (sel) { sel.value = 'applied'; sel.className = 'pipeline-select stage-applied'; }
+      }
+      updateSidebarStats(c);
+      toast('✅ Marked as Applied!');
+    }, 8000);
+  }, 500);
 }
 
 function deleteJob(c, id) {
@@ -4790,6 +4835,7 @@ function updateFilterCounts(c) {
     remote: jobs.filter(j=>(j.workType||'').toLowerCase()==='remote').length,
     hybrid: jobs.filter(j=>(j.workType||'').toLowerCase()==='hybrid').length,
     travel: jobs.filter(j=>(j.workType||'').toLowerCase()==='travel').length,
+    onsite: jobs.filter(j=>['on-site','onsite','on site','in-person','in person'].includes((j.workType||'').toLowerCase())).length,
     starred: jobs.filter(j=>j.starred).length,
     applied: jobs.filter(j=>j.applied).length,
   };
