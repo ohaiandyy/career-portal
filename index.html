@@ -2432,13 +2432,22 @@ function renderAdminSidebar() {
           const cd = CONFIG.candidates[c];
           const isActive = cd.active !== false;
           return `
-          <div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--border);">
-            <div style="width:26px;height:26px;border-radius:50%;background:${cd.colorHex};color:white;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;flex-shrink:0;opacity:${isActive?1:.4}">${cd.name[0]}</div>
-            <div style="flex:1;font-size:12px;font-weight:700;color:${isActive?'var(--text)':'var(--muted)'};">${cd.name}</div>
-            <button onclick="editCandidate('${c}')" style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:5px;border:1.5px solid var(--border);background:white;color:var(--text2);cursor:pointer;">✏️ Edit</button>
-            <button onclick="openResumeModal('${c}')" title="Import resume to auto-fill skills & bio" style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:5px;border:1.5px solid var(--border);background:white;color:var(--text2);cursor:pointer;">📄 Resume</button>
-            <button onclick="toggleCandidateActive('${c}')" style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:5px;border:1.5px solid ${isActive?'var(--red)':'var(--green)'};background:white;color:${isActive?'var(--red)':'var(--green)'};cursor:pointer;">${isActive?'Hide':'Show'}</button>
-            <button onclick="resetJobs('${c}')" title="Reset all jobs for ${cd.name}" style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:5px;border:1.5px solid var(--gold);background:white;color:#92600a;cursor:pointer;">🔄 Reset</button>
+          <div style="padding:9px 0;border-bottom:1px solid var(--border);">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+              <div style="width:28px;height:28px;border-radius:50%;background:${cd.colorHex};color:white;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;flex-shrink:0;opacity:${isActive?1:.45}">${cd.name[0]}</div>
+              <div style="flex:1;">
+                <div style="font-size:13px;font-weight:700;color:${isActive?'var(--text)':'var(--muted)'};">${cd.name}</div>
+                <div style="font-size:10px;color:var(--muted);">${isActive?'Active':'Archived · data preserved'}</div>
+              </div>
+            </div>
+            <div style="display:flex;gap:5px;padding-left:36px;">
+              <button onclick="editCandidate('${c}')" style="flex:1;font-size:10px;font-weight:700;padding:4px 6px;border-radius:5px;border:1.5px solid var(--border);background:white;color:var(--text2);cursor:pointer;">✏️ Edit</button>
+              <button onclick="openResumeModal('${c}')" style="flex:1;font-size:10px;font-weight:700;padding:4px 6px;border-radius:5px;border:1.5px solid var(--border);background:white;color:var(--text2);cursor:pointer;" title="Import resume to auto-fill skills & bio">📄 Resume</button>
+              <button onclick="switchPanel('${c}')" style="flex:1;font-size:10px;font-weight:700;padding:4px 6px;border-radius:5px;border:1.5px solid var(--border);background:white;color:var(--text2);cursor:pointer;" title="View this candidate's jobs">👁 View</button>
+              <button onclick="toggleCandidateActive('${c}')" style="flex:1;font-size:10px;font-weight:700;padding:4px 6px;border-radius:5px;border:1.5px solid ${isActive?'var(--red)':'var(--green)'};background:${isActive?'white':'var(--green-lt)'};color:${isActive?'var(--red)':'var(--green)'};cursor:pointer;" title="${isActive?'Archive this user — preserves all data':'Restore this user'}">
+                ${isActive?'📦 Archive':'↩ Restore'}
+              </button>
+            </div>
           </div>`;
         }).join('')}
         <button onclick="openWizard()" style="width:100%;margin-top:10px;padding:9px;border-radius:8px;border:1.5px dashed var(--border);background:white;color:var(--admin);font-size:12px;font-weight:700;cursor:pointer;">✨ Add New User</button>
@@ -2615,13 +2624,13 @@ function updateSiteTitle() {
 function toggleCandidateActive(c) {
   const cd = CONFIG.candidates[c];
   const wasActive = cd.active !== false;
-  if (wasActive && !confirm(`Hide ${cd.name} from the portal? Their data will be preserved and you can restore them any time.`)) return;
+  if (wasActive && !confirm(`Archive ${cd.name}? Their jobs, notes, and profile are fully preserved. You can restore them any time from Admin → Manage Users.`)) return;
   cd.active = !wasActive;
   saveConfig();
   updateLoginCounts();
   renderLoginScreen();
   renderOverview();
-  toast(`${cd.name} is now ${cd.active ? 'visible' : 'hidden'}`);
+  toast(`${cd.name} is now ${cd.active ? 'restored ↩' : 'archived 📦 — data preserved'}`);
 }
 
 // ── Onboarding Wizard ────────────────────────────────────────────────────────
