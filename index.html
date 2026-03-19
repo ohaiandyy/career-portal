@@ -2608,18 +2608,30 @@ function buildSidebar(c, cd, isAdmin) {
 }
 
 function buildMainContent(c, cd, isAdmin) {
+  const jobs = (cd.jobs||[]).filter(j=>!j.dismissed);
+  const counts = {
+    all: jobs.length,
+    unreviewed: jobs.filter(j=>!j.starred&&!j.applied&&(!j.stage||j.stage==='none')).length,
+    remote: jobs.filter(j=>(j.workType||'').toLowerCase()==='remote').length,
+    hybrid: jobs.filter(j=>(j.workType||'').toLowerCase()==='hybrid').length,
+    travel: jobs.filter(j=>(j.workType||'').toLowerCase()==='travel').length,
+    starred: jobs.filter(j=>j.starred).length,
+    applied: jobs.filter(j=>j.applied).length,
+  };
+  const badge = n => n > 0 ? ` <span style="font-size:10px;font-weight:800;background:rgba(0,0,0,.1);border-radius:8px;padding:1px 6px;margin-left:2px;">${n}</span>` : '';
+
   return `
     <div class="content-header">
       <div class="content-title" style="color:${cd.colorHex}">Jobs for ${cd.name}</div>
       <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
         <div class="filter-row" id="filters-${c}">
-          <button class="fbt on" onclick="filterJobs('${c}','all',this)">All</button>
-          <button class="fbt" onclick="filterJobs('${c}','unreviewed',this)">To Review</button>
-          <button class="fbt" onclick="filterJobs('${c}','remote',this)">Remote</button>
-          <button class="fbt" onclick="filterJobs('${c}','hybrid',this)">Hybrid</button>
-          <button class="fbt" onclick="filterJobs('${c}','travel',this)">Travel</button>
-          <button class="fbt star-on" onclick="filterJobs('${c}','starred',this)" style="background:white;color:var(--text2);border-color:var(--border)">⭐ Starred</button>
-          <button class="fbt" onclick="filterJobs('${c}','applied',this)" style="background:white;color:var(--text2)">✅ Applied</button>
+          <button class="fbt on" onclick="filterJobs('${c}','all',this)">All${badge(counts.all)}</button>
+          <button class="fbt" onclick="filterJobs('${c}','unreviewed',this)">To Review${badge(counts.unreviewed)}</button>
+          <button class="fbt" onclick="filterJobs('${c}','remote',this)">Remote${badge(counts.remote)}</button>
+          <button class="fbt" onclick="filterJobs('${c}','hybrid',this)">Hybrid${badge(counts.hybrid)}</button>
+          <button class="fbt" onclick="filterJobs('${c}','travel',this)">Travel${badge(counts.travel)}</button>
+          <button class="fbt star-on" onclick="filterJobs('${c}','starred',this)" style="background:white;color:var(--text2);border-color:var(--border)">⭐ Starred${badge(counts.starred)}</button>
+          <button class="fbt" onclick="filterJobs('${c}','applied',this)" style="background:white;color:var(--text2)">✅ Applied${badge(counts.applied)}</button>
         </div>
         <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
           <div style="display:flex;align-items:center;gap:4px;">
@@ -3072,9 +3084,11 @@ async function aiSearch(c) {
       <div style="background:var(--red-lt);border:1.5px solid #f5c6c1;border-radius:var(--radius);padding:16px 20px;margin-bottom:16px;">
         <div style="font-size:13px;font-weight:700;color:var(--red);margin-bottom:4px">Search error</div>
         <div style="font-size:12px;color:var(--red);opacity:.8">${err.message}</div>
-        <div style="font-size:12px;color:var(--muted);margin-top:8px">Check that your Cloudflare Worker is deployed and your Anthropic API key is set correctly. Showing curated listings below in the meantime.</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:8px">Check that your Cloudflare Worker is deployed and your Anthropic API key is set correctly. Showing sample listings below — run a real search from the live site to get actual job results.</div>
       </div>`;
-    loadFallback(c);
+  // Only load fallbacks if the candidate has no jobs yet
+  if (!(cd.jobs||[]).length) loadFallback(c);
+  else renderJobCards(c);
   }
 
   btn.disabled = false;
@@ -3166,6 +3180,7 @@ function renderJobCards(c, filter='all', page=0) {
   if (countEl) countEl.textContent = `${allUnfiltered.length} jobs`;
   if (newEl) newEl.textContent = `${allUnfiltered.filter(j=>j.isNew).length} new`;
   updateSidebarStats(c);
+  updateFilterCounts(c);
 
   if (!jobs.length) {
     const hiddenCount = allUnfiltered.length - jobs.length;
@@ -3965,6 +3980,32 @@ function sortJobs(c, flip=false) {
 
   saveConfig();
   renderJobCards(c, currentFilter[c]||'all', 0);
+}
+
+function updateFilterCounts(c) {
+  const cd = CONFIG.candidates[c];
+  const jobs = (cd.jobs||[]).filter(j=>!j.dismissed);
+  const counts = {
+    all: jobs.length,
+    unreviewed: jobs.filter(j=>!j.starred&&!j.applied&&(!j.stage||j.stage==='none')).length,
+    remote: jobs.filter(j=>(j.workType||'').toLowerCase()==='remote').length,
+    hybrid: jobs.filter(j=>(j.workType||'').toLowerCase()==='hybrid').length,
+    travel: jobs.filter(j=>(j.workType||'').toLowerCase()==='travel').length,
+    starred: jobs.filter(j=>j.starred).length,
+    applied: jobs.filter(j=>j.applied).length,
+  };
+  const filterMap = { all:'All', unreviewed:'To Review', remote:'Remote', hybrid:'Hybrid', travel:'Travel', starred:'⭐ Starred', applied:'✅ Applied' };
+  document.querySelectorAll(`#filters-${c} .fbt`).forEach(btn => {
+    const onclick = btn.getAttribute('onclick') || '';
+    const match = onclick.match(/'([a-z]+)'\s*,this\)/);
+    if (!match) return;
+    const type = match[1];
+    const n = counts[type] || 0;
+    const label = filterMap[type] || type;
+    btn.innerHTML = n > 0
+      ? `${label} <span style="font-size:10px;font-weight:800;background:rgba(0,0,0,.1);border-radius:8px;padding:1px 6px;margin-left:2px;">${n}</span>`
+      : label;
+  });
 }
 
 function filterJobs(c, type, btn) {
