@@ -2103,7 +2103,7 @@ body.font-xl .card-title { font-size: calc(var(--base-font) + 1px); }
 //  CLOUDFLARE WORKER — API proxy URL
 //  Update this if you ever redeploy your Worker
 // ═══════════════════════════════════════════════════════════════
-const VERSION = '6.8';
+const VERSION = '7.0';
 const WORKER_URL = 'https://career-hub-api.andy-dao-91-aaf.workers.dev';
 
 // ═══════════════════════════════════════════════════════════════
@@ -3627,6 +3627,13 @@ function savePref(c, key, val) {
   }
   const labels = { minSalary: 'Min salary', jobType: 'Job type', location: 'Location', workArrangement: 'Work arrangement' };
   toast(`✓ ${labels[key]||key} updated`);
+
+  // Re-filter existing cards instantly + show re-search nudge
+  const hasJobs = (CONFIG.candidates[c].jobs||[]).filter(j=>!j.dismissed).length > 0;
+  if (hasJobs) {
+    renderJobCards(c, currentFilter[c]||'all', 0);
+    showReSearchNudge(c);
+  }
 }
 
 function saveRole(c, val) {
@@ -4054,6 +4061,9 @@ async function aiSearch(c) {
     renderJobCards(c);
     updateSidebarStats(c);
 
+    // Dismiss the re-search nudge if present
+    document.getElementById('research-nudge-'+c)?.remove();
+
     if (newJobs.length === 0) {
       toast(`All results already in your list. Try again tomorrow for fresh postings.`);
     } else {
@@ -4174,20 +4184,39 @@ Start your response with [ and end with ].`;
 // ═══════════════════════════════════════════════════════════════
 //  MATCH SCORING — client-side 0-100 score
 // ═══════════════════════════════════════════════════════════════
-function positionMatchTooltip(e, id) {
+function toggleMatchTooltip(e, id) {
+  e.stopPropagation();
+  // Close any other open tooltips
+  document.querySelectorAll('.match-tooltip').forEach(t => {
+    if (t.id !== id) t.style.display = 'none';
+  });
   const tip = document.getElementById(id);
   if (!tip) return;
+  const isOpen = tip.style.display !== 'none';
+  if (isOpen) { tip.style.display = 'none'; return; }
+
+  // Position it
   tip.style.display = 'block';
-  const x = e.clientX + 14;
-  const y = e.clientY + 14;
+  const rect = e.currentTarget.getBoundingClientRect();
   const tipW = 240;
-  const tipH = tip.offsetHeight || 180;
+  const tipH = tip.offsetHeight || 200;
   const vw = window.innerWidth;
   const vh = window.innerHeight;
-  // Flip left if too close to right edge
-  tip.style.left = (x + tipW > vw ? e.clientX - tipW - 8 : x) + 'px';
-  // Flip up if too close to bottom edge
-  tip.style.top = (y + tipH > vh ? e.clientY - tipH - 8 : y) + 'px';
+  const left = rect.left;
+  const top = rect.bottom + 8;
+  tip.style.left = (left + tipW > vw ? vw - tipW - 12 : left) + 'px';
+  tip.style.top = (top + tipH > vh ? rect.top - tipH - 8 : top) + 'px';
+}
+
+// Close match tooltips when clicking elsewhere
+document.addEventListener('click', e => {
+  if (!e.target.closest('.match-gauge')) {
+    document.querySelectorAll('.match-tooltip').forEach(t => t.style.display = 'none');
+  }
+});
+
+function positionMatchTooltip(e, id) {
+  // Legacy — kept for safety
 }
 
 function scoreJob(j, c, cd) {
@@ -4358,6 +4387,24 @@ function renderJobCards(c, filter='all', page=0) {
         (j.title||'').toLowerCase().includes(tag.toLowerCase())
       )
     );
+  }
+
+  // Apply work arrangement pref filter to existing list
+  const workArrangement = cd.prefs?.workArrangement || 'open-to-both';
+  if (workArrangement === 'remote-only') {
+    jobs = jobs.filter(j => (j.workType||'').toLowerCase() === 'remote');
+  }
+
+  // Apply min salary filter to existing list
+  const minSal = cd.prefs?.minSalary || 0;
+  if (minSal > 0) {
+    jobs = jobs.filter(j => {
+      if (!j.salary || j.salary === 'Competitive' || j.salary === 'Not listed') return true; // keep if unknown
+      const m = (j.salary||'').match(/([\d,]+)K?/i);
+      if (!m) return true;
+      const jobSal = parseFloat(m[1].replace(/,/g,'')) * ((j.salary||'').toUpperCase().includes('K') ? 1000 : 1);
+      return jobSal >= minSal * 0.8; // 20% buffer so near-matches still show
+    });
   }
 
   // Apply filter
@@ -4537,6 +4584,41 @@ async function fetchMoreJobs(c) {
   }
 }
 
+function showReSearchNudge(c) {
+  const cd = CONFIG.candidates[c];
+  const existing = document.getElementById('research-nudge-'+c);
+  if (existing) return; // already showing
+
+  const main = document.getElementById('main-content');
+  if (!main) return;
+
+  const nudge = document.createElement('div');
+  nudge.id = 'research-nudge-'+c;
+  nudge.style.cssText = `background:white;border:1.5px solid ${cd.colorHex};border-radius:10px;padding:10px 16px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;animation:slideUp .3s ease;`;
+  nudge.innerHTML = `
+    <div style="display:flex;align-items:center;gap:8px;">
+      <span style="font-size:16px;">🔄</span>
+      <span style="font-size:13px;font-weight:600;color:var(--text2);">Your preferences changed — search again for fresh results that match your new settings.</span>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center;flex-shrink:0;">
+      <button onclick="aiSearch('${c}');document.getElementById('research-nudge-${c}')?.remove()"
+        style="padding:7px 14px;border-radius:8px;border:none;background:${cd.colorHex};color:white;font-size:12px;font-weight:700;cursor:pointer;">
+        🔍 Search Now
+      </button>
+      <button onclick="document.getElementById('research-nudge-${c}').remove()"
+        style="padding:7px 10px;border-radius:8px;border:1.5px solid var(--border);background:white;font-size:12px;font-weight:600;cursor:pointer;color:var(--muted);">
+        ✕
+      </button>
+    </div>`;
+
+  // Insert at top of main content
+  const firstChild = main.firstElementChild;
+  main.insertBefore(nudge, firstChild);
+
+  // Auto-dismiss after 30 seconds
+  setTimeout(() => nudge?.remove(), 30000);
+}
+
 function getFollowUpReminders(c) {
   const cd = CONFIG.candidates[c];
   const reminders = [];
@@ -4594,16 +4676,16 @@ function buildCard(j, c, cd) {
   // Match gauge — client-side scoring
   const scored = scoreJob(j, c, cd);
   const matchGauge = `
-    <div class="match-gauge" style="position:relative;cursor:default;"
-      onmouseenter="positionMatchTooltip(event,'mtip-${safeId}')"
-      onmousemove="positionMatchTooltip(event,'mtip-${safeId}')"
-      onmouseleave="document.getElementById('mtip-${safeId}').style.display='none'">
-      <div class="match-gauge-track">
+    <div class="match-gauge" style="position:relative;">
+      <div class="match-gauge-track" style="cursor:pointer;" onclick="toggleMatchTooltip(event,'mtip-${safeId}')" title="Click for match details">
         <div class="match-gauge-bar" style="width:${scored.pct}%;background:${scored.color}"></div>
       </div>
-      <span class="match-gauge-label" style="color:${scored.color}">${scored.label}</span>
-      <div class="match-tooltip" id="mtip-${safeId}">
-        <div style="font-size:11px;font-weight:800;color:white;margin-bottom:8px;border-bottom:1px solid rgba(255,255,255,.2);padding-bottom:6px;">Match Breakdown · ${scored.score}/100</div>
+      <span class="match-gauge-label" style="color:${scored.color};cursor:pointer;" onclick="toggleMatchTooltip(event,'mtip-${safeId}')" title="Click for match details">${scored.label} <span style="font-size:10px;opacity:.5;">ⓘ</span></span>
+      <div class="match-tooltip" id="mtip-${safeId}" style="display:none;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;border-bottom:1px solid rgba(255,255,255,.2);padding-bottom:6px;">
+          <span style="font-size:11px;font-weight:800;color:white;">Match Breakdown · ${scored.score}/100</span>
+          <span onclick="document.getElementById('mtip-${safeId}').style.display='none'" style="cursor:pointer;font-size:14px;opacity:.6;line-height:1;">✕</span>
+        </div>
         ${scored.reasons.matched.map(r => `<div style="display:flex;gap:6px;margin-bottom:4px;font-size:11px;"><span style="color:#4ade80;flex-shrink:0;">✓</span><span>${r}</span></div>`).join('')}
         ${scored.reasons.warnings.map(r => `<div style="display:flex;gap:6px;margin-bottom:4px;font-size:11px;"><span style="color:#fbbf24;flex-shrink:0;">⚠</span><span>${r}</span></div>`).join('')}
         ${scored.reasons.missing.map(r => `<div style="display:flex;gap:6px;margin-bottom:4px;font-size:11px;"><span style="color:#f87171;flex-shrink:0;">✗</span><span>${r}</span></div>`).join('')}
