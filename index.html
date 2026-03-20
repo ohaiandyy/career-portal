@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <!-- ============================================================
      The Job Hunts — Career Portal
-     Version: 8.7
+     Version: 8.8
      Updated: 2026-03-20
      Changes: Match scoring (0-100 client-side), hover breakdown tooltip,
               industry multi-select filter, work arrangement toggles,
@@ -2118,7 +2118,7 @@ body.font-xl .card-title { font-size: calc(var(--base-font) + 1px); }
 //  CLOUDFLARE WORKER — API proxy URL
 //  Update this if you ever redeploy your Worker
 // ═══════════════════════════════════════════════════════════════
-const VERSION = '8.7';
+const VERSION = '8.8';
 const WORKER_URL = 'https://career-hub-api.andy-dao-91-aaf.workers.dev';
 
 // ═══════════════════════════════════════════════════════════════
@@ -3988,13 +3988,17 @@ function removeSkill(c, skill) {
 
 // Build verified job search URLs — these always work
 function buildLinkedInUrl(title, company) {
-  const q = encodeURIComponent(company ? `${title} ${company}` : title);
-  return `https://www.linkedin.com/jobs/search/?keywords=${q}&location=United%20States&f_WT=2&sortBy=DD`;
+  // Search by title only — adding company makes it too narrow and returns no results
+  const q = encodeURIComponent(title || '');
+  const base = `https://www.linkedin.com/jobs/search/?keywords=${q}&f_WT=2&sortBy=DD`;
+  return base;
 }
 
 function buildIndeedUrl(title, company) {
-  const q = encodeURIComponent(company ? `"${title}" "${company}"` : title);
-  return `https://www.indeed.com/jobs?q=${q}&l=&remotejob=032b3046-06a3-4876-8dfd-474eb5e7ed11`;
+  // Title + company as separate params for better matching
+  const q = encodeURIComponent(title || '');
+  const co = encodeURIComponent(company || '');
+  return `https://www.indeed.com/jobs?q=${q}${co ? '+'+co : ''}&sc=0kf%3Aattr(DSQF7)%3B&fromage=14`;
 }
 
 function buildGoogleJobsUrl(title, company) {
