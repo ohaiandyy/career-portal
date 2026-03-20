@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <!-- ============================================================
      The Job Hunts — Career Portal
-     Version: 8.6
+     Version: 8.7
      Updated: 2026-03-20
      Changes: Match scoring (0-100 client-side), hover breakdown tooltip,
               industry multi-select filter, work arrangement toggles,
@@ -2118,7 +2118,7 @@ body.font-xl .card-title { font-size: calc(var(--base-font) + 1px); }
 //  CLOUDFLARE WORKER — API proxy URL
 //  Update this if you ever redeploy your Worker
 // ═══════════════════════════════════════════════════════════════
-const VERSION = '8.6';
+const VERSION = '8.7';
 const WORKER_URL = 'https://career-hub-api.andy-dao-91-aaf.workers.dev';
 
 // ═══════════════════════════════════════════════════════════════
@@ -2233,6 +2233,10 @@ function loadConfig() {
           // Strip fallback jobs and deduplicate on load
           if (CONFIG.candidates[c].jobs) {
             CONFIG.candidates[c].jobs = CONFIG.candidates[c].jobs.filter(j => !j._id || !j._id.includes('-fb-'));
+            // Strip fabricated applyUrls from existing jobs
+            CONFIG.candidates[c].jobs.forEach(j => {
+              if (!validateApplyUrl(j.applyUrl)) delete j.applyUrl;
+            });
             // Deduplicate
             const seen = new Set();
             CONFIG.candidates[c].jobs = CONFIG.candidates[c].jobs.filter(j => {
@@ -3982,10 +3986,43 @@ function removeSkill(c, skill) {
 //  LINKEDIN HELPERS
 // ═══════════════════════════════════════════════════════════════
 
-// Builds a LinkedIn job search URL for a given title + company
+// Build verified job search URLs — these always work
 function buildLinkedInUrl(title, company) {
   const q = encodeURIComponent(company ? `${title} ${company}` : title);
-  return `https://www.linkedin.com/jobs/search/?keywords=${q}&location=United%20States&f_WT=2`;
+  return `https://www.linkedin.com/jobs/search/?keywords=${q}&location=United%20States&f_WT=2&sortBy=DD`;
+}
+
+function buildIndeedUrl(title, company) {
+  const q = encodeURIComponent(company ? `"${title}" "${company}"` : title);
+  return `https://www.indeed.com/jobs?q=${q}&l=&remotejob=032b3046-06a3-4876-8dfd-474eb5e7ed11`;
+}
+
+function buildGoogleJobsUrl(title, company) {
+  const q = encodeURIComponent(company ? `${title} ${company} jobs` : `${title} jobs`);
+  return `https://www.google.com/search?q=${q}&ibp=htl;jobs`;
+}
+
+// Validate an applyUrl — returns null if it looks fabricated
+function validateApplyUrl(url) {
+  if (!url) return null;
+  try {
+    const u = new URL(url);
+    const host = u.hostname.toLowerCase();
+    // Reject: fake job IDs, search pages without real IDs, suspicious patterns
+    if (u.pathname.includes('/search') && !u.searchParams.get('currentJobId')) return null;
+    if (u.searchParams.get('jk') && /[a-z].*-[a-z].*-\d{4}/.test(u.searchParams.get('jk'))) return null; // fake indeed ID
+    if (u.pathname.match(/\/jobs\/\d{10,}/)) return url; // LinkedIn real listing ID (10+ digits)
+    if (u.pathname.match(/\/job\/[a-f0-9]{8,}/i)) return url; // real hash-based ID
+    if (host.includes('greenhouse.io') || host.includes('lever.co') || host.includes('workday.com') ||
+        host.includes('myworkdayjobs.com') || host.includes('taleo.net') || host.includes('smartrecruiters.com') ||
+        host.includes('icims.com') || host.includes('jobvite.com') || host.includes('ashbyhq.com')) {
+      return url; // ATS platforms — URLs are almost always real
+    }
+    // Company career pages — likely real
+    const jobBoards = ['linkedin.com','indeed.com','glassdoor.com','ziprecruiter.com','monster.com','careerbuilder.com','simplyhired.com'];
+    if (!jobBoards.some(b => host.includes(b))) return url; // company domain = likely real
+    return null; // job board URL we can't verify
+  } catch(_) { return null; }
 }
 
 // Pre-built LinkedIn alert strings per candidate
@@ -4358,7 +4395,9 @@ Find genuinely new openings — different companies, different industries, diffe
 ${exclusionClause}
 
 Return ${count} real open jobs as a JSON array. No markdown, no text outside the array. Each object on ONE line:
-{"title":"Title","company":"Company","location":"Remote","workType":"Remote","salary":"$X","matchScore":"Strong Match","description":"2 sentences: first what the role does, second WHY this specific candidate fits based on their background. Max 40 words total.","qualifications":["req 1","req 2","req 3"],"applyUrl":"https://url","source":"LinkedIn","isNew":true,"tags":["Industry"],"degreeRequired":"Bachelor|Master|MBA|PhD|None","yearsRequired":0}
+{"title":"Title","company":"Company","location":"Remote","workType":"Remote","salary":"$X","matchScore":"Strong Match","description":"2 sentences: first what the role does, second WHY this specific candidate fits based on their background. Max 40 words total.","qualifications":["req 1","req 2","req 3"],"source":"LinkedIn","isNew":true,"tags":["Industry"],"degreeRequired":"Bachelor|Master|MBA|PhD|None","yearsRequired":0}
+
+DO NOT include applyUrl — URLs you generate are fabricated and broken. We build real search links from title+company.
 
 DESCRIPTION RULE: Make descriptions personal. Example: "Lead HR transformation for 500-person tech company. Your Paycom expertise and multi-site ops background directly match their digital HR modernization initiative." NOT "Manage HR operations for tech company."
 QUALIFICATION RULE: Always include education requirement as first item if applicable (e.g. "Bachelor's degree required", "MBA preferred", "No degree required"). Include years of experience if stated (e.g. "10+ years experience required").
@@ -5176,15 +5215,23 @@ function buildCard(j, c, cd) {
     ${companyLinks}
     <div class="card-footer">
       <div class="card-footer-left">
-        <a class="apply-link" style="background:${cd.colorHex}" href="${j.applyUrl || buildLinkedInUrl(j.title, j.company)}" target="_blank" rel="noopener"
-           onclick="promptApplyStage('${c}','${j._id}')">
-          ${j.applyUrl ? 'Apply Now ↗' : '🔗 Search on LinkedIn ↗'}
+        ${(() => {
+          const validUrl = validateApplyUrl(j.applyUrl);
+          const liUrl = buildLinkedInUrl(j.title, j.company);
+          const indeedUrl = buildIndeedUrl(j.title, j.company);
+          if (validUrl) {
+            return `<a class="apply-link" style="background:${cd.colorHex}" href="${validUrl}" target="_blank" rel="noopener" onclick="promptApplyStage('${c}','${j._id}')">⚡ Apply Directly ↗</a>`;
+          }
+          return `<a class="apply-link" style="background:${cd.colorHex}" href="${liUrl}" target="_blank" rel="noopener" onclick="promptApplyStage('${c}','${j._id}')">🔍 Find on LinkedIn ↗</a>`;
+        })()}
+        <a href="${buildLinkedInUrl(j.title, j.company)}" target="_blank" rel="noopener"
+          style="display:inline-flex;align-items:center;gap:4px;padding:6px 11px;border-radius:8px;border:1.5px solid var(--border);background:white;font-size:12px;font-weight:700;color:var(--text2);text-decoration:none;">
+          💼 LinkedIn
         </a>
-        ${j.applyUrl ? `<a href="${buildLinkedInUrl(j.title, j.company)}" target="_blank" rel="noopener"
-          style="display:inline-flex;align-items:center;gap:4px;padding:6px 11px;border-radius:8px;border:1.5px solid var(--border);background:white;font-size:12px;font-weight:700;color:var(--text2);text-decoration:none;"
-          title="Can't find the posting? Search LinkedIn directly">
-          🔗 LinkedIn
-        </a>` : ''}
+        <a href="${buildIndeedUrl(j.title, j.company)}" target="_blank" rel="noopener"
+          style="display:inline-flex;align-items:center;gap:4px;padding:6px 11px;border-radius:8px;border:1.5px solid var(--border);background:white;font-size:12px;font-weight:700;color:var(--text2);text-decoration:none;">
+          🔎 Indeed
+        </a>
         <select class="pipeline-select stage-${(j.stage||'none')}" 
                 onchange="setStage('${c}','${j._id}',this)"
                 title="Track your progress · click 📋 Job Tracker to see your board">
