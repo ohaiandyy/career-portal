@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <!-- ============================================================
      The Job Hunts — Career Portal
-     Version: 8.2
+     Version: 8.5
      Updated: 2026-03-20
      Changes: Match scoring (0-100 client-side), hover breakdown tooltip,
               industry multi-select filter, work arrangement toggles,
@@ -2118,7 +2118,7 @@ body.font-xl .card-title { font-size: calc(var(--base-font) + 1px); }
 //  CLOUDFLARE WORKER — API proxy URL
 //  Update this if you ever redeploy your Worker
 // ═══════════════════════════════════════════════════════════════
-const VERSION = '8.2';
+const VERSION = '8.5';
 const WORKER_URL = 'https://career-hub-api.andy-dao-91-aaf.workers.dev';
 
 // ═══════════════════════════════════════════════════════════════
@@ -4365,9 +4365,11 @@ Find genuinely new openings — different companies, different industries, diffe
 ${exclusionClause}
 
 Return ${count} real open jobs as a JSON array. No markdown, no text outside the array. Each object on ONE line:
-{"title":"Title","company":"Company","location":"Remote","workType":"Remote","salary":"$X","matchScore":"Strong Match","description":"2 sentences: first what the role does, second WHY this specific candidate fits based on their background. Max 40 words total.","qualifications":["req 1","req 2","req 3"],"applyUrl":"https://url","source":"LinkedIn","isNew":true,"tags":["Industry"]}
+{"title":"Title","company":"Company","location":"Remote","workType":"Remote","salary":"$X","matchScore":"Strong Match","description":"2 sentences: first what the role does, second WHY this specific candidate fits based on their background. Max 40 words total.","qualifications":["req 1","req 2","req 3"],"applyUrl":"https://url","source":"LinkedIn","isNew":true,"tags":["Industry"],"degreeRequired":"Bachelor|Master|MBA|PhD|None","yearsRequired":0}
 
-DESCRIPTION RULE: Make descriptions personal. Example: "Lead HR transformation for 500-person tech company. Your Paycom expertise and multi-site ops background directly match their digital HR modernization initiative." NOT "Manage HR operations for tech company." 
+DESCRIPTION RULE: Make descriptions personal. Example: "Lead HR transformation for 500-person tech company. Your Paycom expertise and multi-site ops background directly match their digital HR modernization initiative." NOT "Manage HR operations for tech company."
+QUALIFICATION RULE: Always include education requirement as first item if applicable (e.g. "Bachelor's degree required", "MBA preferred", "No degree required"). Include years of experience if stated (e.g. "10+ years experience required").
+DEGREE FIELD: Set degreeRequired to Bachelor, Master, MBA, PhD, or None. Set yearsRequired to minimum years of experience (0 if not specified).
 
 Start your response with [ and end with ].`;
 }
@@ -4490,6 +4492,25 @@ function buildTastePromptAddition(c) {
 //  MATCH SCORING — client-side 0-100 score
 // ═══════════════════════════════════════════════════════════════
 // ── Match Tooltip Portal ────────────────────────────────────────
+// Delayed show — only opens after 400ms hover (prevents scroll flicker)
+let _matchTooltipTimer = null;
+
+function scheduleMatchTooltip(e, gaugeEl) {
+  cancelMatchTooltip();
+  // Capture event coords now — e may be stale after delay
+  const capturedEvent = { currentTarget: gaugeEl, clientX: e.clientX, clientY: e.clientY };
+  _matchTooltipTimer = setTimeout(() => {
+    showMatchTooltipPortal(capturedEvent, gaugeEl);
+  }, 400);
+}
+
+function cancelMatchTooltip() {
+  clearTimeout(_matchTooltipTimer);
+  _matchTooltipTimer = null;
+  hideMatchTooltipPortal();
+}
+
+
 // Renders outside all cards so overflow:hidden never clips it
 let _matchTooltipEl = null;
 
@@ -4664,19 +4685,23 @@ function scoreJob(j, c, cd) {
   const desc = (j.description||'').toLowerCase();
   const fullText = quals + ' ' + desc;
 
-  // Degree check
-  const requiresDegree = /bachelor|master|mba|phd|degree required|bs\/ba|b\.s\.|m\.s\./i.test(fullText);
-  const requiresMasters = /master|mba|phd|advanced degree/i.test(fullText);
+  // Use explicit AI fields first, fall back to text detection
+  const degreeField = (j.degreeRequired||'').toLowerCase();
+  const requiresMasters = degreeField === 'master' || degreeField === 'mba' || degreeField === 'phd' ||
+    /master|mba|phd|advanced degree/i.test(fullText);
+  const requiresDegree = requiresMasters || degreeField === 'bachelor' ||
+    /bachelor|degree required|undergraduate|college degree/i.test(fullText);
 
-  // Years of experience check
+  // Years check — use explicit field or detect from text
+  const yearsField = parseInt(j.yearsRequired||0) || 0;
   const expMatch = fullText.match(/(\d+)\+?\s*years?\s*(of\s*)?(experience|exp)/i);
-  const requiredYears = expMatch ? parseInt(expMatch[1]) : 0;
+  const requiredYears = yearsField > 0 ? yearsField : (expMatch ? parseInt(expMatch[1]) : 0);
 
   if (!requiresDegree && !requiredYears) { score += 15; }
   else {
     score += 10;
-    if (requiresMasters) reasons.warnings.push("Master's degree or MBA may be required");
-    else if (requiresDegree) reasons.warnings.push("Bachelor's degree typically required");
+    if (requiresMasters) reasons.warnings.push("Masters degree or MBA may be required");
+    else if (requiresDegree) reasons.warnings.push("Bachelors degree typically required");
     if (requiredYears >= 10) reasons.matched.push(`${requiredYears}+ years required — your experience likely qualifies`);
     else if (requiredYears > 0) reasons.warnings.push(`${requiredYears}+ years of experience required`);
   }
@@ -5077,7 +5102,7 @@ function buildCard(j, c, cd) {
   // Match gauge — client-side scoring
   const scored = scoreJob(j, c, cd);
   const matchGauge = `
-    <div class="match-gauge match-gauge-hover" onmouseenter="showMatchTooltipPortal(event,this)" onmouseleave="hideMatchTooltipPortal()">
+    <div class="match-gauge match-gauge-hover" onmouseenter="scheduleMatchTooltip(event,this)" onmouseleave="cancelMatchTooltip()">
       <div class="match-gauge-track">
         <div class="match-gauge-bar" style="width:${scored.pct}%;background:${scored.color}"></div>
       </div>
@@ -5141,8 +5166,8 @@ function buildCard(j, c, cd) {
       <span class="jb ${wtClass}">${j.workType||'Unknown'}</span>
       ${j.salary&&j.salary!=='Not listed'&&j.salary!=='Competitive' ? `<span class="jb jb-salary">💰 ${j.salary}</span>` : '<span class="jb" style="background:#fff3e0;color:#b45309;border:1px solid #f6c96b;" title="Salary not listed — ask before applying">💰 Not disclosed</span>'}
       ${(() => { try { const d = new URL(j.applyUrl||'').hostname; const boards = ['linkedin.com','indeed.com','glassdoor.com','ziprecruiter.com','monster.com','careerbuilder.com']; return j.applyUrl && !boards.some(b=>d.includes(b)) ? '<span class="jb" style="background:#e8f5e9;color:#1e7a4e;border:1px solid #a0d8b8;" title="Apply directly on company website">⚡ Direct</span>' : ''; } catch(_){ return ''; }})()}
-      ${scored.requiresMasters ? '<span class="jb" style="background:#fce4ec;color:#880e4f;" title="Advanced degree may be required">🎓 MBA/Masters</span>' : scored.requiresDegree ? '<span class="jb" style="background:#f3e5f5;color:#6a1b9a;" title="Degree typically required">🎓 Degree reqd</span>' : ''}
-      ${scored.requiredYears >= 5 ? `<span class="jb" style="background:#e8f4fd;color:#1565c0;" title="${scored.requiredYears}+ years of experience required">📅 ${scored.requiredYears}+ yrs exp</span>` : ''}
+      ${scored.requiresMasters ? '<span class="jb" style="background:#fce4ec;color:#880e4f;" title="Advanced degree required">🎓 MBA/Masters</span>' : scored.requiresDegree ? '<span class="jb" style="background:#f3e5f5;color:#6a1b9a;" title="Degree required">🎓 Degree reqd</span>' : '<span class="jb" style="background:#e8f5e9;color:#1e7a4e;" title="No degree requirement">🎓 No degree</span>'}
+      ${scored.requiredYears >= 2 ? `<span class="jb" style="background:#e8f4fd;color:#1565c0;" title="${scored.requiredYears}+ years of experience required">📅 ${scored.requiredYears}+ yrs exp</span>` : ''}
       ${tags}
     </div>
     ${matchGauge}
