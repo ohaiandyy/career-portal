@@ -1470,28 +1470,21 @@ body.font-xl .card-title { font-size: calc(var(--base-font) + 1px); }
 }
 .match-tooltip {
   display: none;
-  position: absolute;
-  bottom: calc(100% + 8px);
-  left: 0;
+  position: fixed;
   background: #1c1c1c;
   color: white;
   border-radius: 10px;
   padding: 12px 14px;
   width: 240px;
+  max-height: 280px;
+  overflow-y: auto;
   z-index: 9999;
   box-shadow: 0 8px 32px rgba(0,0,0,.3);
   pointer-events: none;
   line-height: 1.5;
   white-space: normal;
 }
-.match-tooltip::after {
-  content: '';
-  position: absolute;
-  top: 100%; left: 16px;
-  border: 6px solid transparent;
-  border-top-color: #1c1c1c;
-}
-/* Show on hover — CSS only, no JS, no scroll interference */
+/* Show on hover — CSS only, positioned via JS on mouseenter */
 .match-gauge-hover:hover .match-tooltip { display: block; }
 
 /* ── Company research links ── */
@@ -2117,7 +2110,7 @@ body.font-xl .card-title { font-size: calc(var(--base-font) + 1px); }
 //  CLOUDFLARE WORKER — API proxy URL
 //  Update this if you ever redeploy your Worker
 // ═══════════════════════════════════════════════════════════════
-const VERSION = '7.1';
+const VERSION = '7.2';
 const WORKER_URL = 'https://career-hub-api.andy-dao-91-aaf.workers.dev';
 
 // ═══════════════════════════════════════════════════════════════
@@ -4198,6 +4191,24 @@ Start your response with [ and end with ].`;
 // ═══════════════════════════════════════════════════════════════
 //  MATCH SCORING — client-side 0-100 score
 // ═══════════════════════════════════════════════════════════════
+function positionTooltipSmart(e, tip) {
+  if (!tip) return;
+  const rect = e.currentTarget.getBoundingClientRect();
+  const tipW = 240;
+  const tipH = 200; // estimated
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+  // Horizontal: align to gauge left, flip if too close to right edge
+  const left = Math.min(rect.left, vw - tipW - 12);
+  // Vertical: prefer above gauge, flip below if not enough space
+  const spaceAbove = rect.top;
+  const top = spaceAbove > tipH + 16
+    ? rect.top - tipH - 8
+    : rect.bottom + 8;
+  tip.style.left = left + 'px';
+  tip.style.top = top + 'px';
+}
+
 function toggleMatchTooltip(e, id) {
   e.stopPropagation();
   // Close any other open tooltips
@@ -4690,7 +4701,7 @@ function buildCard(j, c, cd) {
   // Match gauge — client-side scoring
   const scored = scoreJob(j, c, cd);
   const matchGauge = `
-    <div class="match-gauge match-gauge-hover">
+    <div class="match-gauge match-gauge-hover" onmouseenter="positionTooltipSmart(event,this.querySelector('.match-tooltip'))">
       <div class="match-gauge-track">
         <div class="match-gauge-bar" style="width:${scored.pct}%;background:${scored.color}"></div>
       </div>
