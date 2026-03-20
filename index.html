@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <!-- ============================================================
      The Job Hunts — Career Portal
-     Version: 7.6
+     Version: 8.0
      Updated: 2026-03-20
      Changes: Match scoring (0-100 client-side), hover breakdown tooltip,
               industry multi-select filter, work arrangement toggles,
@@ -2118,7 +2118,7 @@ body.font-xl .card-title { font-size: calc(var(--base-font) + 1px); }
 //  CLOUDFLARE WORKER — API proxy URL
 //  Update this if you ever redeploy your Worker
 // ═══════════════════════════════════════════════════════════════
-const VERSION = '7.6';
+const VERSION = '8.0';
 const WORKER_URL = 'https://career-hub-api.andy-dao-91-aaf.workers.dev';
 
 // ═══════════════════════════════════════════════════════════════
@@ -3365,6 +3365,23 @@ function buildSidebar(c, cd, isAdmin) {
         Finds ~20 live openings · ~15 sec<br>
         <span style="font-size:10px;opacity:.7;">✨ AI searches real job boards using your profile</span>
       </div>
+      ${(cd.searchHistory||[]).length ? `
+      <div style="margin-top:2px;">
+        <div style="font-size:10px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:5px;">Recent Searches</div>
+        ${(cd.searchHistory||[]).slice(0,3).map(h => {
+          const ago = (() => {
+            const m = Math.floor((Date.now()-h.ts)/60000);
+            if (m < 60) return m+'m ago';
+            const hr = Math.floor(m/60);
+            if (hr < 24) return hr+'h ago';
+            return Math.floor(hr/24)+'d ago';
+          })();
+          return `<div style="display:flex;align-items:center;justify-content:space-between;padding:4px 8px;border-radius:6px;background:var(--surface2);margin-bottom:3px;font-size:11px;">
+            <span style="color:var(--text2);">+${h.count} jobs · ${ago}</span>
+            <button onclick="aiSearch('${c}')" style="font-size:10px;font-weight:700;color:${colorHex};background:none;border:none;cursor:pointer;padding:0;">🔄 Re-run</button>
+          </div>`;
+        }).join('')}
+      </div>` : ''}
 
       <button class="sidebar-btn btn-secondary" onclick="toggleAddJob('${c}')">
         ➕ Add a Job You Found
@@ -3373,6 +3390,16 @@ function buildSidebar(c, cd, isAdmin) {
         📄 Update Profile from Resume
       </button>
 
+      ${(() => {
+        const insights = getTasteInsights('${c}');
+        if (!insights.length) return '';
+        return `
+        <div style="background:white;border:1.5px solid ${colorHex}22;border-left:3px solid ${colorHex};border-radius:8px;padding:10px 12px;margin-bottom:12px;">
+          <div style="font-size:10px;font-weight:800;color:${colorHex};text-transform:uppercase;letter-spacing:.07em;margin-bottom:7px;">🧠 What We've Learned</div>
+          ${insights.map(i => `<div style="font-size:11px;color:var(--text2);margin-bottom:4px;line-height:1.4;">${i}</div>`).join('')}
+          <div style="font-size:10px;color:var(--muted);margin-top:6px;font-style:italic;">Used automatically in your next search</div>
+        </div>`;
+      })()}
       <div class="section-label" style="margin-top:16px;">Stats</div>
       <div class="stat-row stat-clickable" onclick="filterJobs('${c}','all',null)" title="Show all jobs">
         <span class="stat-key">Total Jobs</span><span class="stat-val" id="stat-total-${c}">${totalJobs}</span>
@@ -3464,14 +3491,21 @@ function buildMainContent(c, cd, isAdmin) {
         </div>
       </div>
       <div class="content-header-filters" id="filter-bar-${c}">
-        <div class="filter-row" id="filters-${c}">
+        <div class="filter-row" id="filters-${c}" style="align-items:center;">
           <button class="fbt on" onclick="filterJobs('${c}','all',this)">All${badge(counts.all)}</button>
           <button class="fbt" onclick="filterJobs('${c}','unreviewed',this)">To Review${badge(counts.unreviewed)}</button>
           <button class="fbt" onclick="filterJobs('${c}','remote',this)">Remote${badge(counts.remote)}</button>
-          <button class="fbt" onclick="filterJobs('${c}','hybrid',this)">Hybrid${badge(counts.hybrid)}</button>
-          <button class="fbt" onclick="filterJobs('${c}','onsite',this)">On-site${badge(counts.onsite)}</button>
-          <button class="fbt star-on" onclick="filterJobs('${c}','starred',this)" style="background:white;color:var(--text2);border-color:var(--border)">⭐ Starred${badge(counts.starred)}</button>
+          <button class="fbt" onclick="filterJobs('${c}','starred',this)" style="background:white;color:var(--text2);border-color:var(--border)">⭐ Starred${badge(counts.starred)}</button>
           <button class="fbt" onclick="filterJobs('${c}','applied',this)" style="background:white;color:var(--text2)">✅ Applied${badge(counts.applied)}</button>
+          <div style="position:relative;display:inline-block;">
+            <button class="fbt" onclick="toggleMoreFilters('${c}')" id="more-filters-btn-${c}" style="background:var(--surface2);">
+              More ▾
+            </button>
+            <div id="more-filters-${c}" style="display:none;position:absolute;top:calc(100% + 4px);left:0;background:white;border:1.5px solid var(--border);border-radius:10px;padding:8px;z-index:200;box-shadow:var(--shadow-lg);white-space:nowrap;display:none;">
+              <button class="fbt" onclick="filterJobs('${c}','hybrid',this);toggleMoreFilters('${c}')" style="display:block;width:100%;margin-bottom:4px;text-align:left;">Hybrid${badge(counts.hybrid)}</button>
+              <button class="fbt" onclick="filterJobs('${c}','onsite',this);toggleMoreFilters('${c}')" style="display:block;width:100%;text-align:left;">On-site${badge(counts.onsite)}</button>
+            </div>
+          </div>
         </div>
         ${(() => {
           // Build industry list from all job tags
@@ -3994,7 +4028,7 @@ async function aiSearch(c) {
     { pct: 45, msg: '🤖 Analyzing matches...', delay: 5000 },
     { pct: 65, msg: '✨ Tailoring to your profile...', delay: 8000 },
     { pct: 80, msg: '📊 Ranking results...', delay: 12000 },
-    { pct: 92, msg: '🎯 Almost done...', delay: 16000 },
+    { pct: 88, msg: '🎯 Finalizing your list...', delay: 15000 },
   ];
   steps.forEach(({ pct, msg, delay }) => {
     setTimeout(() => {
@@ -4006,6 +4040,22 @@ async function aiSearch(c) {
       if (pctEl) pctEl.textContent = pct + '%';
     }, delay);
   });
+
+  // After 15s — pulse between 88-94% so it looks alive while waiting
+  let _pulseDir = 1, _pulsePct = 88;
+  const _pulseInterval = setInterval(() => {
+    const bar = document.getElementById('search-progress-bar');
+    if (!bar) { clearInterval(_pulseInterval); return; }
+    _pulsePct += _pulseDir * 1.5;
+    if (_pulsePct >= 94) _pulseDir = -1;
+    if (_pulsePct <= 88) _pulseDir = 1;
+    bar.style.width = _pulsePct + '%';
+    bar.style.transition = 'width .6s ease';
+    const pctEl = document.getElementById('search-progress-pct');
+    if (pctEl) pctEl.textContent = Math.round(_pulsePct) + '%';
+  }, 600);
+  // Store interval ID so we can clear it on completion
+  window._searchPulseInterval = _pulseInterval;
 
   const isFirstSearch = !(cd.jobs || []).filter(j => !j.dismissed).length;
 
@@ -4122,6 +4172,10 @@ async function aiSearch(c) {
     // Save timestamp + stamp cooldown (only on success)
     _searchCooldowns[c] = Date.now();
     cd.lastSearched = Date.now();
+    // Store search history
+    if (!cd.searchHistory) cd.searchHistory = [];
+    const histEntry = { ts: Date.now(), count: newJobs.length, filter: currentFilter[c]||'all' };
+    cd.searchHistory = [histEntry, ...cd.searchHistory].slice(0, 5);
     saveConfig(true);
 
     // Sync new jobs to Airtable if connected
@@ -4132,12 +4186,15 @@ async function aiSearch(c) {
     renderJobCards(c);
     updateSidebarStats(c);
 
-    // Complete progress bar
+    // Clear pulse interval and complete progress bar
+    if (window._searchPulseInterval) { clearInterval(window._searchPulseInterval); window._searchPulseInterval = null; }
     const bar = document.getElementById('search-progress-bar');
     const msgEl = document.getElementById('search-progress-msg');
-    if (bar) { bar.style.width = '100%'; bar.style.background = 'var(--green)'; }
+    const pctEl = document.getElementById('search-progress-pct');
+    if (bar) { bar.style.transition = 'width .4s ease'; bar.style.width = '100%'; bar.style.background = 'var(--green)'; }
     if (msgEl) msgEl.textContent = '✅ Done!';
-    await new Promise(r => setTimeout(r, 400)); // brief flash of 100%
+    if (pctEl) pctEl.textContent = '100%';
+    await new Promise(r => setTimeout(r, 500));
 
     // Dismiss the re-search nudge if present
     document.getElementById('research-nudge-'+c)?.remove();
@@ -4206,7 +4263,8 @@ OUTPUT RULES — CRITICAL:
 3. Keep qualifications to 3 items max
 4. No benefits field needed — omit it to save space
 5. Search across ANY industry — tech, finance, logistics, retail, consulting, insurance, manufacturing
-6. Tags should be INDUSTRY only (e.g. Healthcare, FinTech, Logistics) — never include Remote/Hybrid/On-site/Full-time in tags`;
+6. Tags should be INDUSTRY only (e.g. Healthcare, FinTech, Logistics) — never include Remote/Hybrid/On-site/Full-time in tags
+${buildTastePromptAddition(c)}`;
 }
 
 // What the AI is asked to do
@@ -4260,6 +4318,118 @@ Return ${count} real open jobs as a JSON array. No markdown, no text outside the
 DESCRIPTION RULE: Make descriptions personal. Example: "Lead HR transformation for 500-person tech company. Your Paycom expertise and multi-site ops background directly match their digital HR modernization initiative." NOT "Manage HR operations for tech company." 
 
 Start your response with [ and end with ].`;
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  SIGNAL LEARNING ENGINE
+//  Learns from stars, applies, dismisses to improve future searches
+// ═══════════════════════════════════════════════════════════════
+
+function extractJobSignals(j) {
+  // Extract meaningful signals from a job
+  const signals = {
+    industries: (j.tags||[]).filter(t => t && t.length > 1),
+    titleWords: (j.title||'').toLowerCase()
+      .split(/\s+/)
+      .filter(w => w.length > 3 && !['director','manager','senior','junior','lead','head','chief','vice','president'].includes(w)),
+    workType: (j.workType||'').toLowerCase(),
+    salaryMid: (() => {
+      const m = (j.salary||'').match(/(\d+)[Kk]?\s*[-–]\s*(\d+)[Kk]?/);
+      if (!m) return 0;
+      const a = parseFloat(m[1]) * ((j.salary||'').includes('K') || parseInt(m[1]) < 1000 ? 1000 : 1);
+      const b = parseFloat(m[2]) * ((j.salary||'').includes('K') || parseInt(m[2]) < 1000 ? 1000 : 1);
+      return Math.round((a + b) / 2);
+    })(),
+    company: j.company || ''
+  };
+  return signals;
+}
+
+function buildTasteProfile(c) {
+  const cd = CONFIG.candidates[c];
+  const jobs = cd.jobs || [];
+
+  const liked = jobs.filter(j => j.starred || j.applied || ['interview','offer'].includes(j.stage));
+  const disliked = jobs.filter(j => j.dismissed);
+
+  // Count frequency of each signal
+  const countSignals = (jobList) => {
+    const industries = {}, titleWords = {}, workTypes = {}, companies = {};
+    let salarySum = 0, salaryCount = 0;
+    jobList.forEach(j => {
+      const s = extractJobSignals(j);
+      s.industries.forEach(i => industries[i] = (industries[i]||0) + 1);
+      s.titleWords.forEach(w => titleWords[w] = (titleWords[w]||0) + 1);
+      if (s.workType) workTypes[s.workType] = (workTypes[s.workType]||0) + 1;
+      if (s.salaryMid > 0) { salarySum += s.salaryMid; salaryCount++; }
+      if (s.company) companies[s.company] = (companies[s.company]||0) + 1;
+    });
+    return {
+      industries: Object.entries(industries).sort((a,b)=>b[1]-a[1]).slice(0,5).map(([k])=>k),
+      titleWords: Object.entries(titleWords).sort((a,b)=>b[1]-a[1]).slice(0,8).map(([k])=>k),
+      workTypes: Object.entries(workTypes).sort((a,b)=>b[1]-a[1]).map(([k])=>k),
+      avgSalary: salaryCount > 0 ? Math.round(salarySum/salaryCount) : 0,
+      companies: Object.entries(companies).sort((a,b)=>b[1]-a[1]).slice(0,10).map(([k])=>k)
+    };
+  };
+
+  const profile = {
+    liked: liked.length >= 2 ? countSignals(liked) : null,
+    disliked: disliked.length >= 3 ? countSignals(disliked) : null,
+    updatedAt: Date.now()
+  };
+
+  // Store on candidate
+  cd.tasteProfile = profile;
+  return profile;
+}
+
+function getTasteInsights(c) {
+  const cd = CONFIG.candidates[c];
+  const profile = cd.tasteProfile || buildTasteProfile(c);
+  const insights = [];
+
+  if (profile.liked) {
+    if (profile.liked.industries.length) insights.push(`✓ You tend to like: ${profile.liked.industries.slice(0,3).join(', ')}`);
+    if (profile.liked.workTypes[0]) insights.push(`✓ Preferred work type: ${profile.liked.workTypes[0]}`);
+    if (profile.liked.avgSalary > 0) insights.push(`✓ Avg salary of liked jobs: $${Math.round(profile.liked.avgSalary/1000)}K`);
+  }
+  if (profile.disliked) {
+    if (profile.disliked.industries.length) insights.push(`✗ Often dismissing: ${profile.disliked.industries.slice(0,2).join(', ')}`);
+    if (profile.disliked.companies.length >= 3) insights.push(`✗ Dismissing lots from: ${profile.disliked.companies.slice(0,2).join(', ')}`);
+  }
+  return insights;
+}
+
+function buildTastePromptAddition(c) {
+  const cd = CONFIG.candidates[c];
+  // Only inject if enough signal (3+ liked or 5+ dismissed)
+  const liked = (cd.jobs||[]).filter(j => j.starred || j.applied);
+  const dismissed = (cd.jobs||[]).filter(j => j.dismissed);
+  if (liked.length < 2 && dismissed.length < 3) return '';
+
+  const profile = buildTasteProfile(c);
+  let addition = '';
+
+  if (profile.liked && liked.length >= 2) {
+    const p = profile.liked;
+    if (p.industries.length) addition += `\nCANDIDATE PREFERENCES (learned from their starred/applied jobs):`;
+    if (p.industries.length) addition += `\n- They tend to like: ${p.industries.join(', ')} roles`;
+    if (p.titleWords.length) addition += `\n- Common keywords in roles they like: ${p.titleWords.slice(0,5).join(', ')}`;
+    if (p.avgSalary > 0) addition += `\n- Average salary of roles they engage with: $${Math.round(p.avgSalary/1000)}K`;
+    addition += `\nPRIORITIZE roles matching these patterns.`;
+  }
+
+  if (profile.disliked && dismissed.length >= 3) {
+    const p = profile.disliked;
+    const avoidIndustries = p.industries.filter(i => !(profile.liked?.industries||[]).includes(i));
+    const avoidCompanies = p.companies.slice(0,8);
+    if (avoidIndustries.length) addition += `\nCANDIDATE DISLIKES (learned from dismissed jobs):`;
+    if (avoidIndustries.length) addition += `\n- They consistently dismiss: ${avoidIndustries.join(', ')} roles — avoid these`;
+    if (avoidCompanies.length) addition += `\n- Skip these companies (already dismissed): ${avoidCompanies.join(', ')}`;
+  }
+
+  return addition;
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -4869,12 +5039,14 @@ function buildCard(j, c, cd) {
   // Company research links
   const co = encodeURIComponent(j.company||'');
   const companyLinks = j.company ? `
-    <div class="company-research-links">
-      <span style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;">Research:</span>
-      ${j.companyUrl ? `<a href="${j.companyUrl}" target="_blank" rel="noopener" class="co-link" title="Company website">🌐 Website</a>` : `<a href="https://www.google.com/search?q=${co}+official+site" target="_blank" rel="noopener" class="co-link" title="Find company website">🌐 Site</a>`}
-      <a href="https://www.glassdoor.com/Search/Results.htm?keyword=${co}" target="_blank" rel="noopener" class="co-link" title="Glassdoor reviews">⭐ Glassdoor</a>
-      <a href="https://www.linkedin.com/company/${co.toLowerCase().replace(/%20/g,'-')}" target="_blank" rel="noopener" class="co-link" title="LinkedIn company page">💼 LinkedIn</a>
-      <a href="https://www.google.com/search?q=${co}+company+reviews+2024" target="_blank" rel="noopener" class="co-link" title="Google reviews">🔍 Reviews</a>
+    <div style="padding:6px 0 8px;border-top:1px solid var(--border);margin-top:4px;display:flex;align-items:center;gap:8px;">
+      <button class="co-link" onclick="toggleResearch('research-${safeId}')" style="cursor:pointer;background:var(--surface2);border:1.5px solid var(--border);border-radius:6px;padding:3px 10px;font-size:11px;font-weight:700;color:var(--text2);">🔍 Research ${j.company}</button>
+      <div id="research-${safeId}" style="display:none;gap:5px;align-items:center;" class="research-links-row">
+        ${j.companyUrl ? `<a href="${j.companyUrl}" target="_blank" rel="noopener" class="co-link">🌐 Site</a>` : `<a href="https://www.google.com/search?q=${co}+official+site" target="_blank" rel="noopener" class="co-link">🌐 Site</a>`}
+        <a href="https://www.glassdoor.com/Search/Results.htm?keyword=${co}" target="_blank" rel="noopener" class="co-link">⭐ Glassdoor</a>
+        <a href="https://www.linkedin.com/company/${co.toLowerCase().replace(/%20/g,'-')}" target="_blank" rel="noopener" class="co-link">💼 LinkedIn</a>
+        <a href="https://www.google.com/search?q=${co}+reviews" target="_blank" rel="noopener" class="co-link">🔍 Reviews</a>
+      </div>
     </div>` : '';
 
   return `
@@ -4911,8 +5083,10 @@ function buildCard(j, c, cd) {
       </div>
     </div>
     <div class="badge-row">
+      ${j._addedAt && (Date.now() - j._addedAt) < 86400000 && j.isNew ? '<span class="jb" style="background:#e8f5e9;color:#1e7a4e;border:1px solid #a0d8b8;font-weight:800;">🆕 New</span>' : ''}
       <span class="jb ${wtClass}">${j.workType||'Unknown'}</span>
       ${j.salary&&j.salary!=='Not listed'&&j.salary!=='Competitive' ? `<span class="jb jb-salary">💰 ${j.salary}</span>` : '<span class="jb" style="background:#fff3e0;color:#b45309;border:1px solid #f6c96b;" title="Salary not listed — ask before applying">💰 Not disclosed</span>'}
+      ${(() => { try { const d = new URL(j.applyUrl||'').hostname; const boards = ['linkedin.com','indeed.com','glassdoor.com','ziprecruiter.com','monster.com','careerbuilder.com']; return j.applyUrl && !boards.some(b=>d.includes(b)) ? '<span class="jb" style="background:#e8f5e9;color:#1e7a4e;border:1px solid #a0d8b8;" title="Apply directly on company website">⚡ Direct</span>' : ''; } catch(_){ return ''; }})()}
       ${scored.requiresMasters ? '<span class="jb" style="background:#fce4ec;color:#880e4f;" title="Advanced degree may be required">🎓 MBA/Masters</span>' : scored.requiresDegree ? '<span class="jb" style="background:#f3e5f5;color:#6a1b9a;" title="Degree typically required">🎓 Degree reqd</span>' : ''}
       ${scored.requiredYears >= 5 ? `<span class="jb" style="background:#e8f4fd;color:#1565c0;" title="${scored.requiredYears}+ years of experience required">📅 ${scored.requiredYears}+ yrs exp</span>` : ''}
       ${tags}
@@ -4922,7 +5096,11 @@ function buildCard(j, c, cd) {
       const daysOld = j._addedAt ? Math.floor((Date.now() - j._addedAt) / (1000*60*60*24)) : 0;
       return daysOld >= 30 ? `<div style="background:#fff3e0;border:1px solid #f6c96b;border-radius:6px;padding:5px 10px;font-size:11px;font-weight:700;color:#b45309;margin-bottom:8px;">⚠️ Added ${daysOld} days ago — listing may be filled</div>` : '';
     })()}
-    <div class="card-desc">${j.description||''}</div>
+    <div class="card-desc" id="desc-${safeId}" style="display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;cursor:pointer;" onclick="expandDesc('${safeId}')" title="Click to expand">${j.description||''}</div>
+    <div id="desc-expand-${safeId}" style="display:none;">
+      <div class="card-desc" style="margin-top:0;">${j.description||''}</div>
+      <span onclick="collapseDesc('${safeId}')" style="font-size:11px;color:var(--muted);cursor:pointer;font-weight:700;">Show less ▴</span>
+    </div>
     ${companyLinks}
     <div class="card-footer">
       <div class="card-footer-left">
@@ -5144,6 +5322,22 @@ function generateCoverLetter(c, safeId) { runAiCardTool(c, safeId, 'cover'); }
 function generateInterviewPrep(c, safeId) { runAiCardTool(c, safeId, 'interview'); }
 function generateResumeTips(c, safeId) { runAiCardTool(c, safeId, 'resume'); }
 
+function expandDesc(safeId) {
+  document.getElementById('desc-'+safeId).style.display = 'none';
+  document.getElementById('desc-expand-'+safeId).style.display = 'block';
+}
+function collapseDesc(safeId) {
+  document.getElementById('desc-'+safeId).style.display = '-webkit-box';
+  document.getElementById('desc-expand-'+safeId).style.display = 'none';
+}
+
+function toggleResearch(id) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const open = el.style.display !== 'none';
+  el.style.display = open ? 'none' : 'flex';
+}
+
 function toggleCardDetail(safeId) {
   const el = document.getElementById('cdetail-'+safeId);
   const btn = el.previousElementSibling?.querySelector('.toggle-btn');
@@ -5160,6 +5354,8 @@ function toggleStar(c, id, btn) {
   if (card) { card.classList.toggle('starred', j.starred); card.dataset.starred = j.starred; }
   saveConfig();
   updateSidebarStats(c);
+  // Update taste profile when enough signals exist
+  buildTasteProfile(c);
 }
 
 function toggleApplied(c, id, btn) {
@@ -5187,6 +5383,7 @@ function dismissCard(c, id) {
     setTimeout(() => { card.remove(); updateSidebarStats(c); }, 300);
   }
   saveConfig();
+  buildTasteProfile(c);
   // Undo toast — 5 seconds to recover accidental dismissals
   showUndoToast('Job dismissed', () => {
     j.dismissed = false;
@@ -6020,6 +6217,24 @@ function updateIndustryBtn(c) {
   if (btn) btn.classList.toggle('active', count > 0);
   if (countEl) { countEl.textContent = count; countEl.style.display = count > 0 ? '' : 'none'; }
   if (allCb) allCb.checked = count === 0;
+}
+
+function toggleMoreFilters(c) {
+  const el = document.getElementById('more-filters-'+c);
+  if (!el) return;
+  const open = el.style.display === 'flex' || el.style.display === 'block';
+  el.style.display = open ? 'none' : 'block';
+  if (!open) {
+    setTimeout(() => {
+      const close = (e) => {
+        if (!el.contains(e.target) && !document.getElementById('more-filters-btn-'+c)?.contains(e.target)) {
+          el.style.display = 'none';
+          document.removeEventListener('click', close);
+        }
+      };
+      document.addEventListener('click', close);
+    }, 10);
+  }
 }
 
 function filterByIndustry(c, tag) {
