@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <!-- ============================================================
      The Job Hunts — Career Portal
-     Version: 8.8
+     Version: 9.0
      Updated: 2026-03-20
      Changes: Match scoring (0-100 client-side), hover breakdown tooltip,
               industry multi-select filter, work arrangement toggles,
@@ -2118,7 +2118,7 @@ body.font-xl .card-title { font-size: calc(var(--base-font) + 1px); }
 //  CLOUDFLARE WORKER — API proxy URL
 //  Update this if you ever redeploy your Worker
 // ═══════════════════════════════════════════════════════════════
-const VERSION = '8.8';
+const VERSION = '9.0';
 const WORKER_URL = 'https://career-hub-api.andy-dao-91-aaf.workers.dev';
 
 // ═══════════════════════════════════════════════════════════════
@@ -4328,86 +4328,68 @@ async function aiSearch(c) {
 // What the AI is told about the candidate
 function buildSystemPrompt(c, cd) {
   const skills = (cd.skills || []).join(', ');
-  return `You are a job search assistant. Your ONLY job is to search for real open jobs and return them as a compact JSON array.
+  const arrangement = cd.prefs?.workArrangement === 'remote-only' ? 'Remote only — exclude on-site and hybrid' :
+    cd.prefs?.workArrangement === 'onsite-ok' ? 'Any arrangement acceptable' :
+    c === 'l' ? 'Remote only' : 'Remote preferred, hybrid acceptable';
 
-CANDIDATE: ${cd.name} | ${cd.prefs?.location || 'Phoenix, AZ'}
-SKILLS: ${skills}
-TARGETS: ${cd.searchAreas}
-WORK ARRANGEMENT: ${
-  cd.prefs?.workArrangement === 'remote-only' ? 'Remote only — do not return on-site or hybrid roles' :
-  cd.prefs?.workArrangement === 'onsite-ok' ? 'Any work arrangement — remote, hybrid, and on-site all acceptable' :
-  c === 'l' ? 'Remote only — no on-site or hybrid' :
-  'Remote preferred; hybrid and on-site OK if strong match and good pay'
-}
-${cd.prefs?.minSalary ? `MIN SALARY: $${Number(cd.prefs.minSalary).toLocaleString()} — do not return roles paying less than this` : ''}
-${cd.prefs?.location ? `LOCATION: ${cd.prefs.location} — hybrid and on-site roles MUST be located in or near this city. Remote roles can be anywhere in the US.` : ''}
-${cd.prefs?.jobType && cd.prefs.jobType !== 'any' ? `JOB TYPE: ${cd.prefs.jobType} positions only` : ''}
-
-OUTPUT RULES — CRITICAL:
-1. Return ONLY a JSON array. No markdown. No backticks. No text before or after. Start with [ end with ]
-2. Keep each description under 40 words
-3. Keep qualifications to 3 items max
-4. No benefits field needed — omit it to save space
-5. Search across ANY industry — tech, finance, logistics, retail, consulting, insurance, manufacturing
-6. Tags should be INDUSTRY only (e.g. Healthcare, FinTech, Logistics) — never include Remote/Hybrid/On-site/Full-time in tags
-${buildTastePromptAddition(c)}`;
+  return 'You are a job search assistant. You MUST use web_search to find real, live job listings. ' +
+    'NEVER invent or fabricate job listings. ONLY return jobs you actually found via web search with real URLs.\n\n' +
+    'CANDIDATE: ' + cd.name + '\n' +
+    'SKILLS: ' + skills + '\n' +
+    'TARGETS: ' + cd.searchAreas + '\n' +
+    'WORK: ' + arrangement + '\n' +
+    (cd.prefs?.minSalary ? 'MIN SALARY: $' + Number(cd.prefs.minSalary).toLocaleString() + '\n' : '') +
+    (cd.prefs?.location ? 'LOCATION: ' + cd.prefs.location + '\n' : '') +
+    (cd.prefs?.jobType && cd.prefs.jobType !== 'any' ? 'JOB TYPE: ' + cd.prefs.jobType + '\n' : '') +
+    buildTastePromptAddition(c) + '\n\n' +
+    'OUTPUT: JSON array only. No markdown. Real URLs mandatory. Fewer real jobs beats more fake ones.';
 }
 
 // What the AI is asked to do
 function buildUserPrompt(c, cd, isFirstSearch = true) {
-  const queryMap = {
-    m: 'HR Director remote, CHRO Chief People Officer remote, VP Operations any industry remote, CIO IT Director SMB remote, Chief Compliance Officer remote, Director HR Technology Paycom, COO remote executive',
-    l: 'Case Manager RN work from home 2026, Utilization Management Nurse remote, Clinical Consultant remote registered nurse, Telehealth clinical lead RN, Joint Commission Surveyor hospice RN, Clinical Informatics Nurse remote',
-    s: 'Corporate Trainer remote 2026, L&D Specialist Learning Development remote, Instructional Designer eLearning remote, EMR EHR Implementation Trainer travel, Learning Consultant travel any industry, Curriculum Developer remote'
-  };
+  // Build targeted search queries for real job boards
+  const remoteFilter = cd.prefs?.workArrangement === 'remote-only' || c === 'l' ? ' remote' : '';
+  const targets = cd.searchAreas || '';
 
-  const count = isFirstSearch ? 20 : 10;
+  // Extract key role titles for focused searches
+  const roleParts = targets.split(/[,;—–]+/).map(s => s.trim()).filter(s => s.length > 3).slice(0, 3);
+  const primaryRole = roleParts[0] || targets.substring(0, 50);
 
-  // Build exclusion + fresh-focus clause for follow-up searches
-  let exclusionClause = '';
-  if (!isFirstSearch) {
-    const existingCompanies = [...new Set((cd.jobs || [])
-      .filter(j => !j.dismissed && j.company)
-      .map(j => j.company)
-    )].slice(0, 25).join(', ');
+  // Build skip lists for follow-up searches
+  const existingCompanies = !isFirstSearch ? [...new Set((cd.jobs||[])
+    .filter(j => !j.dismissed && j.company).map(j => j.company))].slice(0,20).join(', ') : '';
+  const existingTitles = !isFirstSearch ? [...new Set((cd.jobs||[])
+    .filter(j => !j.dismissed && j.title).map(j => j.title))].slice(0,10).join(', ') : '';
 
-    const existingTitles = [...new Set((cd.jobs || [])
-      .filter(j => !j.dismissed && j.title)
-      .map(j => j.title)
-    )].slice(0, 12).join(', ');
+  const skipClause = !isFirstSearch && existingCompanies ? `
+ALREADY HAVE THESE — skip them: ${existingCompanies}
+ALREADY HAVE THESE TITLES — find different ones: ${existingTitles}` : '';
 
-    const freshIndustries = {
-      m: 'fintech, real estate, logistics, manufacturing, retail, consulting, government contracting, SaaS, insurance',
-      l: 'managed care insurers, digital health startups, health systems, pharma, workers comp, disability insurance, telehealth platforms',
-      s: 'financial services, retail banking, software companies, manufacturing, hospitality, retail chains, government agencies, nonprofits'
-    };
+  const count = isFirstSearch ? 10 : 8;
 
-    exclusionClause = `
+  return `Search for real, currently open job listings for this candidate. Use web_search to find actual postings.
 
-IMPORTANT — Follow-up search. Candidate already has ${(cd.jobs||[]).filter(j=>!j.dismissed).length} jobs saved.
-SKIP these companies (already listed): ${existingCompanies}
-SKIP these role types (already listed): ${existingTitles}
-PRIORITIZE these fresh industries not yet covered: ${freshIndustries[c] || 'industries different from what is already in the list'}
-Find genuinely new openings — different companies, different industries, different role angles.`;
-  }
+CANDIDATE BACKGROUND: ${cd.bio?.substring(0,200)}
+LOOKING FOR: ${targets}
+${cd.prefs?.minSalary ? `MINIMUM SALARY: $${Number(cd.prefs.minSalary).toLocaleString()}` : ''}
+${cd.prefs?.location ? `LOCATION PREFERENCE: ${cd.prefs.location}` : ''}
+${skipClause}
 
-  const searches = isFirstSearch ? `Run these 2 web searches, combine all results:
-1. "${queryMap[c] || cd.searchAreas}"
-2. "${queryMap[c] || cd.searchAreas} hiring 2026"` : `Search for: ${queryMap[c] || cd.searchAreas}`;
+Run these web searches to find REAL job listings:
+1. site:linkedin.com/jobs "${primaryRole}"${remoteFilter} ${new Date().getFullYear()}
+2. site:indeed.com "${primaryRole}"${remoteFilter}
+3. "${primaryRole}"${remoteFilter} job opening ${new Date().getFullYear()} (greenhouse OR lever OR workday OR careers)
 
-  return `${searches}
-${exclusionClause}
+For each real listing you find, extract the data. Return ONLY jobs with real URLs from your search results.
 
-Return ${count} real open jobs as a JSON array. No markdown, no text outside the array. Each object on ONE line:
-{"title":"Title","company":"Company","location":"Remote","workType":"Remote","salary":"$X","matchScore":"Strong Match","description":"2 sentences: first what the role does, second WHY this specific candidate fits based on their background. Max 40 words total.","qualifications":["req 1","req 2","req 3"],"source":"LinkedIn","isNew":true,"tags":["Industry"],"degreeRequired":"Bachelor|Master|MBA|PhD|None","yearsRequired":0}
+Return up to ${count} jobs as a JSON array. Start with [ end with ]. Each job on ONE line:
+{"title":"exact title","company":"exact company","location":"as listed","workType":"Remote|Hybrid|On-site","salary":"as listed or Not listed","description":"what role does + why candidate fits their specific background. 40 words max.","qualifications":["requirement from listing","requirement from listing","requirement from listing"],"applyUrl":"REAL URL from search — mandatory, no fabrication","source":"LinkedIn|Indeed|Company","tags":["Industry"],"degreeRequired":"Bachelor|Master|MBA|PhD|None","yearsRequired":0}
 
-DO NOT include applyUrl — URLs you generate are fabricated and broken. We build real search links from title+company.
-
-DESCRIPTION RULE: Make descriptions personal. Example: "Lead HR transformation for 500-person tech company. Your Paycom expertise and multi-site ops background directly match their digital HR modernization initiative." NOT "Manage HR operations for tech company."
-QUALIFICATION RULE: Always include education requirement as first item if applicable (e.g. "Bachelor's degree required", "MBA preferred", "No degree required"). Include years of experience if stated (e.g. "10+ years experience required").
-DEGREE FIELD: Set degreeRequired to Bachelor, Master, MBA, PhD, or None. Set yearsRequired to minimum years of experience (0 if not specified).
-
-Start your response with [ and end with ].`;
+ABSOLUTE RULES:
+- applyUrl must be a real URL you found in search results — if you don't have one, skip that job
+- salary must come from the listing — never invent a number
+- title must be exact from the listing — do not paraphrase
+- If you can only find 3 real jobs, return 3 — do not pad with invented ones`;
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -5202,7 +5184,7 @@ function buildCard(j, c, cd) {
       <span class="jb ${wtClass}">${j.workType||'Unknown'}</span>
       ${j.salary&&j.salary!=='Not listed'&&j.salary!=='Competitive' ? `<span class="jb jb-salary">💰 ${j.salary}</span>` : '<span class="jb" style="background:#fff3e0;color:#b45309;border:1px solid #f6c96b;" title="Salary not listed — ask before applying">💰 Not disclosed</span>'}
       ${(() => { try { const d = new URL(j.applyUrl||'').hostname; const boards = ['linkedin.com','indeed.com','glassdoor.com','ziprecruiter.com','monster.com','careerbuilder.com']; return j.applyUrl && !boards.some(b=>d.includes(b)) ? '<span class="jb" style="background:#e8f5e9;color:#1e7a4e;border:1px solid #a0d8b8;" title="Apply directly on company website">⚡ Direct</span>' : ''; } catch(_){ return ''; }})()}
-      ${scored.requiresMasters ? '<span class="jb" style="background:#fce4ec;color:#880e4f;" title="Advanced degree required">🎓 MBA/Masters</span>' : scored.requiresDegree ? '<span class="jb" style="background:#f3e5f5;color:#6a1b9a;" title="Degree required">🎓 Degree reqd</span>' : '<span class="jb" style="background:#e8f5e9;color:#1e7a4e;" title="No degree requirement">🎓 No degree</span>'}
+      ${scored.requiresMasters ? '<span class="jb" style="background:#fce4ec;color:#880e4f;" title="Advanced degree required">🎓 MBA/Masters req</span>' : scored.requiresDegree ? '<span class="jb" style="background:#f3e5f5;color:#6a1b9a;" title="Degree required">🎓 Degree reqd</span>' : ''}
       ${scored.requiredYears >= 2 ? `<span class="jb" style="background:#e8f4fd;color:#1565c0;" title="${scored.requiredYears}+ years of experience required">📅 ${scored.requiredYears}+ yrs exp</span>` : ''}
       ${tags}
     </div>
@@ -5222,11 +5204,10 @@ function buildCard(j, c, cd) {
         ${(() => {
           const validUrl = validateApplyUrl(j.applyUrl);
           const liUrl = buildLinkedInUrl(j.title, j.company);
-          const indeedUrl = buildIndeedUrl(j.title, j.company);
           if (validUrl) {
-            return `<a class="apply-link" style="background:${cd.colorHex}" href="${validUrl}" target="_blank" rel="noopener" onclick="promptApplyStage('${c}','${j._id}')">⚡ Apply Directly ↗</a>`;
+            return `<a class="apply-link" style="background:${cd.colorHex}" href="${validUrl}" target="_blank" rel="noopener" onclick="promptApplyStage('${c}','${j._id}')">⚡ Apply Now ↗</a>`;
           }
-          return `<a class="apply-link" style="background:${cd.colorHex}" href="${liUrl}" target="_blank" rel="noopener" onclick="promptApplyStage('${c}','${j._id}')">🔍 Find on LinkedIn ↗</a>`;
+          return `<a class="apply-link" style="background:${cd.colorHex};opacity:.85;" href="${liUrl}" target="_blank" rel="noopener" onclick="promptApplyStage('${c}','${j._id}')">🔍 Search on LinkedIn ↗</a>`;
         })()}
         <a href="${buildLinkedInUrl(j.title, j.company)}" target="_blank" rel="noopener"
           style="display:inline-flex;align-items:center;gap:4px;padding:6px 11px;border-radius:8px;border:1.5px solid var(--border);background:white;font-size:12px;font-weight:700;color:var(--text2);text-decoration:none;">
