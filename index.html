@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <!-- ============================================================
      The Job Hunts — Career Portal
-     Version: 8.0
+     Version: 8.2
      Updated: 2026-03-20
      Changes: Match scoring (0-100 client-side), hover breakdown tooltip,
               industry multi-select filter, work arrangement toggles,
@@ -2118,7 +2118,7 @@ body.font-xl .card-title { font-size: calc(var(--base-font) + 1px); }
 //  CLOUDFLARE WORKER — API proxy URL
 //  Update this if you ever redeploy your Worker
 // ═══════════════════════════════════════════════════════════════
-const VERSION = '8.0';
+const VERSION = '8.2';
 const WORKER_URL = 'https://career-hub-api.andy-dao-91-aaf.workers.dev';
 
 // ═══════════════════════════════════════════════════════════════
@@ -2170,16 +2170,50 @@ function activeCandidates() {
 
 // Persist config to localStorage
 let _saveTimer = null;
+function cleanConfigForStorage(config) {
+  // Deep clone and strip bloat before saving
+  const c = JSON.parse(JSON.stringify(config));
+  const thirtyDaysAgo = Date.now() - (30 * 24 * 60 * 60 * 1000);
+
+  Object.keys(c.candidates || {}).forEach(key => {
+    const cd = c.candidates[key];
+    if (!cd.jobs) return;
+
+    cd.jobs = cd.jobs
+      // Drop dismissed jobs older than 30 days
+      .filter(j => !j.dismissed || (j._addedAt && j._addedAt > thirtyDaysAgo))
+      .map(j => {
+        // Strip fields that are recalculated on render
+        delete j.matchScore; // recalculated client-side
+        // Trim qualifications to 3 max
+        if (j.qualifications && j.qualifications.length > 3) {
+          j.qualifications = j.qualifications.slice(0, 3);
+        }
+        // Strip empty/null fields to save space
+        Object.keys(j).forEach(k => {
+          if (j[k] === null || j[k] === undefined || j[k] === '') delete j[k];
+          if (Array.isArray(j[k]) && j[k].length === 0) delete j[k];
+        });
+        return j;
+      });
+
+    // Strip tasteProfile from storage (rebuilt on demand)
+    delete cd.tasteProfile;
+  });
+
+  return c;
+}
+
 function saveConfig(immediate = false) {
   if (immediate) {
     clearTimeout(_saveTimer);
-    localStorage.setItem('portalConfig', JSON.stringify(CONFIG));
+    localStorage.setItem('portalConfig', JSON.stringify(cleanConfigForStorage(CONFIG)));
     savedFlash();
     return;
   }
   clearTimeout(_saveTimer);
   _saveTimer = setTimeout(() => {
-    localStorage.setItem('portalConfig', JSON.stringify(CONFIG));
+    localStorage.setItem('portalConfig', JSON.stringify(cleanConfigForStorage(CONFIG)));
     savedFlash();
   }, 400);
 }
@@ -2196,9 +2230,17 @@ function loadConfig() {
       Object.keys(CONFIG.candidates).forEach(c => {
         if (parsed.candidates?.[c]) {
           CONFIG.candidates[c] = { ...CONFIG.candidates[c], ...parsed.candidates[c] };
-          // Strip hardcoded fallback jobs (identified by -fb- in their _id)
+          // Strip fallback jobs and deduplicate on load
           if (CONFIG.candidates[c].jobs) {
             CONFIG.candidates[c].jobs = CONFIG.candidates[c].jobs.filter(j => !j._id || !j._id.includes('-fb-'));
+            // Deduplicate
+            const seen = new Set();
+            CONFIG.candidates[c].jobs = CONFIG.candidates[c].jobs.filter(j => {
+              const key = (j.title||'').toLowerCase().trim() + '||' + (j.company||'').toLowerCase().trim();
+              if (seen.has(key)) return false;
+              seen.add(key);
+              return true;
+            });
           }
         }
       });
@@ -3391,14 +3433,15 @@ function buildSidebar(c, cd, isAdmin) {
       </button>
 
       ${(() => {
-        const insights = getTasteInsights('${c}');
-        if (!insights.length) return '';
-        return `
-        <div style="background:white;border:1.5px solid ${colorHex}22;border-left:3px solid ${colorHex};border-radius:8px;padding:10px 12px;margin-bottom:12px;">
-          <div style="font-size:10px;font-weight:800;color:${colorHex};text-transform:uppercase;letter-spacing:.07em;margin-bottom:7px;">🧠 What We've Learned</div>
-          ${insights.map(i => `<div style="font-size:11px;color:var(--text2);margin-bottom:4px;line-height:1.4;">${i}</div>`).join('')}
-          <div style="font-size:10px;color:var(--muted);margin-top:6px;font-style:italic;">Used automatically in your next search</div>
-        </div>`;
+        try {
+          const insights = getTasteInsights(c);
+          if (!insights || !insights.length) return '';
+          return '<div style="background:white;border:1.5px solid '+colorHex+'33;border-left:3px solid '+colorHex+';border-radius:8px;padding:10px 12px;margin-bottom:12px;">'
+            + '<div style="font-size:10px;font-weight:800;color:'+colorHex+';text-transform:uppercase;letter-spacing:.07em;margin-bottom:7px;">🧠 What We Know</div>'
+            + insights.map(i => '<div style="font-size:11px;color:var(--text2);margin-bottom:4px;line-height:1.4;">'+i+'</div>').join('')
+            + '<div style="font-size:10px;color:var(--muted);margin-top:6px;font-style:italic;">Used automatically in your next search</div>'
+            + '</div>';
+        } catch(_) { return ''; }
       })()}
       <div class="section-label" style="margin-top:16px;">Stats</div>
       <div class="stat-row stat-clickable" onclick="filterJobs('${c}','all',null)" title="Show all jobs">
@@ -3997,6 +4040,9 @@ async function aiSearch(c) {
   }
   // Don't stamp cooldown yet — only stamp after a successful search
 
+  // Rebuild taste profile if dirty
+  if (cd._tasteDirty) { buildTasteProfile(c); cd._tasteDirty = false; }
+
   // Mark all existing as not-new before this session
   (cd.jobs||[]).forEach(j => j.isNew = false);
 
@@ -4168,6 +4214,12 @@ async function aiSearch(c) {
     // Prepend new jobs (newest at top)
     if (!cd.jobs) cd.jobs = [];
     cd.jobs = [...newJobs, ...cd.jobs];
+    // Cap at 200 total jobs — keep newest, always preserve starred/applied
+    if (cd.jobs.length > 200) {
+      const important = cd.jobs.filter(j => j.starred || j.applied || (j.stage && j.stage !== 'none'));
+      const rest = cd.jobs.filter(j => !j.starred && !j.applied && (!j.stage || j.stage === 'none'));
+      cd.jobs = [...important, ...rest].slice(0, 200);
+    }
 
     // Save timestamp + stamp cooldown (only on success)
     _searchCooldowns[c] = Date.now();
@@ -4386,7 +4438,9 @@ function buildTasteProfile(c) {
 
 function getTasteInsights(c) {
   const cd = CONFIG.candidates[c];
+  if (!cd) return [];
   const profile = cd.tasteProfile || buildTasteProfile(c);
+  if (!profile) return [];
   const insights = [];
 
   if (profile.liked) {
@@ -5354,8 +5408,8 @@ function toggleStar(c, id, btn) {
   if (card) { card.classList.toggle('starred', j.starred); card.dataset.starred = j.starred; }
   saveConfig();
   updateSidebarStats(c);
-  // Update taste profile when enough signals exist
-  buildTasteProfile(c);
+  // Mark taste profile as stale — will rebuild before next search
+  if (CONFIG.candidates[c]) CONFIG.candidates[c]._tasteDirty = true;
 }
 
 function toggleApplied(c, id, btn) {
@@ -5383,7 +5437,7 @@ function dismissCard(c, id) {
     setTimeout(() => { card.remove(); updateSidebarStats(c); }, 300);
   }
   saveConfig();
-  buildTasteProfile(c);
+  if (CONFIG.candidates[c]) CONFIG.candidates[c]._tasteDirty = true;
   // Undo toast — 5 seconds to recover accidental dismissals
   showUndoToast('Job dismissed', () => {
     j.dismissed = false;
