@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <!-- ============================================================
      The Job Hunts — Career Portal
-     Version: 8.5
+     Version: 8.6
      Updated: 2026-03-20
      Changes: Match scoring (0-100 client-side), hover breakdown tooltip,
               industry multi-select filter, work arrangement toggles,
@@ -2118,7 +2118,7 @@ body.font-xl .card-title { font-size: calc(var(--base-font) + 1px); }
 //  CLOUDFLARE WORKER — API proxy URL
 //  Update this if you ever redeploy your Worker
 // ═══════════════════════════════════════════════════════════════
-const VERSION = '8.5';
+const VERSION = '8.6';
 const WORKER_URL = 'https://career-hub-api.andy-dao-91-aaf.workers.dev';
 
 // ═══════════════════════════════════════════════════════════════
@@ -3534,21 +3534,14 @@ function buildMainContent(c, cd, isAdmin) {
         </div>
       </div>
       <div class="content-header-filters" id="filter-bar-${c}">
-        <div class="filter-row" id="filters-${c}" style="align-items:center;">
+        <div class="filter-row" id="filters-${c}">
           <button class="fbt on" onclick="filterJobs('${c}','all',this)">All${badge(counts.all)}</button>
           <button class="fbt" onclick="filterJobs('${c}','unreviewed',this)">To Review${badge(counts.unreviewed)}</button>
           <button class="fbt" onclick="filterJobs('${c}','remote',this)">Remote${badge(counts.remote)}</button>
+          <button class="fbt" onclick="filterJobs('${c}','hybrid',this)">Hybrid${badge(counts.hybrid)}</button>
+          <button class="fbt" onclick="filterJobs('${c}','onsite',this)">On-site${badge(counts.onsite)}</button>
           <button class="fbt" onclick="filterJobs('${c}','starred',this)" style="background:white;color:var(--text2);border-color:var(--border)">⭐ Starred${badge(counts.starred)}</button>
           <button class="fbt" onclick="filterJobs('${c}','applied',this)" style="background:white;color:var(--text2)">✅ Applied${badge(counts.applied)}</button>
-          <div style="position:relative;display:inline-block;">
-            <button class="fbt" onclick="toggleMoreFilters('${c}')" id="more-filters-btn-${c}" style="background:var(--surface2);">
-              More ▾
-            </button>
-            <div id="more-filters-${c}" style="display:none;position:absolute;top:calc(100% + 4px);left:0;background:white;border:1.5px solid var(--border);border-radius:10px;padding:8px;z-index:200;box-shadow:var(--shadow-lg);white-space:nowrap;display:none;">
-              <button class="fbt" onclick="filterJobs('${c}','hybrid',this);toggleMoreFilters('${c}')" style="display:block;width:100%;margin-bottom:4px;text-align:left;">Hybrid${badge(counts.hybrid)}</button>
-              <button class="fbt" onclick="filterJobs('${c}','onsite',this);toggleMoreFilters('${c}')" style="display:block;width:100%;text-align:left;">On-site${badge(counts.onsite)}</button>
-            </div>
-          </div>
         </div>
         ${(() => {
           // Build industry list from all job tags
