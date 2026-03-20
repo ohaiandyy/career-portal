@@ -1465,9 +1465,14 @@ body.font-xl .card-title { font-size: calc(var(--base-font) + 1px); }
 .match-gauge-track { width:100px; height:6px; background:var(--surface2); border-radius:3px; overflow:hidden; flex-shrink:0; }
 .match-gauge-bar { height:100%; border-radius:3px; transition:width .4s ease; }
 .match-gauge-label { font-size:11px; font-weight:700; white-space:nowrap; }
+.match-gauge-hover {
+  cursor: default;
+}
 .match-tooltip {
   display: none;
-  position: fixed;
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 0;
   background: #1c1c1c;
   color: white;
   border-radius: 10px;
@@ -1477,8 +1482,17 @@ body.font-xl .card-title { font-size: calc(var(--base-font) + 1px); }
   box-shadow: 0 8px 32px rgba(0,0,0,.3);
   pointer-events: none;
   line-height: 1.5;
+  white-space: normal;
 }
-/* tooltip shown via JS positionMatchTooltip */
+.match-tooltip::after {
+  content: '';
+  position: absolute;
+  top: 100%; left: 16px;
+  border: 6px solid transparent;
+  border-top-color: #1c1c1c;
+}
+/* Show on hover — CSS only, no JS, no scroll interference */
+.match-gauge-hover:hover .match-tooltip { display: block; }
 
 /* ── Company research links ── */
 .company-research-links { display:flex; flex-wrap:wrap; gap:6px; align-items:center; padding:7px 0 10px; border-top:1px solid var(--border); margin-top:4px; }
@@ -2103,7 +2117,7 @@ body.font-xl .card-title { font-size: calc(var(--base-font) + 1px); }
 //  CLOUDFLARE WORKER — API proxy URL
 //  Update this if you ever redeploy your Worker
 // ═══════════════════════════════════════════════════════════════
-const VERSION = '7.0';
+const VERSION = '7.1';
 const WORKER_URL = 'https://career-hub-api.andy-dao-91-aaf.workers.dev';
 
 // ═══════════════════════════════════════════════════════════════
@@ -4676,16 +4690,13 @@ function buildCard(j, c, cd) {
   // Match gauge — client-side scoring
   const scored = scoreJob(j, c, cd);
   const matchGauge = `
-    <div class="match-gauge" style="position:relative;">
-      <div class="match-gauge-track" style="cursor:pointer;" onclick="toggleMatchTooltip(event,'mtip-${safeId}')" title="Click for match details">
+    <div class="match-gauge match-gauge-hover">
+      <div class="match-gauge-track">
         <div class="match-gauge-bar" style="width:${scored.pct}%;background:${scored.color}"></div>
       </div>
-      <span class="match-gauge-label" style="color:${scored.color};cursor:pointer;" onclick="toggleMatchTooltip(event,'mtip-${safeId}')" title="Click for match details">${scored.label} <span style="font-size:10px;opacity:.5;">ⓘ</span></span>
-      <div class="match-tooltip" id="mtip-${safeId}" style="display:none;">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;border-bottom:1px solid rgba(255,255,255,.2);padding-bottom:6px;">
-          <span style="font-size:11px;font-weight:800;color:white;">Match Breakdown · ${scored.score}/100</span>
-          <span onclick="document.getElementById('mtip-${safeId}').style.display='none'" style="cursor:pointer;font-size:14px;opacity:.6;line-height:1;">✕</span>
-        </div>
+      <span class="match-gauge-label" style="color:${scored.color}">${scored.label} <span style="font-size:10px;opacity:.45;">ⓘ</span></span>
+      <div class="match-tooltip">
+        <div style="font-size:11px;font-weight:800;color:white;margin-bottom:8px;border-bottom:1px solid rgba(255,255,255,.2);padding-bottom:6px;">Match Breakdown · ${scored.score}/100</div>
         ${scored.reasons.matched.map(r => `<div style="display:flex;gap:6px;margin-bottom:4px;font-size:11px;"><span style="color:#4ade80;flex-shrink:0;">✓</span><span>${r}</span></div>`).join('')}
         ${scored.reasons.warnings.map(r => `<div style="display:flex;gap:6px;margin-bottom:4px;font-size:11px;"><span style="color:#fbbf24;flex-shrink:0;">⚠</span><span>${r}</span></div>`).join('')}
         ${scored.reasons.missing.map(r => `<div style="display:flex;gap:6px;margin-bottom:4px;font-size:11px;"><span style="color:#f87171;flex-shrink:0;">✗</span><span>${r}</span></div>`).join('')}
