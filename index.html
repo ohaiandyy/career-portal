@@ -1478,7 +1478,7 @@ body.font-xl .card-title { font-size: calc(var(--base-font) + 1px); }
   pointer-events: none;
   line-height: 1.5;
 }
-.match-gauge:hover .match-tooltip { display: block; }
+/* tooltip shown via JS positionMatchTooltip */
 
 /* ── Company research links ── */
 .company-research-links { display:flex; flex-wrap:wrap; gap:6px; align-items:center; padding:7px 0 10px; border-top:1px solid var(--border); margin-top:4px; }
@@ -1567,6 +1567,55 @@ body.font-xl .card-title { font-size: calc(var(--base-font) + 1px); }
 }
 .view-btn.active { background:var(--text); color:white; border-color:var(--text); }
 .view-btn:hover:not(.active) { background:var(--surface2); }
+
+/* ── Industry filter popover ── */
+.industry-popover {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  background: white;
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  box-shadow: var(--shadow-lg);
+  z-index: 400;
+  min-width: 200px;
+  max-height: 280px;
+  overflow-y: auto;
+  padding: 8px 0;
+  display: none;
+}
+.industry-popover.open { display: block; }
+.industry-popover-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text2);
+  cursor: pointer;
+  transition: background .1s;
+}
+.industry-popover-item:hover { background: var(--surface2); }
+.industry-popover-item input[type="checkbox"] { cursor: pointer; accent-color: var(--text); }
+.industry-filter-btn {
+  padding: 5px 12px;
+  border-radius: 20px;
+  border: 1.5px solid var(--border);
+  background: white;
+  font-size: 12px;
+  font-weight: 600;
+  font-family: 'Nunito', sans-serif;
+  cursor: pointer;
+  color: var(--text2);
+  transition: all .15s;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+}
+.industry-filter-btn:hover { background: var(--surface2); }
+.industry-filter-btn.active { background: var(--text); color: white; border-color: var(--text); }
 
 /* ── Kanban board ── */
 .kanban-board {
@@ -2054,7 +2103,7 @@ body.font-xl .card-title { font-size: calc(var(--base-font) + 1px); }
 //  CLOUDFLARE WORKER — API proxy URL
 //  Update this if you ever redeploy your Worker
 // ═══════════════════════════════════════════════════════════════
-const VERSION = '6.6';
+const VERSION = '6.8';
 const WORKER_URL = 'https://career-hub-api.andy-dao-91-aaf.workers.dev';
 
 // ═══════════════════════════════════════════════════════════════
@@ -2427,8 +2476,9 @@ function setSidebarWidth(w) {
 
 function switchPanel(panel) {
   activePanel = panel;
-  // Reset industry filter on panel switch
+  // Reset industry filters on panel switch
   if (window._industryFilter) window._industryFilter[panel] = '';
+  if (window._industryTags) window._industryTags[panel] = new Set();
   renderAdminTabs();
   if (panel === 'overview') {
     renderOverview();
@@ -3360,7 +3410,7 @@ function buildMainContent(c, cd, isAdmin) {
             <select id="sort-select-${c}" onchange="sortJobs('${c}',false)" style="padding:5px 10px;border-radius:8px;border:1.5px solid var(--border);font-family:'Nunito',sans-serif;font-size:12px;font-weight:600;cursor:pointer;background:white;color:var(--text2);">
               <option value="default">Sort: Default</option>
               <option value="match">Best Match</option>
-              <option value="newest">Date Added</option>
+              <option value="newest">Recently Added</option>
               <option value="salary">Salary</option>
               <option value="company">Company A–Z</option>
             </select>
@@ -3389,19 +3439,35 @@ function buildMainContent(c, cd, isAdmin) {
         </div>
         ${(() => {
           // Build industry list from all job tags
+          const skipTags = new Set(['remote','hybrid','on-site','onsite','on site','travel','full-time','part-time','contract','any','added by admin']);
           const allTags = new Map();
           (cd.jobs||[]).filter(j=>!j.dismissed).forEach(j => {
             (j.tags||[]).forEach(t => {
-              if (t && t.length > 1) allTags.set(t, (allTags.get(t)||0)+1);
+              if (t && t.length > 1 && !skipTags.has(t.toLowerCase())) {
+                allTags.set(t, (allTags.get(t)||0)+1);
+              }
             });
           });
           if (allTags.size < 2) return '';
           const sorted = [...allTags.entries()].sort((a,b)=>b[1]-a[1]).slice(0,12);
-          return `<select id="industry-filter-${c}" onchange="filterByIndustry('${c}',this.value)"
-            style="padding:5px 10px;border-radius:20px;border:1.5px solid var(--border);font-family:'Nunito',sans-serif;font-size:12px;font-weight:600;cursor:pointer;background:white;color:var(--text2);height:30px;">
-            <option value="">🏷 All Industries</option>
-            ${sorted.map(([tag,n])=>`<option value="${tag}">${tag} (${n})</option>`).join('')}
-          </select>`;
+          return `<div style="position:relative;" id="industry-wrap-${c}">
+            <button class="industry-filter-btn" id="industry-btn-${c}" onclick="toggleIndustryPopover('${c}')">
+              🏷 Industry <span id="industry-btn-count-${c}" style="display:none;background:var(--text);color:white;border-radius:8px;padding:1px 6px;font-size:10px;margin-left:2px;"></span> ▾
+            </button>
+            <div class="industry-popover" id="industry-popover-${c}">
+              <div class="industry-popover-item" onclick="clearIndustryFilter('${c}')">
+                <input type="checkbox" id="ind-all-${c}" checked readonly style="pointer-events:none;">
+                <span>All Industries</span>
+              </div>
+              <div style="height:1px;background:var(--border);margin:4px 0;"></div>
+              ${sorted.map(([tag,n])=>`
+                <label class="industry-popover-item">
+                  <input type="checkbox" value="${tag}" onchange="toggleIndustryTag('${c}','${tag}',this.checked)">
+                  <span style="flex:1;">${tag}</span>
+                  <span style="color:var(--muted);font-size:11px;">${n}</span>
+                </label>`).join('')}
+            </div>
+          </div>`;
         })()}
       </div>
     </div>
@@ -4111,14 +4177,17 @@ Start your response with [ and end with ].`;
 function positionMatchTooltip(e, id) {
   const tip = document.getElementById(id);
   if (!tip) return;
-  const x = e.clientX + 12;
-  const y = e.clientY - 10;
+  tip.style.display = 'block';
+  const x = e.clientX + 14;
+  const y = e.clientY + 14;
   const tipW = 240;
-  const tipH = tip.offsetHeight || 160;
+  const tipH = tip.offsetHeight || 180;
   const vw = window.innerWidth;
   const vh = window.innerHeight;
-  tip.style.left = (x + tipW > vw ? vw - tipW - 12 : x) + 'px';
-  tip.style.top = (y + tipH > vh ? y - tipH - 10 : y) + 'px';
+  // Flip left if too close to right edge
+  tip.style.left = (x + tipW > vw ? e.clientX - tipW - 8 : x) + 'px';
+  // Flip up if too close to bottom edge
+  tip.style.top = (y + tipH > vh ? e.clientY - tipH - 8 : y) + 'px';
 }
 
 function scoreJob(j, c, cd) {
@@ -4279,12 +4348,16 @@ function renderJobCards(c, filter='all', page=0) {
   let jobs = (cd.jobs||[]).filter(j => !j.dismissed);
   const allUnfiltered = [...jobs];
 
-  // Apply industry filter if set
-  const industryTag = window._industryFilter?.[c];
-  if (industryTag) {
-    jobs = jobs.filter(j => (j.tags||[]).some(t => t === industryTag) ||
-      (j.description||'').toLowerCase().includes(industryTag.toLowerCase()) ||
-      (j.title||'').toLowerCase().includes(industryTag.toLowerCase()));
+  // Apply industry multi-tag filter
+  const industryTags = window._industryTags?.[c];
+  if (industryTags && industryTags.size > 0) {
+    jobs = jobs.filter(j =>
+      (j.tags||[]).some(t => industryTags.has(t)) ||
+      [...industryTags].some(tag =>
+        (j.description||'').toLowerCase().includes(tag.toLowerCase()) ||
+        (j.title||'').toLowerCase().includes(tag.toLowerCase())
+      )
+    );
   }
 
   // Apply filter
@@ -4521,9 +4594,10 @@ function buildCard(j, c, cd) {
   // Match gauge — client-side scoring
   const scored = scoreJob(j, c, cd);
   const matchGauge = `
-    <div class="match-gauge" style="position:relative;cursor:help;" title="Hover for match breakdown"
+    <div class="match-gauge" style="position:relative;cursor:default;"
       onmouseenter="positionMatchTooltip(event,'mtip-${safeId}')"
-      onmousemove="positionMatchTooltip(event,'mtip-${safeId}')">
+      onmousemove="positionMatchTooltip(event,'mtip-${safeId}')"
+      onmouseleave="document.getElementById('mtip-${safeId}').style.display='none'">
       <div class="match-gauge-track">
         <div class="match-gauge-bar" style="width:${scored.pct}%;background:${scored.color}"></div>
       </div>
@@ -5592,9 +5666,12 @@ function sortJobs(c, flip=false) {
     jobs.sort((a,b) => (b._addedAt||0) - (a._addedAt||0));
     if (dirBtn) dirBtn.textContent = '↕';
   } else if (sort === 'match') {
-    jobs.sort((a,b) => asc
-      ? (matchOrder[b.matchScore]??3) - (matchOrder[a.matchScore]??3)
-      : (matchOrder[a.matchScore]??3) - (matchOrder[b.matchScore]??3));
+    // Score each job on the fly using the client-side scorer
+    jobs.sort((a,b) => {
+      const sa = scoreJob(a, c, cd).score;
+      const sb = scoreJob(b, c, cd).score;
+      return asc ? sa - sb : sb - sa;
+    });
   } else if (sort === 'newest') {
     jobs.sort((a,b) => asc
       ? (a._addedAt||0) - (b._addedAt||0)
@@ -5639,9 +5716,58 @@ function updateFilterCounts(c) {
   });
 }
 
+// Industry multi-select state
+window._industryTags = window._industryTags || {};
+
+function toggleIndustryPopover(c) {
+  const pop = document.getElementById('industry-popover-'+c);
+  if (!pop) return;
+  pop.classList.toggle('open');
+  // Close on outside click
+  if (pop.classList.contains('open')) {
+    setTimeout(() => {
+      const close = (e) => {
+        if (!pop.contains(e.target) && !document.getElementById('industry-btn-'+c)?.contains(e.target)) {
+          pop.classList.remove('open');
+          document.removeEventListener('click', close);
+        }
+      };
+      document.addEventListener('click', close);
+    }, 10);
+  }
+}
+
+function toggleIndustryTag(c, tag, checked) {
+  if (!window._industryTags[c]) window._industryTags[c] = new Set();
+  if (checked) window._industryTags[c].add(tag);
+  else window._industryTags[c].delete(tag);
+  updateIndustryBtn(c);
+  renderJobCards(c, currentFilter[c]||'all', 0);
+}
+
+function clearIndustryFilter(c) {
+  window._industryTags[c] = new Set();
+  // Uncheck all checkboxes in popover
+  document.querySelectorAll(`#industry-popover-${c} input[type="checkbox"]`).forEach(cb => {
+    if (cb.id !== `ind-all-${c}`) cb.checked = false;
+  });
+  updateIndustryBtn(c);
+  renderJobCards(c, currentFilter[c]||'all', 0);
+}
+
+function updateIndustryBtn(c) {
+  const tags = window._industryTags[c];
+  const btn = document.getElementById('industry-btn-'+c);
+  const countEl = document.getElementById('industry-btn-count-'+c);
+  const allCb = document.getElementById('ind-all-'+c);
+  const count = tags?.size || 0;
+  if (btn) btn.classList.toggle('active', count > 0);
+  if (countEl) { countEl.textContent = count; countEl.style.display = count > 0 ? '' : 'none'; }
+  if (allCb) allCb.checked = count === 0;
+}
+
 function filterByIndustry(c, tag) {
-  // Store industry filter separately
-  if (!currentFilter) window.currentFilter = {};
+  // Legacy — kept for compatibility
   window._industryFilter = window._industryFilter || {};
   window._industryFilter[c] = tag;
   renderJobCards(c, currentFilter[c]||'all', 0);
