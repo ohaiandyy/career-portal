@@ -548,25 +548,55 @@ header {
    MAIN CONTENT AREA
 ═══════════════════════════════════════════════ */
 .content-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 18px;
-  flex-wrap: wrap;
-  gap: 12px;
   position: sticky;
   top: 0;
   z-index: 100;
-  background: rgba(247,246,242,0.97);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  padding: 12px 28px 10px;
+  padding: 10px 28px 0;
   margin-top: -24px;
   margin-left: -28px;
   margin-right: -28px;
-  border-bottom: 1.5px solid var(--border);
-  box-shadow: 0 4px 20px rgba(0,0,0,.07);
+  background: rgba(247,246,242,0.92);
+  backdrop-filter: saturate(180%) blur(16px);
+  -webkit-backdrop-filter: saturate(180%) blur(16px);
+  border-bottom: 1px solid rgba(224,221,213,0.8);
+  box-shadow: 0 1px 0 rgba(255,255,255,.6), 0 4px 24px rgba(0,0,0,.08);
 }
+.content-header-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding-bottom: 8px;
+}
+.content-header-filters {
+  padding-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  border-top: 1px solid rgba(224,221,213,0.5);
+  padding-top: 8px;
+  transition: all .2s ease;
+}
+.content-header-filters.collapsed {
+  display: none;
+}
+.filter-collapse-btn {
+  padding: 3px 8px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: white;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  color: var(--muted);
+  transition: all .15s;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+.filter-collapse-btn:hover { background: var(--surface2); color: var(--text); }
 
 .content-title {
   font-family: 'Lora', serif;
@@ -1230,6 +1260,7 @@ header {
 }
 
 ::-webkit-scrollbar { width: 5px; }
+.tip-wrap:hover > div { display: block !important; }
 ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 5px; }
 
 /* Notification dot */
@@ -1442,10 +1473,33 @@ body.font-xl .card-title { font-size: calc(var(--base-font) + 1px); }
 ::-webkit-scrollbar-thumb { background: #bbb; border-radius: 4px; }
 ::-webkit-scrollbar-thumb:hover { background: #999; }
 /* ── Match gauge ── */
-.match-gauge { display:flex; align-items:center; gap:8px; margin-bottom:8px; }
+.match-gauge { display:flex; align-items:center; gap:8px; margin-bottom:8px; position:relative; }
 .match-gauge-track { width:100px; height:6px; background:var(--surface2); border-radius:3px; overflow:hidden; flex-shrink:0; }
 .match-gauge-bar { height:100%; border-radius:3px; transition:width .4s ease; }
 .match-gauge-label { font-size:11px; font-weight:700; white-space:nowrap; }
+.match-tooltip {
+  display: none;
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 0;
+  background: #1c1c1c;
+  color: white;
+  border-radius: 10px;
+  padding: 12px 14px;
+  width: 260px;
+  z-index: 500;
+  box-shadow: 0 8px 32px rgba(0,0,0,.25);
+  pointer-events: none;
+  line-height: 1.5;
+}
+.match-tooltip::after {
+  content: '';
+  position: absolute;
+  top: 100%; left: 20px;
+  border: 6px solid transparent;
+  border-top-color: #1c1c1c;
+}
+.match-gauge:hover .match-tooltip { display: block; }
 
 /* ── Company research links ── */
 .company-research-links { display:flex; flex-wrap:wrap; gap:6px; align-items:center; padding:7px 0 10px; border-top:1px solid var(--border); margin-top:4px; }
@@ -1819,6 +1873,21 @@ body.font-xl .card-title { font-size: calc(var(--base-font) + 1px); }
     </div>
 
     <div class="help-section">
+      <div class="help-section-title">⌨️ Keyboard Shortcuts</div>
+      <div class="help-item">
+        <div class="help-item-icon">⌨️</div>
+        <div class="help-item-text">
+          <strong>S</strong> — Search for jobs &nbsp;·&nbsp;
+          <strong>F</strong> — Toggle filters &nbsp;·&nbsp;
+          <strong>A</strong> — Add a job &nbsp;·&nbsp;
+          <strong>T</strong> — Toggle tracker view<br>
+          <strong>1</strong> All &nbsp;·&nbsp; <strong>2</strong> Remote &nbsp;·&nbsp; <strong>3</strong> Starred &nbsp;·&nbsp; <strong>4</strong> Applied &nbsp;·&nbsp; <strong>5</strong> To Review<br>
+          Press <strong>?</strong> anytime to see a quick reminder. Shortcuts are disabled when typing in a field.
+        </div>
+      </div>
+    </div>
+
+    <div class="help-section">
       <div class="help-section-title">💾 Saving & Data</div>
       <div class="help-item">
         <div class="help-item-icon">💾</div>
@@ -2005,7 +2074,7 @@ body.font-xl .card-title { font-size: calc(var(--base-font) + 1px); }
 //  CLOUDFLARE WORKER — API proxy URL
 //  Update this if you ever redeploy your Worker
 // ═══════════════════════════════════════════════════════════════
-const VERSION = '5.7';
+const VERSION = '6.0';
 const WORKER_URL = 'https://career-hub-api.andy-dao-91-aaf.workers.dev';
 
 // ═══════════════════════════════════════════════════════════════
@@ -2421,6 +2490,52 @@ function renderOverview() {
       }).join('') || '<div style="color:var(--muted);font-size:13px">No starred jobs yet</div>'}
     </div>
 
+    <!-- Activity Feed -->
+    <div style="background:white;border-radius:var(--radius);padding:20px;border:1.5px solid var(--border);margin-bottom:16px;">
+      <h3 style="font-size:14px;font-weight:700;margin-bottom:12px;color:var(--text2)">⚡ Recent Activity</h3>
+      ${(() => {
+        const events = [];
+        activeCandidates().forEach(c => {
+          const cd = CONFIG.candidates[c];
+          // Last search
+          if (cd.lastSearched) events.push({ ts: cd.lastSearched, c, text: `ran a job search`, icon: '🔍' });
+          // Last login
+          if (cd.lastLogin) events.push({ ts: cd.lastLogin, c, text: `logged in`, icon: '👤' });
+          // Recent stage changes
+          (cd.jobs||[]).filter(j=>!j.dismissed&&j.stageHistory).forEach(j => {
+            Object.entries(j.stageHistory||{}).forEach(([stage, ts]) => {
+              const stageLabels = { applied:'marked Applied', interview:'moved to Interview', offer:'received an Offer', declined:'declined a role' };
+              if (stageLabels[stage]) events.push({ ts, c, text: `${stageLabels[stage]}: ${j.title} at ${j.company}`, icon: { applied:'📤', interview:'📅', offer:'🎉', declined:'✕' }[stage] });
+            });
+          });
+          // Recent stars
+          (cd.jobs||[]).filter(j=>j.starred&&j._addedAt).forEach(j => {
+            events.push({ ts: j._addedAt, c, text: `starred: ${j.title} at ${j.company}`, icon: '⭐' });
+          });
+        });
+        // Sort newest first, take top 12
+        events.sort((a,b) => b.ts - a.ts);
+        const recent = events.slice(0, 12);
+        if (!recent.length) return '<div style="color:var(--muted);font-size:13px;">No activity yet</div>';
+        return recent.map(e => {
+          const cd = CONFIG.candidates[e.c];
+          const ago = (() => {
+            const m = Math.floor((Date.now()-e.ts)/60000);
+            if (m < 60) return m <= 1 ? 'just now' : m+'m ago';
+            const h = Math.floor(m/60);
+            if (h < 24) return h+'h ago';
+            return Math.floor(h/24)+'d ago';
+          })();
+          return `<div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--border);font-size:13px;flex-wrap:wrap;">
+            <span style="font-size:16px;flex-shrink:0;">${e.icon}</span>
+            <span style="background:${cd.colorHex};color:white;padding:2px 7px;border-radius:5px;font-size:10px;font-weight:700;flex-shrink:0;">${cd.name}</span>
+            <span style="flex:1;color:var(--text2);">${e.text}</span>
+            <span style="font-size:11px;color:var(--muted);flex-shrink:0;">${ago}</span>
+          </div>`;
+        }).join('');
+      })()}
+    </div>
+
     <div style="background:white;border-radius:var(--radius);padding:20px;border:1.5px solid var(--border);">
       <h3 style="font-size:14px;font-weight:700;margin-bottom:4px;color:var(--text2)">🗑 Dismissed Jobs</h3>
       <div style="font-size:12px;color:var(--muted);margin-bottom:12px;">Jobs removed by candidates — click Restore to add back to their list.</div>
@@ -2526,6 +2641,15 @@ function renderAdminSidebar() {
             ${at?.enabled ? `<button class="cancel-btn" style="padding:7px 12px;font-size:12px;" onclick="CONFIG.airtable.enabled=false;saveConfig();renderOverview()">Disconnect</button>` : ''}
           </div>
         </div>
+      </div>
+
+      <div style="background:var(--surface2);border-radius:10px;padding:12px 14px;margin-bottom:14px;">
+        <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:8px;">🚀 Deploy to GitHub</div>
+        <div style="font-size:11px;color:var(--muted);margin-bottom:8px;line-height:1.5;">Push the current portal code live to GitHub Pages.</div>
+        <input class="form-input" id="gh-token-input" type="password" placeholder="GitHub token (ghp_...)" style="font-size:12px;padding:6px 10px;margin-bottom:6px;width:100%;">
+        <input class="form-input" id="deploy-token-input" type="password" placeholder="Deploy token (jobhunts-deploy-2026)" style="font-size:12px;padding:6px 10px;margin-bottom:8px;width:100%;">
+        <button onclick="deployToGitHub()" style="width:100%;padding:8px;border-radius:8px;border:none;background:var(--text);color:white;font-size:12px;font-weight:700;cursor:pointer;">🚀 Push Live</button>
+        <div id="deploy-status" style="font-size:11px;margin-top:6px;color:var(--muted);"></div>
       </div>
 
       <div style="display:flex;flex-direction:column;gap:8px;">
@@ -2955,10 +3079,18 @@ function buildSidebar(c, cd, isAdmin) {
         ${cd.name}
       </div>
 
-      <div class="profile-role" id="role-display-${c}" onclick="toggleRoleEdit('${c}')" title="Click to edit" style="cursor:pointer;">${cd.role} <span style="font-size:10px;opacity:.4">✏️</span></div>
-      <input spellcheck="true" class="skill-input" id="role-edit-${c}" value="${cd.role}" 
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:10px;">
+        <div class="profile-role" id="role-display-${c}" onclick="toggleRoleEdit('${c}')" title="Click to edit your headline" style="cursor:pointer;flex:1;">${cd.role} <span style="font-size:10px;opacity:.4">✏️</span></div>
+        <button onclick="suggestHeadlines('${c}')" id="headline-ai-btn-${c}"
+          style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:6px;border:1.5px solid ${colorHex};background:white;color:${colorHex};cursor:pointer;white-space:nowrap;flex-shrink:0;">
+          ✨ Suggest
+        </button>
+      </div>
+      <input spellcheck="true" class="skill-input" id="role-edit-${c}" value="${cd.role}"
              style="display:none;width:100%;margin-bottom:6px;font-size:12px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;"
              onblur="saveRole('${c}',this.value)" onkeydown="if(event.key==='Enter')this.blur()">
+      <div id="headline-suggestions-${c}" style="display:none;margin-bottom:10px;"></div>
+      <div style="font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px;opacity:.6">HEADLINE</div>
 
       <div style="position:relative;">
         <div class="profile-bio" id="bio-display-${c}" onclick="toggleBioEdit('${c}')" title="Click to edit bio" style="cursor:pointer;">
@@ -2981,6 +3113,31 @@ function buildSidebar(c, cd, isAdmin) {
         </div>
       </div>
 
+      ${(() => {
+        // Profile completeness
+        const checks = [
+          { done: !!cd.bio && cd.bio.length > 50, label: 'Bio' },
+          { done: (cd.skills||[]).length >= 5, label: '5+ skills' },
+          { done: !!cd.searchAreas && cd.searchAreas.length > 20, label: 'Search targets' },
+          { done: !!cd.prefs?.location, label: 'Location' },
+          { done: !!cd.prefs?.minSalary, label: 'Min salary' },
+        ];
+        const done = checks.filter(x=>x.done).length;
+        const pct = Math.round((done/checks.length)*100);
+        const missing = checks.filter(x=>!x.done).map(x=>x.label);
+        const color = pct===100?'var(--green)':pct>=60?'#b45309':'var(--red)';
+        return pct === 100 ? '' : `
+        <div style="background:var(--surface2);border-radius:8px;padding:10px 12px;margin-bottom:12px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+            <span style="font-size:11px;font-weight:800;color:${color};text-transform:uppercase;letter-spacing:.06em;">Profile ${pct}% complete</span>
+            <span style="font-size:11px;color:var(--muted);">${done}/${checks.length}</span>
+          </div>
+          <div style="height:5px;background:var(--border);border-radius:3px;overflow:hidden;margin-bottom:6px;">
+            <div style="height:100%;width:${pct}%;background:${color};border-radius:3px;transition:width .4s;"></div>
+          </div>
+          <div style="font-size:11px;color:var(--muted);">Missing: ${missing.join(' · ')} — complete these for better results</div>
+        </div>`;
+      })()}
       <div class="section-label">Skills & Keywords</div>
       <div style="font-size:11px;color:var(--muted);margin:-8px 0 8px;">These keywords are included in every job search</div>
       <div class="skills-container" id="skills-${c}">${skills}</div>
@@ -2997,18 +3154,23 @@ function buildSidebar(c, cd, isAdmin) {
         <div id="skill-suggestion-chips-${c}" style="display:flex;flex-wrap:wrap;gap:5px;"></div>
       </div>
 
-      <div class="section-label">Search Targets</div>
-      <div style="font-size:11px;color:var(--muted);margin:-8px 0 8px;">Be specific — Claude searches for exactly what you describe here</div>
-      <div style="font-size:12px;color:var(--text2);line-height:1.6;background:${cd.lt};padding:10px 12px;border-radius:8px;margin-bottom:4px;">
-        <div id="targets-display-${c}">${cd.searchAreas}</div>
-        <textarea spellcheck="true" class="editable-bio" id="targets-edit-${c}" style="background:white;margin-top:6px;font-size:inherit;" onblur="saveTargets('${c}',this.value)">${cd.searchAreas}</textarea>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-top:16px;margin-bottom:6px;">
+        <div style="display:flex;align-items:center;gap:6px;">
+          <span style="font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);">🎯 What You're Targeting</span>
+        </div>
+        <div style="display:flex;gap:6px;">
+          <button onclick="toggleTargetEdit('${c}')" style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:6px;border:1.5px solid var(--border);background:white;color:var(--muted);cursor:pointer;">✏️ Edit</button>
+          <button onclick="aiWriteTargets('${c}')" id="targets-ai-btn-${c}"
+            style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:6px;border:1.5px solid ${colorHex};background:white;color:${colorHex};cursor:pointer;">
+            ✨ AI Help
+          </button>
+        </div>
       </div>
-      <div style="display:flex;gap:8px;align-items:center;margin-top:4px;flex-wrap:wrap;">
-        <button class="skill-remove" style="font-size:12px;color:var(--muted);cursor:pointer;background:none;border:none;padding:0;" onclick="toggleTargetEdit('${c}')">✏️ Edit</button>
-        <button onclick="aiWriteTargets('${c}')" id="targets-ai-btn-${c}"
-          style="font-size:11px;font-weight:700;padding:3px 10px;border-radius:6px;border:1.5px solid ${colorHex};background:white;color:${colorHex};cursor:pointer;">
-          ✨ Help me write this
-        </button>
+      <div style="border:2px solid ${colorHex};border-radius:10px;padding:12px 14px;background:${cd.lt};margin-bottom:8px;position:relative;">
+        <div style="font-size:11px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;opacity:.7;">Most important field — AI searches exactly what's written here</div>
+        <div id="targets-display-${c}" style="font-size:13px;color:var(--text2);line-height:1.65;">${cd.searchAreas || '<span style="color:var(--muted);font-style:italic;">Not set — click Edit or AI Help to add targeting</span>'}</div>
+        <textarea spellcheck="true" class="editable-bio" id="targets-edit-${c}" style="background:white;margin-top:6px;font-size:13px;" onblur="saveTargets('${c}',this.value)">${cd.searchAreas}</textarea>
+        ${!cd.searchAreas ? `<div style="position:absolute;top:-8px;right:10px;background:var(--red);color:white;font-size:9px;font-weight:800;padding:2px 7px;border-radius:6px;text-transform:uppercase;letter-spacing:.05em;">Not set</div>` : ''}
       </div>
 
     </div>
@@ -3052,13 +3214,22 @@ function buildSidebar(c, cd, isAdmin) {
         <div>
           <div style="font-size:10px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px;">🏠 Work Arrangement</div>
           <div style="display:flex;gap:5px;">
-            ${['remote-only','open-to-both','onsite-ok'].map(opt => {
-              const labels = { 'remote-only':'🌐 Remote Only', 'open-to-both':'🔀 Open to Both', 'onsite-ok':'🏢 On-site OK' };
-              const active = (cd.prefs?.workArrangement || 'open-to-both') === opt;
-              return `<button onclick="savePref('${c}','workArrangement','${opt}')" 
-                style="flex:1;padding:6px 4px;border-radius:8px;border:1.5px solid ${active ? colorHex : 'var(--border)'};background:${active ? colorHex : 'white'};color:${active ? 'white' : 'var(--text2)'};font-size:10px;font-weight:700;cursor:pointer;transition:all .15s;line-height:1.3;text-align:center;">
-                ${labels[opt]}
-              </button>`;
+            ${[
+              {v:'remote-only', l:'🌐 Remote Only', tip:'AI will only return fully remote positions — no office or hybrid'},
+              {v:'open-to-both', l:'🔀 Open to Both', tip:'Remote preferred — hybrid and on-site included if it is a strong match and good pay'},
+              {v:'onsite-ok',   l:'🏢 On-site OK',  tip:'No restrictions — remote, hybrid, and on-site all returned'}
+            ].map(opt => {
+              const active = (cd.prefs?.workArrangement || 'open-to-both') === opt.v;
+              return `<div class="tip-wrap" style="flex:1;position:relative;">
+                <button onclick="savePref('${c}','workArrangement','${opt.v}')"
+                  style="width:100%;padding:6px 4px;border-radius:8px;border:1.5px solid ${active ? colorHex : 'var(--border)'};background:${active ? colorHex : 'white'};color:${active ? 'white' : 'var(--text2)'};font-size:10px;font-weight:700;cursor:pointer;transition:all .15s;line-height:1.3;text-align:center;">
+                  ${opt.l}
+                </button>
+                <div style="display:none;position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);background:var(--text);color:white;font-size:11px;font-weight:500;line-height:1.4;padding:7px 10px;border-radius:8px;width:160px;text-align:center;z-index:999;pointer-events:none;box-shadow:var(--shadow-lg);">
+                  ${opt.tip}
+                  <div style="position:absolute;top:100%;left:50%;transform:translateX(-50%);border:5px solid transparent;border-top-color:var(--text);"></div>
+                </div>
+              </div>`;
             }).join('')}
           </div>
         </div>
@@ -3151,7 +3322,6 @@ function buildMainContent(c, cd, isAdmin) {
     unreviewed: jobs.filter(j=>!j.starred&&!j.applied&&(!j.stage||j.stage==='none')).length,
     remote: jobs.filter(j=>(j.workType||'').toLowerCase()==='remote').length,
     hybrid: jobs.filter(j=>(j.workType||'').toLowerCase()==='hybrid').length,
-    travel: jobs.filter(j=>(j.workType||'').toLowerCase()==='travel').length,
     onsite: jobs.filter(j=>['on-site','onsite','on site','in-person','in person'].includes((j.workType||'').toLowerCase())).length,
     starred: jobs.filter(j=>j.starred).length,
     applied: jobs.filter(j=>j.applied).length,
@@ -3159,20 +3329,12 @@ function buildMainContent(c, cd, isAdmin) {
   const badge = n => n > 0 ? ` <span style="font-size:10px;font-weight:800;background:rgba(0,0,0,.1);border-radius:8px;padding:1px 6px;margin-left:2px;">${n}</span>` : '';
 
   return `
-    <div class="content-header">
-      <div class="content-title" style="color:${cd.colorHex}">Jobs for ${cd.name}</div>
-      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-        <div class="filter-row" id="filters-${c}">
-          <button class="fbt on" onclick="filterJobs('${c}','all',this)">All${badge(counts.all)}</button>
-          <button class="fbt" onclick="filterJobs('${c}','unreviewed',this)">To Review${badge(counts.unreviewed)}</button>
-          <button class="fbt" onclick="filterJobs('${c}','remote',this)">Remote${badge(counts.remote)}</button>
-          <button class="fbt" onclick="filterJobs('${c}','hybrid',this)">Hybrid${badge(counts.hybrid)}</button>
-          <button class="fbt" onclick="filterJobs('${c}','travel',this)">Travel${badge(counts.travel)}</button>
-          <button class="fbt" onclick="filterJobs('${c}','onsite',this)">On-site${badge(counts.onsite)}</button>
-          <button class="fbt star-on" onclick="filterJobs('${c}','starred',this)" style="background:white;color:var(--text2);border-color:var(--border)">⭐ Starred${badge(counts.starred)}</button>
-          <button class="fbt" onclick="filterJobs('${c}','applied',this)" style="background:white;color:var(--text2)">✅ Applied${badge(counts.applied)}</button>
+    <div class="content-header" id="content-header-${c}">
+      <div class="content-header-top">
+        <div class="content-title" style="color:${cd.colorHex}">Jobs for ${cd.name}
+          <span style="font-size:13px;font-weight:600;color:var(--muted);margin-left:8px;">${counts.all} jobs</span>
         </div>
-        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+        <div style="display:flex;align-items:center;gap:6px;">
           <div style="display:flex;align-items:center;gap:4px;">
             <select id="sort-select-${c}" onchange="sortJobs('${c}',false)" style="padding:5px 10px;border-radius:8px;border:1.5px solid var(--border);font-family:'Nunito',sans-serif;font-size:12px;font-weight:600;cursor:pointer;background:white;color:var(--text2);">
               <option value="default">Sort: Default</option>
@@ -3185,10 +3347,24 @@ function buildMainContent(c, cd, isAdmin) {
           </div>
           <div class="view-toggle">
             <button class="view-btn active" id="view-list-${c}" onclick="setView('${c}','list',this)" title="List view">☰ List</button>
-            <button class="view-btn" id="view-tracker-${c}" onclick="setView('${c}','tracker',this)" title="Job Tracker — see your pipeline board">
-              📋 Tracker${(cd.jobs||[]).filter(j=>j.stage&&j.stage!=='none'&&!j.dismissed).length > 0 ? `<span style="background:${cd.colorHex};color:white;border-radius:10px;padding:1px 6px;font-size:10px;margin-left:5px;font-weight:800;">${(cd.jobs||[]).filter(j=>j.stage&&j.stage!=='none'&&!j.dismissed).length}</span>` : '<span style="font-size:10px;color:var(--muted);margin-left:4px;font-weight:600;">pipeline</span>'}
+            <button class="view-btn" id="view-tracker-${c}" onclick="setView('${c}','tracker',this)" title="My Applications — see your pipeline board">
+              📋 My Applications${(cd.jobs||[]).filter(j=>j.stage&&j.stage!=='none'&&!j.dismissed).length > 0 ? `<span style="background:${cd.colorHex};color:white;border-radius:10px;padding:1px 6px;font-size:10px;margin-left:5px;font-weight:800;">${(cd.jobs||[]).filter(j=>j.stage&&j.stage!=='none'&&!j.dismissed).length}</span>` : ''}
             </button>
           </div>
+          <button class="filter-collapse-btn" id="filter-collapse-${c}" onclick="toggleFilterBar('${c}')" title="Show/hide filters">
+            <span id="filter-collapse-icon-${c}">▾</span> Filters
+          </button>
+        </div>
+      </div>
+      <div class="content-header-filters" id="filter-bar-${c}">
+        <div class="filter-row" id="filters-${c}">
+          <button class="fbt on" onclick="filterJobs('${c}','all',this)">All${badge(counts.all)}</button>
+          <button class="fbt" onclick="filterJobs('${c}','unreviewed',this)">To Review${badge(counts.unreviewed)}</button>
+          <button class="fbt" onclick="filterJobs('${c}','remote',this)">Remote${badge(counts.remote)}</button>
+          <button class="fbt" onclick="filterJobs('${c}','hybrid',this)">Hybrid${badge(counts.hybrid)}</button>
+          <button class="fbt" onclick="filterJobs('${c}','onsite',this)">On-site${badge(counts.onsite)}</button>
+          <button class="fbt star-on" onclick="filterJobs('${c}','starred',this)" style="background:white;color:var(--text2);border-color:var(--border)">⭐ Starred${badge(counts.starred)}</button>
+          <button class="fbt" onclick="filterJobs('${c}','applied',this)" style="background:white;color:var(--text2)">✅ Applied${badge(counts.applied)}</button>
         </div>
       </div>
     </div>
@@ -3360,6 +3536,68 @@ function saveRole(c, val) {
   document.getElementById('role-edit-'+c).style.display = 'none';
   saveConfig();
   toast('Subtitle updated');
+}
+
+async function suggestHeadlines(c) {
+  const cd = CONFIG.candidates[c];
+  const btn = document.getElementById('headline-ai-btn-'+c);
+  const container = document.getElementById('headline-suggestions-'+c);
+  if (!btn || !container) return;
+
+  btn.textContent = '⏳...';
+  btn.disabled = true;
+
+  try {
+    const res = await fetch(WORKER_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 300,
+        messages: [{
+          role: 'user',
+          content: `Generate 3 professional LinkedIn-style headline options for this person. Each should be under 12 words, punchy, and specific to their background and targets.
+
+Name: ${cd.name}
+Bio: ${cd.bio?.substring(0,300)}
+Skills: ${(cd.skills||[]).slice(0,8).join(', ')}
+Targets: ${cd.searchAreas?.substring(0,200)}
+
+Return ONLY a JSON array of 3 strings. Example: ["HR Director · 20+ Years Building Teams & Culture","RN Transitioning to Remote Case Management · 30 Years Clinical","L&D Specialist · Corporate Trainer · Adult Learning Expert"]`
+        }]
+      })
+    });
+    const data = await res.json();
+    let raw = (data.content||[]).find(b=>b.type==='text')?.text?.trim()||'';
+    const m = raw.match(/\[[\s\S]*\]/);
+    if (!m) throw new Error('no suggestions');
+    const suggestions = JSON.parse(m[0]);
+    const colorHex = cd.colorHex;
+
+    container.style.display = 'block';
+    container.innerHTML = `
+      <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;">Pick one or click to edit:</div>
+      ${suggestions.map((s,i) => `
+        <div onclick="applyHeadline('${c}','${s.replace(/'/g,"\'")}')"
+          style="padding:7px 10px;border-radius:8px;border:1.5px solid var(--border);background:white;font-size:12px;font-weight:600;color:var(--text2);cursor:pointer;margin-bottom:5px;transition:all .15s;"
+          onmouseover="this.style.borderColor='${colorHex}';this.style.color='${colorHex}'"
+          onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text2)'">
+          ${s}
+        </div>`).join('')}
+      <button onclick="document.getElementById('headline-suggestions-${c}').style.display='none'"
+        style="font-size:10px;color:var(--muted);background:none;border:none;cursor:pointer;padding:2px 0;">✕ Dismiss</button>`;
+  } catch(e) {
+    toast('Could not generate headlines — try again');
+  }
+  btn.textContent = '✨ Suggest';
+  btn.disabled = false;
+}
+
+function applyHeadline(c, val) {
+  document.getElementById('role-edit-'+c).value = val;
+  saveRole(c, val);
+  document.getElementById('headline-suggestions-'+c).style.display = 'none';
+  toast('✅ Headline updated!');
 }
 
 async function cleanupBio(c) {
@@ -3831,6 +4069,91 @@ Start your response with [ and end with ].`;
 }
 
 // ═══════════════════════════════════════════════════════════════
+//  MATCH SCORING — client-side 0-100 score
+// ═══════════════════════════════════════════════════════════════
+function scoreJob(j, c, cd) {
+  let score = 0;
+  const reasons = { matched: [], warnings: [], missing: [] };
+
+  // 1. Title vs search targets (30pts)
+  const targets = (cd.searchAreas||'').toLowerCase();
+  const title = (j.title||'').toLowerCase();
+  const titleWords = title.split(/\s+/);
+  const targetWords = targets.split(/[\s,\/\-–]+/).filter(w => w.length > 3);
+  const titleMatches = titleWords.filter(w => targetWords.some(t => t.includes(w) || w.includes(t)));
+  if (titleMatches.length >= 2) { score += 30; reasons.matched.push('Title matches your targets'); }
+  else if (titleMatches.length === 1) { score += 15; reasons.matched.push('Title partially matches targets'); }
+  else { reasons.missing.push('Title may not match your target roles'); }
+
+  // 2. Work arrangement (20pts)
+  const wt = (j.workType||'').toLowerCase();
+  const pref = cd.prefs?.workArrangement || 'open-to-both';
+  if (pref === 'remote-only') {
+    if (wt === 'remote') { score += 20; reasons.matched.push('Remote ✓'); }
+    else { score -= 10; reasons.missing.push('Not remote — conflicts with your preference'); }
+  } else if (pref === 'open-to-both') {
+    if (['remote','hybrid'].includes(wt)) { score += 20; reasons.matched.push(`${j.workType} ✓`); }
+    else if (wt === 'on-site' || wt === 'onsite') { score += 8; reasons.warnings.push('On-site — you prefer remote/hybrid'); }
+    else { score += 15; }
+  } else {
+    score += 20; reasons.matched.push(`${j.workType||'Any'} arrangement OK`);
+  }
+
+  // 3. Salary vs minimum (20pts)
+  const minSal = cd.prefs?.minSalary || 0;
+  if (minSal > 0 && j.salary && j.salary !== 'Competitive' && j.salary !== 'Not listed') {
+    const m = (j.salary||'').match(/\$?([\d,]+)K?/i);
+    if (m) {
+      const jobSal = parseFloat(m[1].replace(/,/g,'')) * ((j.salary||'').toUpperCase().includes('K') ? 1000 : 1);
+      if (jobSal >= minSal) { score += 20; reasons.matched.push(`Salary $${Math.round(jobSal/1000)}K meets your minimum`); }
+      else if (jobSal >= minSal * 0.85) { score += 10; reasons.warnings.push(`Salary slightly below your $${Math.round(minSal/1000)}K minimum`); }
+      else { reasons.missing.push(`Salary below your $${Math.round(minSal/1000)}K minimum`); }
+    } else { score += 10; }
+  } else if (!minSal) { score += 15; }
+  else { score += 10; }
+
+  // 4. Skills overlap (15pts)
+  const skills = (cd.skills||[]).map(s => s.toLowerCase());
+  const jobText = ((j.description||'') + ' ' + (j.qualifications||[]).join(' ')).toLowerCase();
+  const matchedSkills = skills.filter(s => jobText.includes(s.split(/\s/)[0]));
+  if (matchedSkills.length >= 4) { score += 15; reasons.matched.push(`${matchedSkills.length} of your skills mentioned`); }
+  else if (matchedSkills.length >= 2) { score += 10; reasons.matched.push(`${matchedSkills.length} of your skills mentioned`); }
+  else if (matchedSkills.length === 1) { score += 5; }
+  else { reasons.warnings.push('Few of your skills mentioned in listing'); }
+
+  // 5. Experience / degree requirements (15pts)
+  const quals = (j.qualifications||[]).join(' ').toLowerCase();
+  const desc = (j.description||'').toLowerCase();
+  const fullText = quals + ' ' + desc;
+
+  // Degree check
+  const requiresDegree = /bachelor|master|mba|phd|degree required|bs\/ba|b\.s\.|m\.s\./i.test(fullText);
+  const requiresMasters = /master|mba|phd|advanced degree/i.test(fullText);
+
+  // Years of experience check
+  const expMatch = fullText.match(/(\d+)\+?\s*years?\s*(of\s*)?(experience|exp)/i);
+  const requiredYears = expMatch ? parseInt(expMatch[1]) : 0;
+
+  if (!requiresDegree && !requiredYears) { score += 15; }
+  else {
+    score += 10;
+    if (requiresMasters) reasons.warnings.push("Master's degree or MBA may be required");
+    else if (requiresDegree) reasons.warnings.push("Bachelor's degree typically required");
+    if (requiredYears >= 10) reasons.matched.push(`${requiredYears}+ years required — your experience likely qualifies`);
+    else if (requiredYears > 0) reasons.warnings.push(`${requiredYears}+ years of experience required`);
+  }
+
+  // Compute label
+  let label, color, pct;
+  if (score >= 78) { label = 'Strong Match'; color = '#1e7a4e'; pct = 92; }
+  else if (score >= 55) { label = 'Good Match'; color = '#b45309'; pct = 65; }
+  else if (score >= 35) { label = 'Growth Opportunity'; color = '#6b2d6b'; pct = 38; }
+  else { label = 'Weak Match'; color = '#888'; pct = 18; }
+
+  return { score, label, color, pct, reasons, requiresDegree, requiresMasters, requiredYears };
+}
+
+// ═══════════════════════════════════════════════════════════════
 //  COMPANY LOGO LOADER — Clearbit autocomplete by company name
 // ═══════════════════════════════════════════════════════════════
 const _logoCache = {};
@@ -3859,8 +4182,18 @@ async function loadCompanyLogos() {
       if (data && data[0] && data[0].domain) {
         const logoUrl = `https://logo.clearbit.com/${data[0].domain}`;
         _logoCache[company] = logoUrl;
-        wrap.innerHTML = `<img src="${logoUrl}" class="company-logo" alt="" loading="lazy"
-          onerror="this.parentElement.innerHTML='<div class=\'company-logo-fallback\' style=\'background:${color}\'>${initial}</div>'">`;
+        // Create img hidden, only show on successful load
+        const img = document.createElement('img');
+        img.className = 'company-logo';
+        img.alt = '';
+        img.style.display = 'none';
+        img.onload = () => {
+          wrap.innerHTML = '';
+          wrap.appendChild(img);
+          img.style.display = '';
+        };
+        img.onerror = () => { _logoCache[company] = null; };
+        img.src = logoUrl;
       } else {
         _logoCache[company] = null;
       }
@@ -3952,6 +4285,8 @@ function renderJobCards(c, filter='all', page=0) {
     }`;
   // Load logos async after cards render
   setTimeout(loadCompanyLogos, 50);
+  // Show follow-up reminders
+  setTimeout(() => renderFollowUpBanner(c), 100);
 }
 
 // ── Inline "load 10 more" — background search, appends cards without full re-render ──
@@ -4062,21 +4397,74 @@ async function fetchMoreJobs(c) {
   }
 }
 
+function getFollowUpReminders(c) {
+  const cd = CONFIG.candidates[c];
+  const reminders = [];
+  const now = Date.now();
+  const stages = { applied: 7, interview: 5, offer: 3 };
+  const labels = { applied: '📤 Applied', interview: '📅 Interview', offer: '🎉 Offer' };
+  (cd.jobs||[]).filter(j => !j.dismissed && j.stage && stages[j.stage]).forEach(j => {
+    const ts = j.stageHistory?.[j.stage];
+    if (!ts) return;
+    const days = Math.floor((now - ts) / (1000*60*60*24));
+    if (days >= stages[j.stage]) {
+      reminders.push({ j, days, label: labels[j.stage] });
+    }
+  });
+  return reminders;
+}
+
+function renderFollowUpBanner(c) {
+  const reminders = getFollowUpReminders(c);
+  const existing = document.getElementById('followup-banner-'+c);
+  if (existing) existing.remove();
+  if (!reminders.length) return;
+
+  const cd = CONFIG.candidates[c];
+  const main = document.getElementById('main-content');
+  if (!main) return;
+
+  const banner = document.createElement('div');
+  banner.id = 'followup-banner-'+c;
+  banner.style.cssText = `background:white;border:1.5px solid ${cd.colorHex};border-radius:10px;padding:12px 16px;margin-bottom:16px;`;
+  banner.innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+      <div style="font-size:12px;font-weight:800;color:${cd.colorHex};text-transform:uppercase;letter-spacing:.06em;">📬 Follow-up Reminders</div>
+      <button onclick="this.parentElement.parentElement.remove()" style="background:none;border:none;cursor:pointer;font-size:14px;color:var(--muted);">✕</button>
+    </div>
+    ${reminders.map(r => `
+      <div style="display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid var(--border);font-size:13px;flex-wrap:wrap;">
+        <span style="font-weight:700;color:${cd.colorHex};flex-shrink:0;">${r.label}</span>
+        <span style="flex:1;font-weight:600;">${r.j.title}</span>
+        <span style="color:var(--muted);font-size:11px;">${r.j.company} · ${r.days} days ago</span>
+        <button onclick="jumpToJob('${c}','${r.j._id}')" style="font-size:11px;font-weight:700;padding:3px 10px;border-radius:5px;border:1.5px solid ${cd.colorHex};background:white;color:${cd.colorHex};cursor:pointer;flex-shrink:0;">View →</button>
+      </div>`).join('')}`;
+  // Insert after any login summary banner
+  const loginBanner = document.getElementById('login-summary-banner');
+  if (loginBanner) loginBanner.after(banner);
+  else main.insertBefore(banner, main.firstChild);
+}
+
 function buildCard(j, c, cd) {
   const safeId = (j._id||'').replace(/[^a-z0-9]/gi,'_');
   const wtClass = { Remote:'jb-remote', Hybrid:'jb-hybrid', 'On-site':'jb-onsite', Travel:'jb-travel' }[j.workType]||'jb-hybrid';
   const quals = (j.qualifications||[]).map(q=>`<li>${q}</li>`).join('');
   const tags = (j.tags||[]).map(t=>`<span class="jb jb-salary">${t}</span>`).join('');
 
-  // Match gauge
-  const matchMap = { 'Strong Match': { pct: 95, color: '#1e7a4e', label: 'Strong Match' }, 'Good Match': { pct: 65, color: '#b45309', label: 'Good Match' }, 'Growth Opportunity': { pct: 40, color: '#6b2d6b', label: 'Growth Opportunity' } };
-  const match = matchMap[j.matchScore] || { pct: 65, color: '#888', label: j.matchScore || 'Match' };
+  // Match gauge — client-side scoring
+  const scored = scoreJob(j, c, cd);
   const matchGauge = `
-    <div class="match-gauge" title="${match.label}">
+    <div class="match-gauge" style="position:relative;cursor:help;" title="Hover for match breakdown">
       <div class="match-gauge-track">
-        <div class="match-gauge-bar" style="width:${match.pct}%;background:${match.color}"></div>
+        <div class="match-gauge-bar" style="width:${scored.pct}%;background:${scored.color}"></div>
       </div>
-      <span class="match-gauge-label" style="color:${match.color}">${match.label}</span>
+      <span class="match-gauge-label" style="color:${scored.color}">${scored.label}</span>
+      <div class="match-tooltip">
+        <div style="font-size:11px;font-weight:800;color:white;margin-bottom:8px;border-bottom:1px solid rgba(255,255,255,.2);padding-bottom:6px;">Match Breakdown · ${scored.score}/100</div>
+        ${scored.reasons.matched.map(r => `<div style="display:flex;gap:6px;margin-bottom:4px;font-size:11px;"><span style="color:#4ade80;flex-shrink:0;">✓</span><span>${r}</span></div>`).join('')}
+        ${scored.reasons.warnings.map(r => `<div style="display:flex;gap:6px;margin-bottom:4px;font-size:11px;"><span style="color:#fbbf24;flex-shrink:0;">⚠</span><span>${r}</span></div>`).join('')}
+        ${scored.reasons.missing.map(r => `<div style="display:flex;gap:6px;margin-bottom:4px;font-size:11px;"><span style="color:#f87171;flex-shrink:0;">✗</span><span>${r}</span></div>`).join('')}
+      </div>
     </div>`;
 
   // Company research links
@@ -4125,11 +4513,16 @@ function buildCard(j, c, cd) {
     </div>
     <div class="badge-row">
       <span class="jb ${wtClass}">${j.workType||'Unknown'}</span>
-
-      ${j.salary&&j.salary!=='Not listed'&&j.salary!=='Competitive' ? `<span class="jb jb-salary">💰 ${j.salary}</span>` : ''}
+      ${j.salary&&j.salary!=='Not listed'&&j.salary!=='Competitive' ? `<span class="jb jb-salary">💰 ${j.salary}</span>` : '<span class="jb" style="background:#fff3e0;color:#b45309;border:1px solid #f6c96b;" title="Salary not listed — ask before applying">💰 Not disclosed</span>'}
+      ${scored.requiresMasters ? '<span class="jb" style="background:#fce4ec;color:#880e4f;" title="Advanced degree may be required">🎓 MBA/Masters</span>' : scored.requiresDegree ? '<span class="jb" style="background:#f3e5f5;color:#6a1b9a;" title="Degree typically required">🎓 Degree reqd</span>' : ''}
+      ${scored.requiredYears >= 5 ? `<span class="jb" style="background:#e8f4fd;color:#1565c0;" title="${scored.requiredYears}+ years of experience required">📅 ${scored.requiredYears}+ yrs exp</span>` : ''}
       ${tags}
     </div>
     ${matchGauge}
+    ${(() => {
+      const daysOld = j._addedAt ? Math.floor((Date.now() - j._addedAt) / (1000*60*60*24)) : 0;
+      return daysOld >= 30 ? `<div style="background:#fff3e0;border:1px solid #f6c96b;border-radius:6px;padding:5px 10px;font-size:11px;font-weight:700;color:#b45309;margin-bottom:8px;">⚠️ Added ${daysOld} days ago — listing may be filled</div>` : '';
+    })()}
     <div class="card-desc">${j.description||''}</div>
     ${companyLinks}
     <div class="card-footer">
@@ -4154,6 +4547,7 @@ function buildCard(j, c, cd) {
           <option value="declined"    ${j.stage==='declined'?'selected':''}>✕ Declined</option>
         </select>
         <button class="toggle-btn" onclick="toggleCardDetail('${safeId}')">Details ▾</button>
+        <button class="toggle-btn" onclick="findSimilarJobs('${c}','${safeId}')" id="similar-btn-${safeId}" title="Find more jobs like this one">🔍 Similar</button>
       </div>
       <span class="card-source">${j.datePosted ? `<span style="margin-right:6px;opacity:.7">${j.datePosted}</span>` : ''}${j.source||''}</span>
     </div>
@@ -4380,6 +4774,79 @@ function dismissCard(c, id) {
   }, 5000);
 }
 
+async function findSimilarJobs(c, safeId) {
+  const cd = CONFIG.candidates[c];
+  const j = (cd?.jobs||[]).find(x => (x._id||'').replace(/[^a-z0-9]/gi,'_') === safeId);
+  if (!j) return;
+
+  const btn = document.getElementById('similar-btn-'+safeId);
+  if (btn) { btn.textContent = '⏳ Searching...'; btn.disabled = true; }
+
+  try {
+    const res = await fetch(WORKER_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 4000,
+        tools: [{ type: 'web_search_20250305', name: 'web_search' }],
+        system: buildSystemPrompt(c, cd),
+        messages: [
+          { role: 'user', content: `Find 5 jobs similar to this one: "${j.title}" at "${j.company}" (${j.workType}, ${j.salary||'salary not listed'}).
+
+Search for: "${j.title} similar roles ${j.workType||'remote'} 2026"
+
+Return exactly 5 jobs as a JSON array. Each object on ONE line:
+{"title":"Title","company":"Company","location":"Remote","workType":"Remote","salary":"$X","matchScore":"Strong Match","description":"20-30 words","qualifications":["req 1","req 2"],"applyUrl":"https://url","source":"LinkedIn","isNew":true,"tags":[]}
+
+Skip "${j.company}" — find different companies. Start with [` },
+          { role: 'assistant', content: '[' }
+        ]
+      })
+    });
+
+    const data = await res.json();
+    let raw = '[';
+    for (const b of (data.content||[])) { if (b.type === 'text') raw += b.text; }
+    raw = '[' + raw.slice(1).replace(/^\s*\[/, '');
+
+    let parsed = [];
+    try { parsed = JSON.parse(raw); } catch(_) {
+      let depth = 0, start = -1;
+      for (let i = 0; i < raw.length; i++) {
+        if (raw[i]==='{'){if(depth===0)start=i;depth++;}
+        else if(raw[i]==='}'){depth--;if(depth===0&&start!==-1){
+          try{const o=JSON.parse(raw.slice(start,i+1));if(o.title&&o.company)parsed.push(o);}catch(_){}
+          start=-1;
+        }}
+      }
+    }
+
+    if (!parsed.length) throw new Error('No results');
+
+    const normalize = s => (s||'').toLowerCase().replace(/(of|the|a|an|&|and)/g,' ').replace(/\s+/g,' ').trim();
+    const existing = new Set((cd.jobs||[]).map(x=>`${normalize(x.title)}||${normalize(x.company)}`));
+    const newJobs = parsed.filter(x => x.title && x.company && !existing.has(`${normalize(x.title)}||${normalize(x.company)}`));
+
+    newJobs.forEach(x => {
+      x._id = `${c}-sim-${Date.now()}-${Math.random().toString(36).substr(2,4)}`;
+      x._addedAt = Date.now();
+      x.isNew = true;
+    });
+
+    if (!newJobs.length) { toast('No new similar jobs found — already in your list'); }
+    else {
+      cd.jobs = [...newJobs, ...cd.jobs];
+      saveConfig(true);
+      renderJobCards(c, currentFilter[c]||'all', 0);
+      toast(`✅ Added ${newJobs.length} similar jobs`);
+    }
+  } catch(e) {
+    toast('Search failed: ' + e.message.substring(0,50));
+  }
+  if (btn) { btn.textContent = '🔍 Similar'; btn.disabled = false; }
+}
+
 function promptApplyStage(c, id) {
   const j = CONFIG.candidates[c]?.jobs?.find(x => x._id === id);
   if (!j) return;
@@ -4448,10 +4915,31 @@ function setStage(c, id, select) {
   saveConfig();
   updateSidebarStats(c);
   updateLoginCounts();
-  // Show timestamp toast
+  // Show timestamp toast + auto-prompt notes for interview/offer
   if (newStage !== 'none') {
     const labels = { researching:'🔍 Researching', applied:'📤 Applied', interview:'📅 Interview scheduled', offer:'🎉 Offer received', declined:'✕ Declined' };
     toast(labels[newStage] + ' — ' + new Date().toLocaleDateString('en-US',{month:'short',day:'numeric'}));
+
+    if (newStage === 'interview' || newStage === 'offer') {
+      const safeId = id.replace(/[^a-z0-9]/gi,'_');
+      // Auto-expand details and focus notes
+      setTimeout(() => {
+        const detail = document.getElementById('cdetail-'+safeId);
+        if (detail && !detail.classList.contains('open')) {
+          toggleCardDetail(safeId);
+        }
+        const notes = detail?.querySelector('.card-notes');
+        if (notes) {
+          notes.focus();
+          const prompt = newStage === 'interview'
+            ? 'Interview date, time, interviewer name, format (phone/video/onsite)...'
+            : 'Offer details — salary, start date, benefits, deadline to respond...';
+          if (!notes.value) notes.placeholder = prompt;
+          notes.style.borderColor = CONFIG.candidates[c].colorHex;
+          setTimeout(() => { notes.style.borderColor = ''; }, 3000);
+        }
+      }, 300);
+    }
   }
 }
 
@@ -4871,6 +5359,14 @@ let currentFilter = {};
 // ═══════════════════════════════════════════════════════════════
 const viewState = {};
 
+function toggleFilterBar(c) {
+  const bar = document.getElementById('filter-bar-'+c);
+  const icon = document.getElementById('filter-collapse-icon-'+c);
+  if (!bar) return;
+  const collapsed = bar.classList.toggle('collapsed');
+  if (icon) icon.textContent = collapsed ? '▸' : '▾';
+}
+
 function setView(c, view, btn) {
   viewState[c] = view;
   // Update toggle buttons
@@ -4925,10 +5421,35 @@ function renderKanban(c) {
       </div>`;
   });
 
-  container.innerHTML = `<div class="kanban-board">${cols.join('')}</div>
-    <div style="font-size:11px;color:var(--muted);text-align:center;padding:8px 0;">
-      Click any card to jump to it in list view · Update stage using the "Track progress" dropdown on each card
-    </div>`;
+  const trackedJobs = jobs.filter(j=>j.stage&&j.stage!=='none');
+  const statItems = [
+    { s:'researching', l:'🔍 Researching', col:'#3b5bdb' },
+    { s:'applied',     l:'📤 Applied',     col:'#1e7a4e' },
+    { s:'interview',   l:'📅 Interview',   col:'#b45309' },
+    { s:'offer',       l:'🎉 Offer',       col:'#155724' },
+    { s:'declined',    l:'✕ Declined',     col:'#c0392b' }
+  ];
+
+  container.innerHTML = `
+    <div style="background:white;border:1.5px solid var(--border);border-radius:12px;padding:16px 20px;margin-bottom:16px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
+        <div>
+          <div style="font-size:16px;font-weight:700;color:${cd.colorHex}">📋 My Applications</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:2px;">${trackedJobs.length} jobs being tracked · ${jobs.length} total</div>
+        </div>
+        <div style="font-size:11px;color:var(--muted);">Click any card to view full listing · Use "Track progress" on cards to update</div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        ${statItems.map(x => {
+          const n = jobs.filter(j=>j.stage===x.s).length;
+          return `<div style="flex:1;min-width:80px;background:${n>0?'white':'var(--surface2)'};border:1.5px solid ${n>0?x.col:'var(--border)'};border-radius:10px;padding:10px 12px;text-align:center;">
+            <div style="font-size:18px;font-weight:800;color:${n>0?x.col:'var(--muted)'};">${n}</div>
+            <div style="font-size:10px;font-weight:700;color:${n>0?x.col:'var(--muted)'};margin-top:2px;">${x.l}</div>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>
+    <div class="kanban-board">${cols.join('')}</div>`;
 }
 
 function jumpToJob(c, id) {
@@ -5005,12 +5526,11 @@ function updateFilterCounts(c) {
     unreviewed: jobs.filter(j=>!j.starred&&!j.applied&&(!j.stage||j.stage==='none')).length,
     remote: jobs.filter(j=>(j.workType||'').toLowerCase()==='remote').length,
     hybrid: jobs.filter(j=>(j.workType||'').toLowerCase()==='hybrid').length,
-    travel: jobs.filter(j=>(j.workType||'').toLowerCase()==='travel').length,
     onsite: jobs.filter(j=>['on-site','onsite','on site','in-person','in person'].includes((j.workType||'').toLowerCase())).length,
     starred: jobs.filter(j=>j.starred).length,
     applied: jobs.filter(j=>j.applied).length,
   };
-  const filterMap = { all:'All', unreviewed:'To Review', remote:'Remote', hybrid:'Hybrid', travel:'Travel', onsite:'On-site', starred:'⭐ Starred', applied:'✅ Applied' };
+  const filterMap = { all:'All', unreviewed:'To Review', remote:'Remote', hybrid:'Hybrid', onsite:'On-site', starred:'⭐ Starred', applied:'✅ Applied' };
   document.querySelectorAll(`#filters-${c} .fbt`).forEach(btn => {
     const onclick = btn.getAttribute('onclick') || '';
     const match = onclick.match(/'([a-z]+)'\s*,this\)/);
@@ -5042,6 +5562,64 @@ function filterJobs(c, type, btn) {
   }
   currentFilter[c] = type;
   renderJobCards(c, type, 0);
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  DEPLOY TO GITHUB via Cloudflare Worker
+// ═══════════════════════════════════════════════════════════════
+async function deployToGitHub() {
+  const token = document.getElementById('deploy-token-input')?.value?.trim();
+  const status = document.getElementById('deploy-status');
+  if (!token) { if (status) status.textContent = '⚠️ Enter deploy token first'; return; }
+  if (status) { status.textContent = '⏳ Getting current file SHA...'; status.style.color = 'var(--muted)'; }
+
+  // Get GitHub token from a separate input
+  const ghToken = document.getElementById('gh-token-input')?.value?.trim();
+  if (!ghToken) {
+    if (status) { status.textContent = '⚠️ Enter your GitHub token in the field below'; status.style.color = 'var(--red)'; }
+    toast('Enter your GitHub token first');
+    return;
+  }
+
+  try {
+    // Step 1: Get current SHA
+    const shaRes = await fetch('https://api.github.com/repos/ohaiandyy/career-portal/contents/index.html', {
+      headers: { 'Authorization': 'token ' + ghToken, 'Accept': 'application/vnd.github.v3+json' }
+    });
+    const shaData = await shaRes.json();
+    const sha = shaData.sha;
+    if (!sha) throw new Error('Could not get file SHA');
+
+    if (status) status.textContent = '⏳ Encoding file...';
+
+    // Step 2: Encode current page HTML
+    const html = document.documentElement.outerHTML;
+    const encoded = btoa(unescape(encodeURIComponent(html)));
+
+    if (status) status.textContent = '⏳ Pushing to GitHub...';
+
+    // Step 3: Push via Worker deploy endpoint
+    const deployRes = await fetch(WORKER_URL + '/deploy', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Deploy-Token': token },
+      body: JSON.stringify({
+        content: encoded,
+        sha,
+        message: `v${VERSION} — deployed from admin panel ${new Date().toISOString().slice(0,10)}`
+      })
+    });
+
+    const result = await deployRes.json();
+    if (result.ok) {
+      if (status) { status.textContent = '✅ Deployed! Commit: ' + result.commit; status.style.color = 'var(--green)'; }
+      toast('✅ Portal deployed to GitHub!');
+    } else {
+      throw new Error(JSON.stringify(result));
+    }
+  } catch(e) {
+    if (status) { status.textContent = '❌ ' + e.message.substring(0,80); status.style.color = 'var(--red)'; }
+    toast('Deploy failed: ' + e.message.substring(0,50));
+  }
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -5384,8 +5962,61 @@ function loadFallback(c) {
 //  KEYBOARD
 // ═══════════════════════════════════════════════════════════════
 document.addEventListener('keydown', e => {
+  // Escape closes modals
   if (e.key === 'Escape') {
     document.querySelectorAll('.modal-overlay').forEach(m => m.classList.remove('open'));
+    return;
+  }
+
+  // Skip shortcuts when typing in inputs
+  const tag = document.activeElement?.tagName?.toLowerCase();
+  if (['input','textarea','select'].includes(tag)) return;
+
+  // Only active when a candidate panel is shown
+  if (!currentUser || currentUser === 'admin') return;
+  const c = currentUser;
+
+  // ? — show shortcuts help
+  if (e.key === '?') {
+    toast('Shortcuts: S=Search · F=Filters · A=Add job · 1=All · 2=Remote · 3=Starred · 4=Applied · T=Tracker');
+    return;
+  }
+
+  // S — trigger AI search
+  if (e.key === 's' || e.key === 'S') {
+    e.preventDefault();
+    document.getElementById('ai-search-btn-'+c)?.click();
+    return;
+  }
+
+  // F — toggle filter bar
+  if (e.key === 'f' || e.key === 'F') {
+    e.preventDefault();
+    toggleFilterBar(c);
+    return;
+  }
+
+  // A — open add job form
+  if (e.key === 'a' || e.key === 'A') {
+    e.preventDefault();
+    toggleAddJob(c);
+    return;
+  }
+
+  // T — toggle tracker view
+  if (e.key === 't' || e.key === 'T') {
+    e.preventDefault();
+    const isTracker = viewState[c] === 'tracker';
+    setView(c, isTracker ? 'list' : 'tracker', null);
+    return;
+  }
+
+  // Number keys — quick filter
+  const filterKeys = { '1': 'all', '2': 'remote', '3': 'starred', '4': 'applied', '5': 'unreviewed' };
+  if (filterKeys[e.key]) {
+    e.preventDefault();
+    filterJobs(c, filterKeys[e.key], null);
+    toast(`Filter: ${filterKeys[e.key]}`);
   }
 });
 
