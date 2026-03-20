@@ -1,12 +1,19 @@
 <!DOCTYPE html>
 <!-- ============================================================
      The Job Hunts — Career Portal
-     Version: 5.4
-     Updated: 2026-03-19
-     Changes: AI search fixes (depth-tracking parser, prefill trick),
-              Load More (Haiku), onboarding wizard, resume import with
-              undo, saved flash, rate limiting, archive/restore users,
-              spellcheck, debounced saves, fallback jobs removed
+     Version: 7.4
+     Updated: 2026-03-20
+     Changes: Match scoring (0-100 client-side), hover breakdown tooltip,
+              industry multi-select filter, work arrangement toggles,
+              job type toggles, location enforcement, search progress bar,
+              company logos (Clearbit), admin compact layout, inline PINs,
+              delete profile (admin + self), re-search nudge on pref change,
+              follow-up reminders, activity feed, deploy button, keyboard
+              shortcuts, profile completeness nudge, empty state redesign,
+              What You're Targeting redesign, headline AI suggestions,
+              stale listing flags, salary-not-disclosed badge, degree/exp
+              badges, similar jobs removed, travel filter removed,
+              self-service onboarding with setup PIN, spellcheck sweep
      ============================================================ -->
 <html lang="en">
 <head>
@@ -2112,7 +2119,7 @@ body.font-xl .card-title { font-size: calc(var(--base-font) + 1px); }
 //  CLOUDFLARE WORKER — API proxy URL
 //  Update this if you ever redeploy your Worker
 // ═══════════════════════════════════════════════════════════════
-const VERSION = '7.3';
+const VERSION = '7.4';
 const WORKER_URL = 'https://career-hub-api.andy-dao-91-aaf.workers.dev';
 
 // ═══════════════════════════════════════════════════════════════
@@ -4260,18 +4267,22 @@ function positionTooltipSmart(e, tip) {
   if (!tip) return;
   const rect = e.currentTarget.getBoundingClientRect();
   const tipW = 240;
-  const tipH = 200; // estimated
   const vw = window.innerWidth;
   const vh = window.innerHeight;
-  // Horizontal: align to gauge left, flip if too close to right edge
-  const left = Math.min(rect.left, vw - tipW - 12);
-  // Vertical: prefer above gauge, flip below if not enough space
-  const spaceAbove = rect.top;
-  const top = spaceAbove > tipH + 16
+  // Make tip visible briefly to measure real height
+  tip.style.visibility = 'hidden';
+  tip.style.display = 'block';
+  const tipH = tip.offsetHeight || 180;
+  tip.style.visibility = '';
+  // Horizontal: clamp to viewport
+  const left = Math.min(Math.max(8, rect.left), vw - tipW - 12);
+  // Vertical: show above if enough space, else below
+  const top = rect.top > tipH + 20
     ? rect.top - tipH - 8
     : rect.bottom + 8;
+  // Final clamp — never go off-screen
   tip.style.left = left + 'px';
-  tip.style.top = top + 'px';
+  tip.style.top = Math.max(8, Math.min(top, vh - tipH - 8)) + 'px';
 }
 
 function toggleMatchTooltip(e, id) {
@@ -4777,7 +4788,7 @@ function buildCard(j, c, cd) {
   // Match gauge — client-side scoring
   const scored = scoreJob(j, c, cd);
   const matchGauge = `
-    <div class="match-gauge match-gauge-hover" onmouseenter="positionTooltipSmart(event,this.querySelector('.match-tooltip'))">
+    <div class="match-gauge match-gauge-hover" onmouseenter="positionTooltipSmart(event,this.querySelector('.match-tooltip'))" onmousemove="positionTooltipSmart(event,this.querySelector('.match-tooltip'))">
       <div class="match-gauge-track">
         <div class="match-gauge-bar" style="width:${scored.pct}%;background:${scored.color}"></div>
       </div>
