@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <!-- ============================================================
      The Job Hunts — Career Portal
-     Version: 7.5
+     Version: 7.6
      Updated: 2026-03-20
      Changes: Match scoring (0-100 client-side), hover breakdown tooltip,
               industry multi-select filter, work arrangement toggles,
@@ -2118,7 +2118,7 @@ body.font-xl .card-title { font-size: calc(var(--base-font) + 1px); }
 //  CLOUDFLARE WORKER — API proxy URL
 //  Update this if you ever redeploy your Worker
 // ═══════════════════════════════════════════════════════════════
-const VERSION = '7.5';
+const VERSION = '7.6';
 const WORKER_URL = 'https://career-hub-api.andy-dao-91-aaf.workers.dev';
 
 // ═══════════════════════════════════════════════════════════════
@@ -4205,7 +4205,8 @@ OUTPUT RULES — CRITICAL:
 2. Keep each description under 40 words
 3. Keep qualifications to 3 items max
 4. No benefits field needed — omit it to save space
-5. Search across ANY industry — tech, finance, logistics, retail, consulting, insurance, manufacturing`;
+5. Search across ANY industry — tech, finance, logistics, retail, consulting, insurance, manufacturing
+6. Tags should be INDUSTRY only (e.g. Healthcare, FinTech, Logistics) — never include Remote/Hybrid/On-site/Full-time in tags`;
 }
 
 // What the AI is asked to do
@@ -4254,7 +4255,9 @@ Find genuinely new openings — different companies, different industries, diffe
 ${exclusionClause}
 
 Return ${count} real open jobs as a JSON array. No markdown, no text outside the array. Each object on ONE line:
-{"title":"Title","company":"Company","location":"Remote","workType":"Remote","salary":"$X","matchScore":"Strong Match","description":"20-30 words max","qualifications":["req 1","req 2","req 3"],"applyUrl":"https://url","source":"LinkedIn","isNew":true,"tags":["Remote","Industry"]}
+{"title":"Title","company":"Company","location":"Remote","workType":"Remote","salary":"$X","matchScore":"Strong Match","description":"2 sentences: first what the role does, second WHY this specific candidate fits based on their background. Max 40 words total.","qualifications":["req 1","req 2","req 3"],"applyUrl":"https://url","source":"LinkedIn","isNew":true,"tags":["Industry"]}
+
+DESCRIPTION RULE: Make descriptions personal. Example: "Lead HR transformation for 500-person tech company. Your Paycom expertise and multi-site ops background directly match their digital HR modernization initiative." NOT "Manage HR operations for tech company." 
 
 Start your response with [ and end with ].`;
 }
@@ -4262,6 +4265,57 @@ Start your response with [ and end with ].`;
 // ═══════════════════════════════════════════════════════════════
 //  MATCH SCORING — client-side 0-100 score
 // ═══════════════════════════════════════════════════════════════
+// ── Match Tooltip Portal ────────────────────────────────────────
+// Renders outside all cards so overflow:hidden never clips it
+let _matchTooltipEl = null;
+
+function getMatchTooltipEl() {
+  if (!_matchTooltipEl) {
+    _matchTooltipEl = document.createElement('div');
+    _matchTooltipEl.id = 'match-tooltip-portal';
+    _matchTooltipEl.style.cssText = `
+      display:none;position:fixed;background:#1c1c1c;color:white;
+      border-radius:10px;padding:12px 14px;width:240px;z-index:99999;
+      box-shadow:0 8px 32px rgba(0,0,0,.35);pointer-events:none;
+      line-height:1.5;font-family:Nunito,sans-serif;font-size:11px;`;
+    document.body.appendChild(_matchTooltipEl);
+  }
+  return _matchTooltipEl;
+}
+
+function showMatchTooltipPortal(e, gaugeEl) {
+  const dataEl = gaugeEl.querySelector('.match-tooltip-data');
+  if (!dataEl) return;
+  const label = dataEl.dataset.label || '';
+  const matched = dataEl.dataset.matched ? dataEl.dataset.matched.split('||').filter(Boolean) : [];
+  const warnings = dataEl.dataset.warnings ? dataEl.dataset.warnings.split('||').filter(Boolean) : [];
+  const missing = dataEl.dataset.missing ? dataEl.dataset.missing.split('||').filter(Boolean) : [];
+
+  const tip = getMatchTooltipEl();
+  tip.innerHTML = `
+    <div style="font-weight:800;margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid rgba(255,255,255,.2);">Why this is a ${label}</div>
+    ${matched.map(r=>`<div style="display:flex;gap:6px;margin-bottom:4px;"><span style="color:#4ade80;flex-shrink:0;">✓</span><span>${r}</span></div>`).join('')}
+    ${warnings.map(r=>`<div style="display:flex;gap:6px;margin-bottom:4px;"><span style="color:#fbbf24;flex-shrink:0;">⚠</span><span>${r}</span></div>`).join('')}
+    ${missing.map(r=>`<div style="display:flex;gap:6px;margin-bottom:4px;"><span style="color:#f87171;flex-shrink:0;">✗</span><span>${r}</span></div>`).join('')}`;
+
+  tip.style.display = 'block';
+
+  // Position relative to gauge
+  const rect = gaugeEl.getBoundingClientRect();
+  const tipW = 240;
+  const tipH = tip.offsetHeight || 180;
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+  const left = Math.min(Math.max(8, rect.left), vw - tipW - 12);
+  const top = rect.top > tipH + 20 ? rect.top - tipH - 8 : rect.bottom + 8;
+  tip.style.left = left + 'px';
+  tip.style.top = Math.max(8, Math.min(top, vh - tipH - 8)) + 'px';
+}
+
+function hideMatchTooltipPortal() {
+  if (_matchTooltipEl) _matchTooltipEl.style.display = 'none';
+}
+
 function showMatchTooltip(e, tip) {
   if (!tip) return;
   // Hide all other tooltips first
@@ -4799,16 +4853,16 @@ function buildCard(j, c, cd) {
   // Match gauge — client-side scoring
   const scored = scoreJob(j, c, cd);
   const matchGauge = `
-    <div class="match-gauge match-gauge-hover" onmouseenter="showMatchTooltip(event,this.querySelector('.match-tooltip'))" onmouseleave="hideMatchTooltip(this.querySelector('.match-tooltip'))">
+    <div class="match-gauge match-gauge-hover" onmouseenter="showMatchTooltipPortal(event,this)" onmouseleave="hideMatchTooltipPortal()">
       <div class="match-gauge-track">
         <div class="match-gauge-bar" style="width:${scored.pct}%;background:${scored.color}"></div>
       </div>
       <span class="match-gauge-label" style="color:${scored.color}">${scored.label} <span style="font-size:10px;opacity:.45;">ⓘ</span></span>
-      <div class="match-tooltip">
-        <div style="font-size:11px;font-weight:800;color:white;margin-bottom:8px;border-bottom:1px solid rgba(255,255,255,.2);padding-bottom:6px;">Why this is a ${scored.label}</div>
-        ${scored.reasons.matched.map(r => `<div style="display:flex;gap:6px;margin-bottom:4px;font-size:11px;"><span style="color:#4ade80;flex-shrink:0;">✓</span><span>${r}</span></div>`).join('')}
-        ${scored.reasons.warnings.map(r => `<div style="display:flex;gap:6px;margin-bottom:4px;font-size:11px;"><span style="color:#fbbf24;flex-shrink:0;">⚠</span><span>${r}</span></div>`).join('')}
-        ${scored.reasons.missing.map(r => `<div style="display:flex;gap:6px;margin-bottom:4px;font-size:11px;"><span style="color:#f87171;flex-shrink:0;">✗</span><span>${r}</span></div>`).join('')}
+      <div class="match-tooltip-data" style="display:none"
+        data-label="${scored.label}"
+        data-matched="${scored.reasons.matched.join('||')}"
+        data-warnings="${scored.reasons.warnings.join('||')}"
+        data-missing="${scored.reasons.missing.join('||')}">
       </div>
     </div>`;
 
