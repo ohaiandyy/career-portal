@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <!-- ============================================================
      The Job Hunts — Career Portal
-     Version: 9.2
+     Version: 9.5
      Updated: 2026-03-20
      Changes: Match scoring (0-100 client-side), hover breakdown tooltip,
               industry multi-select filter, work arrangement toggles,
@@ -2118,7 +2118,7 @@ body.font-xl .card-title { font-size: calc(var(--base-font) + 1px); }
 //  CLOUDFLARE WORKER — API proxy URL
 //  Update this if you ever redeploy your Worker
 // ═══════════════════════════════════════════════════════════════
-const VERSION = '9.2';
+const VERSION = '9.5';
 const WORKER_URL = 'https://career-hub-api.andy-dao-91-aaf.workers.dev';
 
 // ═══════════════════════════════════════════════════════════════
@@ -2742,20 +2742,42 @@ function renderAdminSidebar() {
               style="width:52px;padding:4px 6px;border:1.5px solid var(--border);border-radius:6px;font-family:Lora,serif;font-size:13px;font-weight:700;text-align:center;letter-spacing:.15em;flex-shrink:0;"
               oninput="updatePin('${c}',this.value)" title="PIN for ${cd.name}">
             <div style="display:flex;gap:4px;flex-shrink:0;">
-              <button onclick="openResumeModal('${c}')" title="Resume" style="width:28px;height:28px;border-radius:6px;border:1.5px solid var(--border);background:white;cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center;">📄</button>
+              <button onclick="openResumeModal('${c}')" title="Import resume" style="width:28px;height:28px;border-radius:6px;border:1.5px solid var(--border);background:white;cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center;">📄</button>
               <button onclick="switchPanel('${c}')" title="View jobs" style="width:28px;height:28px;border-radius:6px;border:1.5px solid var(--border);background:white;cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center;">👁</button>
-              <button onclick="toggleCandidateActive('${c}')" title="${isActive?'Archive':'Restore'}"
-                style="width:28px;height:28px;border-radius:6px;border:1.5px solid ${isActive?'var(--red)':'var(--green)'};background:${isActive?'white':'var(--green-lt)'};cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center;">
+              <button onclick="clearJobs('${c}')" title="Clear all jobs" style="width:28px;height:28px;border-radius:6px;border:1.5px solid var(--border);background:white;cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center;"
+                onmouseover="this.style.borderColor='var(--admin)';this.style.background='#fffbef';"
+                onmouseout="this.style.borderColor='var(--border)';this.style.background='white';">🧹</button>
+              <button onclick="toggleCandidateActive('${c}')" title="${isActive?'Archive (hides from login, keeps data)':'Restore'}"
+                style="width:28px;height:28px;border-radius:6px;border:1.5px solid ${isActive?'var(--border)':'var(--green)'};background:${isActive?'white':'var(--green-lt)'};cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center;">
                 ${isActive?'📦':'↩'}
               </button>
-              <button onclick="deleteCandidate('${c}')" title="Delete permanently"
-                style="width:28px;height:28px;border-radius:6px;border:1.5px solid var(--red);background:white;cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center;color:var(--red);">
+              <div style="width:1px;background:var(--border);height:20px;margin:0 2px;"></div>
+              <button onclick="deleteCandidate('${c}')" title="Delete user permanently"
+                style="width:28px;height:28px;border-radius:6px;border:1.5px solid var(--border);background:white;cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center;opacity:.4;"
+                onmouseover="this.style.borderColor='var(--red)';this.style.opacity='1';"
+                onmouseout="this.style.borderColor='var(--border)';this.style.opacity='.4';">
                 🗑
               </button>
             </div>
           </div>`;
         }).join('')}
         <button onclick="openWizard()" style="width:100%;margin-top:10px;padding:9px;border-radius:8px;border:1.5px dashed var(--border);background:white;color:var(--admin);font-size:12px;font-weight:700;cursor:pointer;">✨ Add New User</button>
+
+        ${(() => {
+          const archived = Object.keys(CONFIG.candidates).filter(k => CONFIG.candidates[k].active === false);
+          if (!archived.length) return '';
+          return '<div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border);">' +
+            '<div style="font-size:10px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px;">📦 Archived (' + archived.length + ')</div>' +
+            archived.map(k => {
+              const cd = CONFIG.candidates[k];
+              return '<div style="display:flex;align-items:center;gap:8px;padding:5px 0;">' +
+                '<div style="width:26px;height:26px;border-radius:50%;background:' + cd.colorHex + ';color:white;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;opacity:.5;">' + cd.name[0] + '</div>' +
+                '<div style="flex:1;font-size:12px;font-weight:600;color:var(--muted);">' + cd.name + ' <span style="font-size:10px;opacity:.6;">(archived)</span></div>' +
+                '<button onclick="toggleCandidateActive(\\\"' + k + '\\\")" style="font-size:11px;font-weight:700;padding:3px 8px;border-radius:5px;border:1.5px solid var(--green);background:var(--green-lt);color:var(--green);cursor:pointer;">&#x21A9; Restore</button>' +
+                '</div>';
+            }).join('') +
+          '</div>';
+        })()}
       </div>
 
       <div style="background:var(--surface2);border-radius:8px;padding:10px 12px;margin-bottom:14px;">
@@ -2944,14 +2966,23 @@ function updateSiteTitle() {
 // ═══════════════════════════════════════════════════════════════
 function deleteCandidate(c) {
   const cd = CONFIG.candidates[c];
-  if (!confirm(`Permanently delete ${cd.name}?\n\nThis removes ALL their data — jobs, notes, profile, and PIN. This cannot be undone.\n\nIf you just want to hide them temporarily, use Archive instead.`)) return;
+  if (!cd) return;
+  // Step 1 — soft confirm
+  if (!confirm(`Delete ${cd.name}?\n\nThis will permanently remove their profile, all ${(cd.jobs||[]).length} jobs, notes, and PIN.\n\nTo hide them temporarily instead, use Archive (📦).\n\nContinue with permanent delete?`)) return;
+  // Step 2 — hard confirm with name typed check replaced by second prompt
+  const check = prompt(`Type "${cd.name}" to confirm permanent deletion:`);
+  if (!check || check.trim().toLowerCase() !== cd.name.toLowerCase()) {
+    toast('Deletion cancelled — name did not match');
+    return;
+  }
+  const name = cd.name;
   delete CONFIG.candidates[c];
   delete CONFIG.pins[c];
   saveConfig(true);
-  updateLoginCounts();
-  renderLoginScreen();
-  renderOverview();
-  toast(`🗑 ${cd.name} permanently deleted`);
+  updateLoginCounts?.();
+  if (activePanel === 'overview' || activePanel === c) activePanel = 'overview';
+  renderAdminPanel();
+  toast(`🗑 ${name} permanently deleted`);
 }
 
 function toggleCandidateActive(c) {
