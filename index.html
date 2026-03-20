@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <!-- ============================================================
      The Job Hunts — Career Portal
-     Version: 7.4
+     Version: 7.5
      Updated: 2026-03-20
      Changes: Match scoring (0-100 client-side), hover breakdown tooltip,
               industry multi-select filter, work arrangement toggles,
@@ -1493,8 +1493,7 @@ body.font-xl .card-title { font-size: calc(var(--base-font) + 1px); }
   line-height: 1.5;
   white-space: normal;
 }
-/* Show on hover — CSS only, positioned via JS on mouseenter */
-.match-gauge-hover:hover .match-tooltip { display: block; }
+/* Tooltip shown/hidden via JS showMatchTooltip/hideMatchTooltip */
 
 /* ── Company research links ── */
 .company-research-links { display:flex; flex-wrap:wrap; gap:6px; align-items:center; padding:7px 0 10px; border-top:1px solid var(--border); margin-top:4px; }
@@ -2119,7 +2118,7 @@ body.font-xl .card-title { font-size: calc(var(--base-font) + 1px); }
 //  CLOUDFLARE WORKER — API proxy URL
 //  Update this if you ever redeploy your Worker
 // ═══════════════════════════════════════════════════════════════
-const VERSION = '7.4';
+const VERSION = '7.5';
 const WORKER_URL = 'https://career-hub-api.andy-dao-91-aaf.workers.dev';
 
 // ═══════════════════════════════════════════════════════════════
@@ -4263,26 +4262,30 @@ Start your response with [ and end with ].`;
 // ═══════════════════════════════════════════════════════════════
 //  MATCH SCORING — client-side 0-100 score
 // ═══════════════════════════════════════════════════════════════
-function positionTooltipSmart(e, tip) {
+function showMatchTooltip(e, tip) {
   if (!tip) return;
+  // Hide all other tooltips first
+  document.querySelectorAll('.match-tooltip').forEach(t => { if (t !== tip) t.style.display = 'none'; });
   const rect = e.currentTarget.getBoundingClientRect();
   const tipW = 240;
   const vw = window.innerWidth;
   const vh = window.innerHeight;
-  // Make tip visible briefly to measure real height
   tip.style.visibility = 'hidden';
   tip.style.display = 'block';
   const tipH = tip.offsetHeight || 180;
   tip.style.visibility = '';
-  // Horizontal: clamp to viewport
   const left = Math.min(Math.max(8, rect.left), vw - tipW - 12);
-  // Vertical: show above if enough space, else below
-  const top = rect.top > tipH + 20
-    ? rect.top - tipH - 8
-    : rect.bottom + 8;
-  // Final clamp — never go off-screen
+  const top = rect.top > tipH + 20 ? rect.top - tipH - 8 : rect.bottom + 8;
   tip.style.left = left + 'px';
   tip.style.top = Math.max(8, Math.min(top, vh - tipH - 8)) + 'px';
+}
+
+function hideMatchTooltip(tip) {
+  if (tip) tip.style.display = 'none';
+}
+
+function positionTooltipSmart(e, tip) {
+  showMatchTooltip(e, tip); // legacy alias
 }
 
 function toggleMatchTooltip(e, id) {
@@ -4324,15 +4327,23 @@ function scoreJob(j, c, cd) {
   let score = 0;
   const reasons = { matched: [], warnings: [], missing: [] };
 
-  // 1. Title vs search targets (30pts)
+  // 1. Title vs search targets (30pts) — stricter matching
   const targets = (cd.searchAreas||'').toLowerCase();
   const title = (j.title||'').toLowerCase();
-  const titleWords = title.split(/\s+/);
-  const targetWords = targets.split(/[\s,\/\-–]+/).filter(w => w.length > 3);
-  const titleMatches = titleWords.filter(w => targetWords.some(t => t.includes(w) || w.includes(t)));
-  if (titleMatches.length >= 2) { score += 30; reasons.matched.push('Title matches your targets'); }
-  else if (titleMatches.length === 1) { score += 15; reasons.matched.push('Title partially matches targets'); }
-  else { reasons.missing.push('Title may not match your target roles'); }
+  // Check if any target phrase appears in the job title
+  const targetPhrases = targets.split(/[,;]+/).map(t => t.trim()).filter(t => t.length > 3);
+  const titleWords = new Set(title.split(/\s+/));
+  let bestMatch = 0;
+  for (const phrase of targetPhrases) {
+    const phraseWords = phrase.split(/\s+/).filter(w => w.length > 3);
+    const matchCount = phraseWords.filter(w => titleWords.has(w) || title.includes(w)).length;
+    const matchRatio = phraseWords.length ? matchCount / phraseWords.length : 0;
+    if (matchRatio > bestMatch) bestMatch = matchRatio;
+  }
+  if (bestMatch >= 0.7) { score += 30; reasons.matched.push('Title matches your targets'); }
+  else if (bestMatch >= 0.4) { score += 15; reasons.matched.push('Title partially matches targets'); }
+  else if (bestMatch > 0) { score += 5; reasons.warnings.push('Title loosely related to your targets'); }
+  else { reasons.missing.push('Title does not match your target roles'); }
 
   // 2. Work arrangement (20pts)
   const wt = (j.workType||'').toLowerCase();
@@ -4392,11 +4403,11 @@ function scoreJob(j, c, cd) {
     else if (requiredYears > 0) reasons.warnings.push(`${requiredYears}+ years of experience required`);
   }
 
-  // Compute label
+  // Compute label — stricter thresholds
   let label, color, pct;
-  if (score >= 78) { label = 'Strong Match'; color = '#1e7a4e'; pct = 92; }
-  else if (score >= 55) { label = 'Good Match'; color = '#b45309'; pct = 65; }
-  else if (score >= 35) { label = 'Growth Opportunity'; color = '#6b2d6b'; pct = 38; }
+  if (score >= 88) { label = 'Strong Match'; color = '#1e7a4e'; pct = 92; }
+  else if (score >= 68) { label = 'Good Match'; color = '#b45309'; pct = 65; }
+  else if (score >= 45) { label = 'Possible Fit'; color = '#6b2d6b'; pct = 38; }
   else { label = 'Weak Match'; color = '#888'; pct = 18; }
 
   return { score, label, color, pct, reasons, requiresDegree, requiresMasters, requiredYears };
@@ -4788,13 +4799,13 @@ function buildCard(j, c, cd) {
   // Match gauge — client-side scoring
   const scored = scoreJob(j, c, cd);
   const matchGauge = `
-    <div class="match-gauge match-gauge-hover" onmouseenter="positionTooltipSmart(event,this.querySelector('.match-tooltip'))" onmousemove="positionTooltipSmart(event,this.querySelector('.match-tooltip'))">
+    <div class="match-gauge match-gauge-hover" onmouseenter="showMatchTooltip(event,this.querySelector('.match-tooltip'))" onmouseleave="hideMatchTooltip(this.querySelector('.match-tooltip'))">
       <div class="match-gauge-track">
         <div class="match-gauge-bar" style="width:${scored.pct}%;background:${scored.color}"></div>
       </div>
       <span class="match-gauge-label" style="color:${scored.color}">${scored.label} <span style="font-size:10px;opacity:.45;">ⓘ</span></span>
       <div class="match-tooltip">
-        <div style="font-size:11px;font-weight:800;color:white;margin-bottom:8px;border-bottom:1px solid rgba(255,255,255,.2);padding-bottom:6px;">Match Breakdown · ${scored.score}/100</div>
+        <div style="font-size:11px;font-weight:800;color:white;margin-bottom:8px;border-bottom:1px solid rgba(255,255,255,.2);padding-bottom:6px;">Why this is a ${scored.label}</div>
         ${scored.reasons.matched.map(r => `<div style="display:flex;gap:6px;margin-bottom:4px;font-size:11px;"><span style="color:#4ade80;flex-shrink:0;">✓</span><span>${r}</span></div>`).join('')}
         ${scored.reasons.warnings.map(r => `<div style="display:flex;gap:6px;margin-bottom:4px;font-size:11px;"><span style="color:#fbbf24;flex-shrink:0;">⚠</span><span>${r}</span></div>`).join('')}
         ${scored.reasons.missing.map(r => `<div style="display:flex;gap:6px;margin-bottom:4px;font-size:11px;"><span style="color:#f87171;flex-shrink:0;">✗</span><span>${r}</span></div>`).join('')}
