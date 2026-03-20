@@ -557,11 +557,15 @@ header {
   position: sticky;
   top: 0;
   z-index: 100;
-  background: #f7f6f2;
-  padding: 12px 0 10px;
-  margin-top: -12px;
+  background: rgba(247,246,242,0.97);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  padding: 12px 28px 10px;
+  margin-top: -24px;
+  margin-left: -28px;
+  margin-right: -28px;
   border-bottom: 1.5px solid var(--border);
-  box-shadow: 0 6px 16px rgba(0,0,0,.08);
+  box-shadow: 0 4px 20px rgba(0,0,0,.07);
 }
 
 .content-title {
@@ -755,6 +759,9 @@ header {
   width: 36px; height: 36px; border-radius: 8px;
   display: flex; align-items: center; justify-content: center;
   font-size: 14px; font-weight: 800; color: white; flex-shrink: 0;
+}
+.company-logo-wrap {
+  width: 36px; height: 36px; flex-shrink: 0;
 }
 
 .card-body { padding: 16px 18px; }
@@ -1998,7 +2005,7 @@ body.font-xl .card-title { font-size: calc(var(--base-font) + 1px); }
 //  CLOUDFLARE WORKER — API proxy URL
 //  Update this if you ever redeploy your Worker
 // ═══════════════════════════════════════════════════════════════
-const VERSION = '5.4';
+const VERSION = '5.6';
 const WORKER_URL = 'https://career-hub-api.andy-dao-91-aaf.workers.dev';
 
 // ═══════════════════════════════════════════════════════════════
@@ -3004,33 +3011,50 @@ function buildSidebar(c, cd, isAdmin) {
         </button>
       </div>
 
-      <div class="section-label">Stats</div>
-      <div class="stat-row stat-clickable" onclick="filterJobs('${c}','all',null)" title="Show all jobs">
-        <span class="stat-key">Total Jobs</span><span class="stat-val" id="stat-total-${c}">${totalJobs}</span>
-      </div>
-      <div class="stat-row stat-clickable" onclick="filterJobs('${c}','starred',null)" title="Show starred jobs">
-        <span class="stat-key">⭐ Starred</span><span class="stat-val" id="stat-starred-${c}">${starredJobs}</span>
-      </div>
-      <div class="stat-row stat-clickable" onclick="filterJobs('${c}','applied',null)" title="Show applied jobs">
-        <span class="stat-key">✅ Applied</span><span class="stat-val" id="stat-applied-${c}">${appliedJobs}</span>
-      </div>
-
-      <div class="stat-row">
-        <span class="stat-key">🔎 Last Searched</span>
-        <span style="display:flex;align-items:center;gap:6px;">
-          <span class="stat-val" id="stat-lastsearch-${c}">${cd.lastSearched ? new Date(cd.lastSearched).toLocaleDateString('en-US',{month:'short',day:'numeric'}) : 'Never'}</span>
-        </span>
-      </div>
-      <div class="stat-row stat-clickable" onclick="showDismissedModal('${c}')" title="View & restore dismissed jobs" style="${dismissedJobs > 0 ? '' : 'opacity:.4'}">
-        <span class="stat-key">🗑 Dismissed</span>
-        <span style="display:flex;align-items:center;gap:6px;">
-          <span class="stat-val" style="color:var(--muted)">${dismissedJobs}</span>
-          ${dismissedJobs > 0 ? `<span style="font-size:10px;color:var(--muted);font-weight:700;">↩ restore</span>` : ''}
-        </span>
-      </div>
     </div>
 
     <div class="action-section">
+
+      <div class="section-label" style="margin-top:4px;">Job Preferences
+        <span class="tip">?<span class="tip-bubble">These feed directly into every AI search — fill these out before searching for best results.</span></span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:7px;margin-bottom:14px;">
+        <div style="display:flex;gap:6px;align-items:center;">
+          <span style="font-size:11px;color:var(--muted);width:72px;flex-shrink:0;">📍 Location</span>
+          <input spellcheck="true" class="skill-input" list="location-suggestions-${c}" value="${cd.prefs?.location||''}" placeholder="Any / Phoenix, AZ" style="flex:1;font-size:12px;"
+            onblur="savePref('${c}','location',this.value)">
+          <datalist id="location-suggestions-${c}">
+            <option value="Any">
+            <option value="Remote (US)">
+            <option value="Phoenix, AZ"><option value="Scottsdale, AZ"><option value="Tempe, AZ">
+            <option value="New York, NY"><option value="Los Angeles, CA"><option value="Chicago, IL">
+            <option value="Houston, TX"><option value="Dallas, TX"><option value="Austin, TX">
+            <option value="San Francisco, CA"><option value="Seattle, WA"><option value="Denver, CO">
+            <option value="Atlanta, GA"><option value="Boston, MA"><option value="Miami, FL">
+            <option value="Nashville, TN"><option value="Charlotte, NC"><option value="Minneapolis, MN">
+            <option value="Portland, OR"><option value="Las Vegas, NV"><option value="San Diego, CA">
+            <option value="Tampa, FL"><option value="Orlando, FL"><option value="Washington, DC">
+            <option value="Philadelphia, PA"><option value="Detroit, MI"><option value="Columbus, OH">
+            <option value="Indianapolis, IN"><option value="Kansas City, MO"><option value="Salt Lake City, UT">
+          </datalist>
+        </div>
+        <div style="display:flex;gap:6px;align-items:center;">
+          <span style="font-size:11px;color:var(--muted);width:72px;flex-shrink:0;">💰 Min Pay</span>
+          <input spellcheck="false" class="skill-input" value="${cd.prefs?.minSalary ? '$'+Number(cd.prefs.minSalary).toLocaleString() : ''}" placeholder="Any / $80k" style="flex:1;font-size:12px;"
+            onblur="savePref('${c}','minSalary',this.value)">
+        </div>
+        <div style="display:flex;gap:6px;align-items:center;">
+          <span style="font-size:11px;color:var(--muted);width:72px;flex-shrink:0;">💼 Job Type</span>
+          <select class="skill-input" style="flex:1;font-size:12px;background:white;"
+            onchange="savePref('${c}','jobType',this.value)">
+            <option value="any" ${(cd.prefs?.jobType||'any')==='any'?'selected':''}>Any</option>
+            <option value="full-time" ${cd.prefs?.jobType==='full-time'?'selected':''}>Full-time</option>
+            <option value="contract" ${cd.prefs?.jobType==='contract'?'selected':''}>Contract</option>
+            <option value="part-time" ${cd.prefs?.jobType==='part-time'?'selected':''}>Part-time</option>
+          </select>
+        </div>
+      </div>
+
       <button class="sidebar-btn" style="background:${colorHex};color:white;border:none" id="ai-search-btn-${c}" onclick="aiSearch('${c}')">
         🔍 Search for Jobs
       </button>
@@ -3046,30 +3070,26 @@ function buildSidebar(c, cd, isAdmin) {
         📄 Update Profile from Resume
       </button>
 
-      <div class="section-label">Job Preferences
-        <span class="tip">?<span class="tip-bubble">Used by the AI when searching — keep these accurate for better results.</span></span>
+      <div class="section-label" style="margin-top:16px;">Stats</div>
+      <div class="stat-row stat-clickable" onclick="filterJobs('${c}','all',null)" title="Show all jobs">
+        <span class="stat-key">Total Jobs</span><span class="stat-val" id="stat-total-${c}">${totalJobs}</span>
       </div>
-      <div style="display:flex;flex-direction:column;gap:7px;margin-bottom:12px;">
-        <div style="display:flex;gap:6px;align-items:center;">
-          <span style="font-size:11px;color:var(--muted);width:72px;flex-shrink:0;">📍 Location</span>
-          <input spellcheck="true" class="skill-input" value="${cd.prefs?.location||''}" placeholder="e.g. Phoenix, AZ" style="flex:1;font-size:12px;"
-            onblur="savePref('${c}','location',this.value)">
-        </div>
-        <div style="display:flex;gap:6px;align-items:center;">
-          <span style="font-size:11px;color:var(--muted);width:72px;flex-shrink:0;">💰 Min Pay</span>
-          <input spellcheck="false" class="skill-input" value="${cd.prefs?.minSalary ? '$'+Number(cd.prefs.minSalary).toLocaleString() : ''}" placeholder="e.g. $80,000" style="flex:1;font-size:12px;"
-            onblur="savePref('${c}','minSalary',this.value)">
-        </div>
-        <div style="display:flex;gap:6px;align-items:center;">
-          <span style="font-size:11px;color:var(--muted);width:72px;flex-shrink:0;">💼 Job Type</span>
-          <select class="skill-input" style="flex:1;font-size:12px;background:white;"
-            onchange="savePref('${c}','jobType',this.value)">
-            <option value="full-time" ${(cd.prefs?.jobType||'full-time')==='full-time'?'selected':''}>Full-time</option>
-            <option value="contract" ${cd.prefs?.jobType==='contract'?'selected':''}>Contract</option>
-            <option value="part-time" ${cd.prefs?.jobType==='part-time'?'selected':''}>Part-time</option>
-            <option value="any" ${cd.prefs?.jobType==='any'?'selected':''}>Any</option>
-          </select>
-        </div>
+      <div class="stat-row stat-clickable" onclick="filterJobs('${c}','starred',null)" title="Show starred jobs">
+        <span class="stat-key">⭐ Starred</span><span class="stat-val" id="stat-starred-${c}">${starredJobs}</span>
+      </div>
+      <div class="stat-row stat-clickable" onclick="filterJobs('${c}','applied',null)" title="Show applied jobs">
+        <span class="stat-key">✅ Applied</span><span class="stat-val" id="stat-applied-${c}">${appliedJobs}</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-key">🔎 Last Searched</span>
+        <span class="stat-val" id="stat-lastsearch-${c}">${cd.lastSearched ? new Date(cd.lastSearched).toLocaleDateString('en-US',{month:'short',day:'numeric'}) : 'Never'}</span>
+      </div>
+      <div class="stat-row stat-clickable" onclick="showDismissedModal('${c}')" title="View & restore dismissed jobs" style="${dismissedJobs > 0 ? '' : 'opacity:.4'}">
+        <span class="stat-key">🗑 Dismissed</span>
+        <span style="display:flex;align-items:center;gap:6px;">
+          <span class="stat-val" style="color:var(--muted)">${dismissedJobs}</span>
+          ${dismissedJobs > 0 ? `<span style="font-size:10px;color:var(--muted);font-weight:700;">↩ restore</span>` : ''}
+        </span>
       </div>
 
       <!-- Collapsed LinkedIn alerts -->
@@ -3140,9 +3160,8 @@ function buildMainContent(c, cd, isAdmin) {
           </div>
           <div class="view-toggle">
             <button class="view-btn active" id="view-list-${c}" onclick="setView('${c}','list',this)" title="List view">☰ List</button>
-            <button class="view-btn" id="view-tracker-${c}" onclick="setView('${c}','tracker',this)" title="Job Tracker — see all your progress stages">
-              📋 Job Tracker
-              ${(cd.jobs||[]).filter(j=>j.stage&&j.stage!=='none'&&!j.dismissed).length > 0 ? `<span style="background:${cd.colorHex};color:white;border-radius:10px;padding:1px 6px;font-size:10px;margin-left:4px;">${(cd.jobs||[]).filter(j=>j.stage&&j.stage!=='none'&&!j.dismissed).length}</span>` : ''}
+            <button class="view-btn" id="view-tracker-${c}" onclick="setView('${c}','tracker',this)" title="Job Tracker — see your pipeline board">
+              📋 Tracker${(cd.jobs||[]).filter(j=>j.stage&&j.stage!=='none'&&!j.dismissed).length > 0 ? `<span style="background:${cd.colorHex};color:white;border-radius:10px;padding:1px 6px;font-size:10px;margin-left:5px;font-weight:800;">${(cd.jobs||[]).filter(j=>j.stage&&j.stage!=='none'&&!j.dismissed).length}</span>` : '<span style="font-size:10px;color:var(--muted);margin-left:4px;font-weight:600;">pipeline</span>'}
             </button>
           </div>
         </div>
@@ -3284,11 +3303,23 @@ function toggleRoleEdit(c) {
 function savePref(c, key, val) {
   if (!CONFIG.candidates[c].prefs) CONFIG.candidates[c].prefs = {};
   if (key === 'minSalary') {
-    val = parseInt((val||'').replace(/[^0-9]/g,'')) || 0;
+    // Accept blank, "Any", "$130k", "130000" etc.
+    const stripped = (val||'').trim().toLowerCase();
+    if (!stripped || stripped === 'any') {
+      val = 0;
+    } else {
+      const num = parseFloat(stripped.replace(/[^0-9.]/g,''));
+      val = stripped.includes('k') ? Math.round(num * 1000) : Math.round(num) || 0;
+    }
+  }
+  if (key === 'location') {
+    const stripped = (val||'').trim().toLowerCase();
+    if (stripped === 'any') val = '';
   }
   CONFIG.candidates[c].prefs[key] = val;
   saveConfig();
-  toast(`✓ ${key === 'minSalary' ? 'Min salary' : key === 'jobType' ? 'Job type' : 'Location'} updated`);
+  const labels = { minSalary: 'Min salary', jobType: 'Job type', location: 'Location' };
+  toast(`✓ ${labels[key]||key} updated`);
 }
 
 function saveRole(c, val) {
@@ -3767,6 +3798,46 @@ Start your response with [ and end with ].`;
 }
 
 // ═══════════════════════════════════════════════════════════════
+//  COMPANY LOGO LOADER — Clearbit autocomplete by company name
+// ═══════════════════════════════════════════════════════════════
+const _logoCache = {};
+
+async function loadCompanyLogos() {
+  const wraps = document.querySelectorAll('.company-logo-wrap[data-company]');
+  for (const wrap of wraps) {
+    const company = wrap.dataset.company;
+    const color = wrap.dataset.color || '#888';
+    const initial = (company||'?')[0].toUpperCase();
+    if (!company) continue;
+
+    // Use cached result
+    if (_logoCache[company] !== undefined) {
+      if (_logoCache[company]) {
+        wrap.innerHTML = `<img src="${_logoCache[company]}" class="company-logo" alt="" loading="lazy"
+          onerror="this.parentElement.innerHTML='<div class=\'company-logo-fallback\' style=\'background:${color}\'>${initial}</div>'">`;
+      }
+      continue;
+    }
+
+    try {
+      const res = await fetch(`https://autocomplete.clearbit.com/v1/companies/suggest?query=${encodeURIComponent(company)}`, { signal: AbortSignal.timeout(3000) });
+      if (!res.ok) throw new Error('no result');
+      const data = await res.json();
+      if (data && data[0] && data[0].domain) {
+        const logoUrl = `https://logo.clearbit.com/${data[0].domain}`;
+        _logoCache[company] = logoUrl;
+        wrap.innerHTML = `<img src="${logoUrl}" class="company-logo" alt="" loading="lazy"
+          onerror="this.parentElement.innerHTML='<div class=\'company-logo-fallback\' style=\'background:${color}\'>${initial}</div>'">`;
+      } else {
+        _logoCache[company] = null;
+      }
+    } catch(_) {
+      _logoCache[company] = null;
+    }
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
 //  RENDER JOB CARDS
 // ═══════════════════════════════════════════════════════════════
 // Track pagination state per candidate+filter
@@ -3846,6 +3917,8 @@ function renderJobCards(c, filter='all', page=0) {
              </div>`
           : ''
     }`;
+  // Load logos async after cards render
+  setTimeout(loadCompanyLogos, 50);
 }
 
 // ── Inline "load 10 more" — background search, appends cards without full re-render ──
@@ -3945,6 +4018,7 @@ async function fetchMoreJobs(c) {
     if (row) row.innerHTML = `<button class="fetch-more-btn" id="fetch-more-btn-${c}" style="color:${cd.colorHex}" onclick="fetchMoreJobs('${c}')">+ Load 10 more jobs</button>`;
 
     toast(`✅ ${newJobs.length} more jobs added`);
+    setTimeout(loadCompanyLogos, 50);
     if (CONFIG.airtable?.enabled) syncToAirtable(newJobs, c).catch(()=>{});
 
   } catch(err) {
@@ -3995,7 +4069,9 @@ function buildCard(j, c, cd) {
   <div class="card-body">
     <div class="card-row1">
       <div style="display:flex;align-items:flex-start;gap:10px;flex:1;min-width:0;">
-        ${(() => { try { const d = new URL(j.applyUrl||'').hostname.replace('www.',''); const skip=['linkedin.com','indeed.com','glassdoor.com','ziprecruiter.com','monster.com','lever.co','greenhouse.io']; return d && !skip.some(s=>d.endsWith(s)) ? `<img src="https://logo.clearbit.com/${d}" class="company-logo" alt="" loading="lazy" onerror="this.style.display='none';this.nextSibling.style.display='flex'"><div class="company-logo-fallback" style="background:${cd.colorHex};display:none">${(j.company||'?')[0].toUpperCase()}</div>` : `<div class="company-logo-fallback" style="background:${cd.colorHex}">${(j.company||'?')[0].toUpperCase()}</div>`; } catch(_){ return `<div class="company-logo-fallback" style="background:${cd.colorHex}">${(j.company||'?')[0].toUpperCase()}</div>`; }})()}
+        <div class="company-logo-wrap" id="logo-${safeId}" data-company="${(j.company||'').replace(/"/g,'&quot;')}" data-color="${cd.colorHex}">
+          <div class="company-logo-fallback" style="background:${cd.colorHex}">${(j.company||'?')[0].toUpperCase()}</div>
+        </div>
         <div class="card-title-block">
           <div class="card-title">${j.title}</div>
           <div class="card-company">
@@ -4794,12 +4870,15 @@ function renderKanban(c) {
   const cols = stages.map(s => {
     const colJobs = jobs.filter(j => (j.stage||'none') === s.key);
     const cards = colJobs.map(j => `
-      <div class="kanban-card" onclick="jumpToJob('${c}','${j._id}')" title="Click to view in list view">
-        <div class="kanban-card-title">${j.title}</div>
+      <div class="kanban-card" title="Click to view full card">
+        <div class="kanban-card-title" onclick="jumpToJob('${c}','${j._id}')" style="cursor:pointer;">${j.title}</div>
         <div class="kanban-card-company">${j.company}${j.location ? ' · ' + j.location : ''}</div>
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-top:4px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-top:6px;">
           ${j.salary && j.salary !== 'Competitive' ? `<span style="font-size:10px;color:var(--muted);font-weight:600">${j.salary}</span>` : '<span></span>'}
-          ${j.starred ? '<span style="font-size:10px;">⭐</span>' : ''}
+          <div style="display:flex;gap:4px;align-items:center;">
+            ${j.starred ? '<span style="font-size:10px;">⭐</span>' : ''}
+            ${j.applyUrl ? `<a href="${j.applyUrl}" target="_blank" onclick="event.stopPropagation()" style="font-size:10px;font-weight:700;color:white;background:${s.color};border-radius:4px;padding:2px 6px;text-decoration:none;">Apply ↗</a>` : ''}
+          </div>
         </div>
       </div>`).join('');
 
@@ -4898,7 +4977,7 @@ function updateFilterCounts(c) {
     starred: jobs.filter(j=>j.starred).length,
     applied: jobs.filter(j=>j.applied).length,
   };
-  const filterMap = { all:'All', unreviewed:'To Review', remote:'Remote', hybrid:'Hybrid', travel:'Travel', starred:'⭐ Starred', applied:'✅ Applied' };
+  const filterMap = { all:'All', unreviewed:'To Review', remote:'Remote', hybrid:'Hybrid', travel:'Travel', onsite:'On-site', starred:'⭐ Starred', applied:'✅ Applied' };
   document.querySelectorAll(`#filters-${c} .fbt`).forEach(btn => {
     const onclick = btn.getAttribute('onclick') || '';
     const match = onclick.match(/'([a-z]+)'\s*,this\)/);
