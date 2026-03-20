@@ -1676,6 +1676,7 @@ body.font-xl .card-title { font-size: calc(var(--base-font) + 1px); }
     </div>
 
     <a class="admin-link" onclick="selectUser('admin')" id="admin-link">admin</a>
+    <a class="admin-link" onclick="promptSetupPin()" id="setup-link" style="margin-top:4px;">✨ New user? Get started →</a>
   </div>
 </div>
 
@@ -2074,14 +2075,14 @@ body.font-xl .card-title { font-size: calc(var(--base-font) + 1px); }
 //  CLOUDFLARE WORKER — API proxy URL
 //  Update this if you ever redeploy your Worker
 // ═══════════════════════════════════════════════════════════════
-const VERSION = '6.0';
+const VERSION = '6.1';
 const WORKER_URL = 'https://career-hub-api.andy-dao-91-aaf.workers.dev';
 
 // ═══════════════════════════════════════════════════════════════
 //  CONFIGURATION — Edit PINs and candidate defaults here
 // ═══════════════════════════════════════════════════════════════
 let CONFIG = {
-  pins: { m: '1111', l: '2222', s: '3333', admin: '0000' },
+  pins: { m: '1111', l: '2222', s: '3333', admin: '0000', setup: '9999' },
   airtable: { apiKey: '', baseId: '', enabled: false },
   site: { title: 'The Job Hunts', emoji: '💻' },
   uiPrefs: { fontSize: 'normal', sidebarWidth: 300 },
@@ -2298,6 +2299,54 @@ function showLoginSummary(c) {
     ${msgs.map(m=>`<div style="font-size:13px;color:var(--text2);margin-bottom:4px;">• ${m}</div>`).join('')}
   `;
   main.insertBefore(banner, main.firstChild);
+}
+
+function promptSetupPin() {
+  // Show a small PIN prompt inline
+  const card = document.querySelector('.login-card');
+  if (!card) return;
+
+  // Remove existing if any
+  const existing = document.getElementById('setup-pin-prompt');
+  if (existing) { existing.remove(); return; }
+
+  const div = document.createElement('div');
+  div.id = 'setup-pin-prompt';
+  div.style.cssText = 'margin-top:14px;padding:14px 16px;background:var(--surface2);border-radius:10px;border:1.5px solid var(--border);text-align:left;';
+  div.innerHTML = `
+    <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:8px;">✨ New User Setup</div>
+    <div style="font-size:11px;color:var(--muted);margin-bottom:10px;line-height:1.5;">Enter the setup code to create your profile. Get this from your administrator.</div>
+    <div style="display:flex;gap:8px;align-items:center;">
+      <input type="password" id="setup-pin-input" maxlength="4" placeholder="Code"
+        style="width:80px;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;font-family:Lora,serif;font-size:18px;font-weight:700;letter-spacing:.2em;text-align:center;outline:none;"
+        onkeydown="if(event.key==='Enter')checkSetupPin()">
+      <button onclick="checkSetupPin()"
+        style="flex:1;padding:9px;border-radius:8px;border:none;background:var(--text);color:white;font-size:13px;font-weight:700;cursor:pointer;">
+        Continue →
+      </button>
+      <button onclick="document.getElementById('setup-pin-prompt').remove()"
+        style="padding:9px 12px;border-radius:8px;border:1.5px solid var(--border);background:white;font-size:13px;cursor:pointer;color:var(--muted);">
+        ✕
+      </button>
+    </div>
+    <div id="setup-pin-error" style="font-size:11px;color:var(--red);margin-top:6px;display:none;">Incorrect code — check with your administrator.</div>`;
+
+  card.appendChild(div);
+  setTimeout(() => div.querySelector('#setup-pin-input')?.focus(), 50);
+}
+
+function checkSetupPin() {
+  const input = document.getElementById('setup-pin-input');
+  const error = document.getElementById('setup-pin-error');
+  const entered = input?.value?.trim();
+  if (entered === CONFIG.pins.setup) {
+    document.getElementById('setup-pin-prompt')?.remove();
+    openWizard();
+  } else {
+    if (error) error.style.display = 'block';
+    if (input) { input.value = ''; input.focus(); }
+    setTimeout(() => { if (error) error.style.display = 'none'; }, 3000);
+  }
 }
 
 function logout() {
@@ -2619,6 +2668,10 @@ function renderAdminSidebar() {
               <label>${CONFIG.candidates[u]?.name || 'Admin'}</label>
               <input type="text" maxlength="4" value="${CONFIG.pins[u]||''}" id="pin-${u}" style="letter-spacing:.2em" oninput="updatePin('${u}',this.value)">
             </div>`).join('')}
+          <div class="pin-item">
+            <label style="color:var(--admin)">✨ Setup Code</label>
+            <input type="text" maxlength="4" value="${CONFIG.pins.setup||'9999'}" id="pin-setup" style="letter-spacing:.2em;border-color:#f6c96b;" oninput="updatePin('setup',this.value)">
+          </div>
         </div>
         <div style="font-size:11px;color:var(--muted);margin-top:8px">Changes save automatically and take effect on next login.</div>
       </div>
@@ -3055,7 +3108,8 @@ function renderCandidatePanel(c) {
   });
 
   // Always render job cards immediately so returning users see their jobs
-  renderJobCards(c, currentFilter[c] || 'all');
+  // Use rAF to ensure DOM is ready and prevent double-render
+  requestAnimationFrame(() => renderJobCards(c, currentFilter[c] || 'all'));
 }
 
 function buildSidebar(c, cd, isAdmin) {
@@ -3119,8 +3173,8 @@ function buildSidebar(c, cd, isAdmin) {
           { done: !!cd.bio && cd.bio.length > 50, label: 'Bio' },
           { done: (cd.skills||[]).length >= 5, label: '5+ skills' },
           { done: !!cd.searchAreas && cd.searchAreas.length > 20, label: 'Search targets' },
-          { done: !!cd.prefs?.location, label: 'Location' },
-          { done: !!cd.prefs?.minSalary, label: 'Min salary' },
+          { done: !!(cd.prefs?.location || cd.prefs?.location === 0), label: 'Location' },
+          { done: !!(cd.prefs?.minSalary && cd.prefs.minSalary > 0), label: 'Min salary' },
         ];
         const done = checks.filter(x=>x.done).length;
         const pct = Math.round((done/checks.length)*100);
@@ -4160,46 +4214,55 @@ const _logoCache = {};
 
 async function loadCompanyLogos() {
   const wraps = document.querySelectorAll('.company-logo-wrap[data-company]');
+
+  // Batch: first try autocomplete for all uncached companies
+  const uncached = [...wraps].filter(w => w.dataset.company && _logoCache[w.dataset.company] === undefined);
+
+  // Fire all autocomplete requests in parallel
+  await Promise.allSettled(uncached.map(async wrap => {
+    const company = wrap.dataset.company;
+    try {
+      const res = await fetch(
+        `https://autocomplete.clearbit.com/v1/companies/suggest?query=${encodeURIComponent(company)}`,
+        { signal: AbortSignal.timeout(4000) }
+      );
+      if (!res.ok) throw new Error('no result');
+      const data = await res.json();
+      _logoCache[company] = (data && data[0]?.domain)
+        ? `https://logo.clearbit.com/${data[0].domain}`
+        : null;
+    } catch(_) {
+      // Fallback: try guessing domain from company name
+      const guess = company.toLowerCase()
+        .replace(/[^a-z0-9\s]/g, '')
+        .trim()
+        .split(/\s+/)[0]; // first word
+      _logoCache[company] = guess.length > 2 ? `https://logo.clearbit.com/${guess}.com` : null;
+    }
+  }));
+
+  // Now apply logos to all wraps
   for (const wrap of wraps) {
     const company = wrap.dataset.company;
     const color = wrap.dataset.color || '#888';
     const initial = (company||'?')[0].toUpperCase();
-    if (!company) continue;
+    const logoUrl = _logoCache[company];
 
-    // Use cached result
-    if (_logoCache[company] !== undefined) {
-      if (_logoCache[company]) {
-        wrap.innerHTML = `<img src="${_logoCache[company]}" class="company-logo" alt="" loading="lazy"
-          onerror="this.parentElement.innerHTML='<div class=\'company-logo-fallback\' style=\'background:${color}\'>${initial}</div>'">`;
-      }
-      continue;
-    }
+    if (!logoUrl) continue; // keep fallback avatar
 
-    try {
-      const res = await fetch(`https://autocomplete.clearbit.com/v1/companies/suggest?query=${encodeURIComponent(company)}`, { signal: AbortSignal.timeout(3000) });
-      if (!res.ok) throw new Error('no result');
-      const data = await res.json();
-      if (data && data[0] && data[0].domain) {
-        const logoUrl = `https://logo.clearbit.com/${data[0].domain}`;
-        _logoCache[company] = logoUrl;
-        // Create img hidden, only show on successful load
-        const img = document.createElement('img');
-        img.className = 'company-logo';
-        img.alt = '';
-        img.style.display = 'none';
-        img.onload = () => {
-          wrap.innerHTML = '';
-          wrap.appendChild(img);
-          img.style.display = '';
-        };
-        img.onerror = () => { _logoCache[company] = null; };
-        img.src = logoUrl;
-      } else {
-        _logoCache[company] = null;
+    const img = document.createElement('img');
+    img.className = 'company-logo';
+    img.alt = '';
+    img.style.cssText = 'display:none;';
+    img.onload = () => {
+      if (wrap.isConnected) {
+        wrap.innerHTML = '';
+        wrap.appendChild(img);
+        img.style.display = '';
       }
-    } catch(_) {
-      _logoCache[company] = null;
-    }
+    };
+    img.onerror = () => { _logoCache[company] = null; };
+    img.src = logoUrl;
   }
 }
 
