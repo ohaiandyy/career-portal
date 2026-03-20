@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <!-- ============================================================
      The Job Hunts — Career Portal
-     Version: 9.0
+     Version: 9.2
      Updated: 2026-03-20
      Changes: Match scoring (0-100 client-side), hover breakdown tooltip,
               industry multi-select filter, work arrangement toggles,
@@ -2118,7 +2118,7 @@ body.font-xl .card-title { font-size: calc(var(--base-font) + 1px); }
 //  CLOUDFLARE WORKER — API proxy URL
 //  Update this if you ever redeploy your Worker
 // ═══════════════════════════════════════════════════════════════
-const VERSION = '9.0';
+const VERSION = '9.2';
 const WORKER_URL = 'https://career-hub-api.andy-dao-91-aaf.workers.dev';
 
 // ═══════════════════════════════════════════════════════════════
@@ -4060,55 +4060,37 @@ const LINKEDIN_ALERTS = {
 const _searchCooldowns = {};
 async function aiSearch(c) {
   const cd = CONFIG.candidates[c];
-  const btn = document.getElementById('ai-search-btn-'+c);
-  const container = document.getElementById('cards-container-'+c);
+  if (!cd) return;
 
-  // 30-second cooldown to prevent accidental repeated searches
   const now = Date.now();
-  const lastSearch = _searchCooldowns[c] || 0;
-  const cooldown = 30000;
-  if (now - lastSearch < cooldown) {
-    const remaining = Math.ceil((cooldown - (now - lastSearch)) / 1000);
-    toast(`Please wait ${remaining}s before searching again`);
-    return;
+  if (_searchCooldowns[c] && (now - _searchCooldowns[c]) < 30000) {
+    toast('Please wait 30 seconds between searches'); return;
   }
-  // Don't stamp cooldown yet — only stamp after a successful search
 
-  // Rebuild taste profile if dirty
   if (cd._tasteDirty) { buildTasteProfile(c); cd._tasteDirty = false; }
-
-  // Mark all existing as not-new before this session
   (cd.jobs||[]).forEach(j => j.isNew = false);
 
-  // Lock button, show spinner
-  btn.disabled = true;
-  btn.innerHTML = `
-    <span style="display:inline-flex;align-items:center;gap:8px;">
-      <span style="width:14px;height:14px;border:2px solid rgba(255,255,255,.3);border-top-color:white;border-radius:50%;animation:spin .7s linear infinite;display:inline-block;flex-shrink:0"></span>
-      Searching live job boards...
-    </span>`;
+  const container = document.getElementById('main-content');
+  if (!container) return;
 
-  // Show loading state in the main panel
   container.innerHTML = `
     <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:48px 24px;gap:20px;text-align:center;max-width:480px;margin:0 auto;">
-      <div id="search-progress-msg" style="font-size:15px;font-weight:700;color:var(--text2);">🔍 Searching job boards...</div>
+      <div id="search-progress-msg" style="font-size:15px;font-weight:700;color:var(--text2);">&#x1F50D; Searching Adzuna...</div>
       <div style="width:100%;background:var(--border);border-radius:10px;height:8px;overflow:hidden;">
         <div id="search-progress-bar" style="height:100%;width:0%;background:${cd.colorHex};border-radius:10px;transition:width .8s ease;"></div>
       </div>
       <div id="search-progress-pct" style="font-size:12px;color:var(--muted);font-weight:600;">0%</div>
       <div style="font-size:12px;color:var(--muted);line-height:1.6;background:var(--surface2);border-radius:8px;padding:10px 14px;">
-        ⏳ This takes 10–20 seconds — please don't refresh or navigate away
+        Searching real job boards with verified listings&#x2026; please don't refresh
       </div>
     </div>`;
 
-  // Animate progress bar with realistic milestones
   const steps = [
-    { pct: 8,  msg: '🔍 Searching job boards...', delay: 500 },
-    { pct: 22, msg: '📋 Reading listings...', delay: 2500 },
-    { pct: 45, msg: '🤖 Analyzing matches...', delay: 5000 },
-    { pct: 65, msg: '✨ Tailoring to your profile...', delay: 8000 },
-    { pct: 80, msg: '📊 Ranking results...', delay: 12000 },
-    { pct: 88, msg: '🎯 Finalizing your list...', delay: 15000 },
+    { pct: 15, msg: '&#x1F50D; Searching Adzuna...', delay: 500 },
+    { pct: 35, msg: '&#x1F4CB; Searching Remotive...', delay: 2000 },
+    { pct: 55, msg: '&#x1F310; Searching Jobicy and RemoteOK...', delay: 4000 },
+    { pct: 75, msg: '&#x1F916; AI scoring matches...', delay: 7000 },
+    { pct: 88, msg: '&#x2728; Personalizing results...', delay: 11000 },
   ];
   steps.forEach(({ pct, msg, delay }) => {
     setTimeout(() => {
@@ -4116,13 +4098,12 @@ async function aiSearch(c) {
       const msgEl = document.getElementById('search-progress-msg');
       const pctEl = document.getElementById('search-progress-pct');
       if (bar) bar.style.width = pct + '%';
-      if (msgEl) msgEl.textContent = msg;
+      if (msgEl) msgEl.innerHTML = msg;
       if (pctEl) pctEl.textContent = pct + '%';
     }, delay);
   });
 
-  // After 15s — pulse between 88-94% so it looks alive while waiting
-  let _pulseDir = 1, _pulsePct = 88;
+  let _pulsePct = 88, _pulseDir = 1;
   const _pulseInterval = setInterval(() => {
     const bar = document.getElementById('search-progress-bar');
     if (!bar) { clearInterval(_pulseInterval); return; }
@@ -4130,198 +4111,122 @@ async function aiSearch(c) {
     if (_pulsePct >= 94) _pulseDir = -1;
     if (_pulsePct <= 88) _pulseDir = 1;
     bar.style.width = _pulsePct + '%';
-    bar.style.transition = 'width .6s ease';
     const pctEl = document.getElementById('search-progress-pct');
     if (pctEl) pctEl.textContent = Math.round(_pulsePct) + '%';
   }, 600);
-  // Store interval ID so we can clear it on completion
   window._searchPulseInterval = _pulseInterval;
 
-  const isFirstSearch = !(cd.jobs || []).filter(j => !j.dismissed).length;
+  const targetRoles = (cd.searchAreas||'').split(/[,;\u2014\u2013]+/).map(s=>s.trim()).filter(Boolean);
+  const remote = cd.prefs?.workArrangement || 'remote-only';
+  const minSalary = cd.prefs?.minSalary || 0;
+  const location = cd.prefs?.location || '';
+  const jobType = cd.prefs?.jobType || 'any';
+  const existingCompanies = new Set((cd.jobs||[]).filter(j=>!j.dismissed).map(j=>(j.company||'').toLowerCase()));
 
   try {
-    const res = await fetch(WORKER_URL, {
+    // Fetch real jobs from all sources in parallel
+    let allRealJobs = [];
+    const searchQueries = targetRoles.slice(0, 3).length > 0 ? targetRoles.slice(0, 3) : [cd.searchAreas || ''];
+
+    const jobFetches = await Promise.allSettled(
+      searchQueries.map(keyword =>
+        fetch(WORKER_URL + '/jobs', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ keywords: keyword, location, remote, minSalary, jobType, count: 15 })
+        }).then(r => r.json()).then(d => d.jobs || [])
+      )
+    );
+
+    jobFetches.forEach(result => {
+      if (result.status === 'fulfilled') allRealJobs.push(...result.value);
+    });
+
+    // Deduplicate
+    const seen = new Set();
+    allRealJobs = allRealJobs.filter(j => {
+      const key = (j.title||'').toLowerCase().trim() + '||' + (j.company||'').toLowerCase().trim();
+      if (seen.has(key)) return false;
+      seen.add(key); return true;
+    }).filter(j => !existingCompanies.has((j.company||'').toLowerCase()));
+
+    if (allRealJobs.length === 0) {
+      if (window._searchPulseInterval) clearInterval(window._searchPulseInterval);
+      toast('No new jobs found. Try adjusting preferences or search again later.');
+      renderCandidatePanel(c); return;
+    }
+
+    // AI scoring + personalization — Claude only adds descriptions/tags, never invents jobs
+    const scoringPrompt = 'Score and personalize these REAL job listings for this candidate.\n\n' +
+      'CANDIDATE: ' + cd.name + '\nBIO: ' + (cd.bio||'').substring(0,200) + '\n' +
+      'SKILLS: ' + (cd.skills||[]).join(', ') + '\nTARGETS: ' + cd.searchAreas + '\n\n' +
+      'JOBS:\n' + allRealJobs.slice(0,20).map((j,i) =>
+        i + '. "' + j.title + '" at ' + j.company + ' | ' + j.location + ' | ' + j.salary + '\n   ' + (j.description||'').substring(0,120)
+      ).join('\n') +
+      '\n\nReturn JSON array, one object per job by index:\n' +
+      '[{"idx":0,"description":"2 sentences: what role does + why THIS candidate fits. 40 words max.","qualifications":["req 1","req 2","req 3"],"degreeRequired":"Bachelor|Master|MBA|PhD|None","yearsRequired":0,"tags":["Industry"]}]\n' +
+      'Return ONLY the JSON array.';
+
+    const aiRes = await fetch(WORKER_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: isFirstSearch ? 10000 : 6000,
-        tools: [{ type: 'web_search_20250305', name: 'web_search' }],
-        system: buildSystemPrompt(c, cd),
-        messages: [
-          { role: 'user', content: buildUserPrompt(c, cd, isFirstSearch) },
-          { role: 'assistant', content: '[' }
-        ]
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 4000,
+        messages: [{ role: 'user', content: scoringPrompt }]
       })
     });
+    const aiData = await aiRes.json();
+    const aiText = (aiData.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('');
 
-    const data = await res.json();
-    if (data.error) throw new Error(data.error.message);
+    let aiEnhancements = [];
+    try {
+      const m = aiText.match(/\[([\s\S]*)\]/);
+      if (m) aiEnhancements = JSON.parse('[' + m[1] + ']');
+    } catch(_) {}
 
-    let raw = '';
-    for (const b of (data.content||[])) { if (b.type === 'text') raw += b.text; }
-    // Prefilled assistant turn means model continues from '[' — prepend it back
-    // but strip any leading '[' the model may have accidentally repeated
-    raw = '[' + raw.replace(/^\s*\[/, '');
-
-    // DEBUG
-
-    // Extract JSON array — be lenient about where it starts/ends
-    const match = raw.match(/\[[\s\S]*\]/);
-    if (!match) throw new Error('No results returned — try again');
-
-    // Bulletproof multi-strategy parser
-    let parsed = [];
-
-    // Strategy 1: clean parse
-    try { parsed = JSON.parse(match[0]); } catch(_) {}
-
-    // Strategy 2: extract each {...} block individually, handling multi-line pretty-print
-    if (!parsed.length) {
-      // Split on object boundaries — find every top-level { ... } block
-      const raw2 = match[0];
-      let depth = 0, start = -1;
-      for (let i = 0; i < raw2.length; i++) {
-        if (raw2[i] === '{') { if (depth === 0) start = i; depth++; }
-        else if (raw2[i] === '}') {
-          depth--;
-          if (depth === 0 && start !== -1) {
-            const chunk = raw2.slice(start, i + 1);
-            try {
-              const j = JSON.parse(chunk);
-              if (j.title && j.company) parsed.push(j);
-            } catch(_) {
-              // Try sanitizing smart quotes and apostrophes
-              try {
-                const clean = chunk
-                  .replace(/[‘’]/g, "'")
-                  .replace(/[“”]/g, '"')
-                  .replace(/\n/g, ' ')
-                  .replace(/,\s*}/g, '}')
-                  .replace(/,\s*]/g, ']');
-                const j = JSON.parse(clean);
-                if (j.title && j.company) parsed.push(j);
-              } catch(__) {}
-            }
-            start = -1;
-          }
-        }
-      }
-    }
-
-    // Strategy 3: sanitize the whole array and retry
-    if (!parsed.length) {
-      try {
-        const sanitized = match[0]
-          .replace(/[‘’]/g, "\'")
-          .replace(/[“”]/g, '\"')
-          .replace(/,(\s*[}\]])/g, '$1');
-        parsed = JSON.parse(sanitized);
-      } catch(_) {}
-    }
-
-    if (!parsed.length) throw new Error('Could not read results — try again');
-
-    // Deduplicate against existing — normalize to catch near-duplicates
-    const normalize = s => (s||'').toLowerCase().replace(/(of|the|a|an|&|and|-|\/|,|\.)/g,' ').replace(/\s+/g,' ').trim();
-    const existingKeys = new Set((cd.jobs||[]).map(j => `${normalize(j.title)}||${normalize(j.company)}`));
-    let newJobs = parsed.filter(j => j.title && j.company && !existingKeys.has(`${normalize(j.title)}||${normalize(j.company)}`));
-
-    // Post-search location filter: remove hybrid/on-site jobs not near user's city
-    const userCity = (cd.prefs?.location||'').toLowerCase().split(',')[0].trim();
-    if (userCity && userCity !== 'any') {
-      newJobs = newJobs.filter(j => {
-        const wt = (j.workType||'').toLowerCase();
-        const isNonRemote = ['hybrid','on-site','onsite','on site','in-person'].includes(wt);
-        if (!isNonRemote) return true; // remote always passes
-        const jobLoc = (j.location||'').toLowerCase();
-        return jobLoc.includes(userCity) || jobLoc.includes('remote') || !jobLoc;
-      });
-    }
-
-    newJobs.forEach(j => {
-      j._id = `${c}-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
-      j._addedAt = Date.now();
-      j.isNew = true;
+    const enhancedJobs = allRealJobs.slice(0,20).map((j,i) => {
+      const e = aiEnhancements.find(x => x.idx === i) || {};
+      return { ...j, description: e.description || j.description || '', qualifications: e.qualifications || [], degreeRequired: e.degreeRequired || 'None', yearsRequired: e.yearsRequired || 0, tags: e.tags || j.tags || [] };
     });
 
-    // Prepend new jobs (newest at top)
-    if (!cd.jobs) cd.jobs = [];
-    cd.jobs = [...newJobs, ...cd.jobs];
-    // Cap at 200 total jobs — keep newest, always preserve starred/applied
-    if (cd.jobs.length > 200) {
-      const important = cd.jobs.filter(j => j.starred || j.applied || (j.stage && j.stage !== 'none'));
-      const rest = cd.jobs.filter(j => !j.starred && !j.applied && (!j.stage || j.stage === 'none'));
-      cd.jobs = [...important, ...rest].slice(0, 200);
-    }
-
-    // Save timestamp + stamp cooldown (only on success)
-    _searchCooldowns[c] = Date.now();
-    cd.lastSearched = Date.now();
-    // Store search history
-    if (!cd.searchHistory) cd.searchHistory = [];
-    const histEntry = { ts: Date.now(), count: newJobs.length, filter: currentFilter[c]||'all' };
-    cd.searchHistory = [histEntry, ...cd.searchHistory].slice(0, 5);
-    saveConfig(true);
-
-    // Sync new jobs to Airtable if connected
-    if (CONFIG.airtable?.enabled && CONFIG.airtable?.apiKey && CONFIG.airtable?.baseId && newJobs.length) {
-      syncToAirtable(newJobs, c).catch(() => {});
-    }
-
-    renderJobCards(c);
-    updateSidebarStats(c);
-
-    // Clear pulse interval and complete progress bar
+    // Complete progress
     if (window._searchPulseInterval) { clearInterval(window._searchPulseInterval); window._searchPulseInterval = null; }
-    const bar = document.getElementById('search-progress-bar');
-    const msgEl = document.getElementById('search-progress-msg');
-    const pctEl = document.getElementById('search-progress-pct');
-    if (bar) { bar.style.transition = 'width .4s ease'; bar.style.width = '100%'; bar.style.background = 'var(--green)'; }
-    if (msgEl) msgEl.textContent = '✅ Done!';
-    if (pctEl) pctEl.textContent = '100%';
+    const barEl = document.getElementById('search-progress-bar');
+    const msgEl2 = document.getElementById('search-progress-msg');
+    const pctEl2 = document.getElementById('search-progress-pct');
+    if (barEl) { barEl.style.transition = 'width .4s ease'; barEl.style.width = '100%'; barEl.style.background = 'var(--green)'; }
+    if (msgEl2) msgEl2.textContent = 'Done!';
+    if (pctEl2) pctEl2.textContent = '100%';
     await new Promise(r => setTimeout(r, 500));
 
-    // Dismiss the re-search nudge if present
-    document.getElementById('research-nudge-'+c)?.remove();
+    if (!cd.jobs) cd.jobs = [];
+    const ts = Date.now();
+    const newJobs = enhancedJobs.map(j => ({ ...j, _id: 'job-' + Math.random().toString(36).substr(2,9), _addedAt: ts, isNew: true }));
 
-    if (newJobs.length === 0) {
-      toast(`All results already in your list. Try again tomorrow for fresh postings.`);
-    } else {
-      toast(`✅ Found ${newJobs.length} new jobs for ${cd.name}`);
+    document.getElementById('research-nudge-'+c)?.remove();
+    cd.jobs = [...newJobs, ...cd.jobs];
+    if (cd.jobs.length > 200) {
+      const imp = cd.jobs.filter(j=>j.starred||j.applied||(j.stage&&j.stage!=='none'));
+      const rst = cd.jobs.filter(j=>!j.starred&&!j.applied&&(!j.stage||j.stage==='none'));
+      cd.jobs = [...imp, ...rst].slice(0,200);
     }
 
-  } catch (err) {
-    // Show error inline but still load fallbacks so page isn't empty
-    container.innerHTML = `
-      <div style="background:var(--red-lt);border:1.5px solid #f5c6c1;border-radius:var(--radius);padding:16px 20px;margin-bottom:16px;">
-        <div style="font-size:13px;font-weight:700;color:var(--red);margin-bottom:4px">Search error</div>
-        <div style="font-size:12px;color:var(--red);opacity:.8">${err.message}</div>
-        <div style="font-size:12px;color:var(--muted);margin-top:8px">Check that your Cloudflare Worker is deployed and your Anthropic API key is set correctly. Showing sample listings below — run a real search from the live site to get actual job results.</div>
-      </div>`;
-  // Only load fallbacks if the candidate has no jobs yet
-  if (!(cd.jobs||[]).length) loadFallback(c);
-  else renderJobCards(c);
-  }
+    _searchCooldowns[c] = Date.now();
+    cd.lastSearched = Date.now();
+    if (!cd.searchHistory) cd.searchHistory = [];
+    cd.searchHistory = [{ ts, count: newJobs.length }, ...cd.searchHistory].slice(0,5);
+    saveConfig(true);
+    updateSidebarStats(c);
 
-  // Only show countdown if search actually succeeded (cooldown was stamped)
-  if (_searchCooldowns[c] && Date.now() - _searchCooldowns[c] < 5000) {
-    let countdown = 30;
-    btn.disabled = true;
-    btn.innerHTML = `🔍 Search again in ${countdown}s`;
-    const tick = setInterval(() => {
-      countdown--;
-      if (countdown <= 0) {
-        clearInterval(tick);
-        btn.disabled = false;
-        btn.innerHTML = '🔍 Search for Jobs';
-      } else {
-        btn.innerHTML = `🔍 Search again in ${countdown}s`;
-      }
-    }, 1000);
-  } else {
-    btn.disabled = false;
-    btn.innerHTML = '🔍 Search for Jobs';
+    toast('Found ' + newJobs.length + ' real jobs from Adzuna, Remotive, Jobicy and RemoteOK');
+    renderCandidatePanel(c);
+
+  } catch (err) {
+    if (window._searchPulseInterval) clearInterval(window._searchPulseInterval);
+    console.error('Search error:', err);
+    toast('Search failed: ' + err.message);
+    renderCandidatePanel(c);
   }
 }
 
@@ -4347,50 +4252,15 @@ function buildSystemPrompt(c, cd) {
 
 // What the AI is asked to do
 function buildUserPrompt(c, cd, isFirstSearch = true) {
-  // Build targeted search queries for real job boards
-  const remoteFilter = cd.prefs?.workArrangement === 'remote-only' || c === 'l' ? ' remote' : '';
+  // NOTE: as of v9.1, aiSearch uses the /jobs Worker endpoint for real job data.
+  // This function is retained for compatibility with other AI calls (suggest headlines, etc.)
   const targets = cd.searchAreas || '';
-
-  // Extract key role titles for focused searches
-  const roleParts = targets.split(/[,;—–]+/).map(s => s.trim()).filter(s => s.length > 3).slice(0, 3);
-  const primaryRole = roleParts[0] || targets.substring(0, 50);
-
-  // Build skip lists for follow-up searches
   const existingCompanies = !isFirstSearch ? [...new Set((cd.jobs||[])
     .filter(j => !j.dismissed && j.company).map(j => j.company))].slice(0,20).join(', ') : '';
-  const existingTitles = !isFirstSearch ? [...new Set((cd.jobs||[])
-    .filter(j => !j.dismissed && j.title).map(j => j.title))].slice(0,10).join(', ') : '';
-
-  const skipClause = !isFirstSearch && existingCompanies ? `
-ALREADY HAVE THESE — skip them: ${existingCompanies}
-ALREADY HAVE THESE TITLES — find different ones: ${existingTitles}` : '';
-
-  const count = isFirstSearch ? 10 : 8;
-
-  return `Search for real, currently open job listings for this candidate. Use web_search to find actual postings.
-
-CANDIDATE BACKGROUND: ${cd.bio?.substring(0,200)}
-LOOKING FOR: ${targets}
-${cd.prefs?.minSalary ? `MINIMUM SALARY: $${Number(cd.prefs.minSalary).toLocaleString()}` : ''}
-${cd.prefs?.location ? `LOCATION PREFERENCE: ${cd.prefs.location}` : ''}
-${skipClause}
-
-Run these web searches to find REAL job listings:
-1. site:linkedin.com/jobs "${primaryRole}"${remoteFilter} ${new Date().getFullYear()}
-2. site:indeed.com "${primaryRole}"${remoteFilter}
-3. "${primaryRole}"${remoteFilter} job opening ${new Date().getFullYear()} (greenhouse OR lever OR workday OR careers)
-
-For each real listing you find, extract the data. Return ONLY jobs with real URLs from your search results.
-
-Return up to ${count} jobs as a JSON array. Start with [ end with ]. Each job on ONE line:
-{"title":"exact title","company":"exact company","location":"as listed","workType":"Remote|Hybrid|On-site","salary":"as listed or Not listed","description":"what role does + why candidate fits their specific background. 40 words max.","qualifications":["requirement from listing","requirement from listing","requirement from listing"],"applyUrl":"REAL URL from search — mandatory, no fabrication","source":"LinkedIn|Indeed|Company","tags":["Industry"],"degreeRequired":"Bachelor|Master|MBA|PhD|None","yearsRequired":0}
-
-ABSOLUTE RULES:
-- applyUrl must be a real URL you found in search results — if you don't have one, skip that job
-- salary must come from the listing — never invent a number
-- title must be exact from the listing — do not paraphrase
-- If you can only find 3 real jobs, return 3 — do not pad with invented ones`;
+  const skipClause = existingCompanies ? `Skip these companies already in list: ${existingCompanies}` : '';
+  return `Find jobs for: ${targets}. ${skipClause}`;
 }
+
 
 // ═══════════════════════════════════════════════════════════════
 //  SIGNAL LEARNING ENGINE
