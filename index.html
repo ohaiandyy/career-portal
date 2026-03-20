@@ -97,9 +97,11 @@ body {
 
 .user-selector {
   display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
-  gap: 10px;
+  grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+  gap: 8px;
   margin-bottom: 24px;
+  max-height: 280px;
+  overflow-y: auto;
 }
 
 /* Discreet admin link */
@@ -2110,7 +2112,7 @@ body.font-xl .card-title { font-size: calc(var(--base-font) + 1px); }
 //  CLOUDFLARE WORKER — API proxy URL
 //  Update this if you ever redeploy your Worker
 // ═══════════════════════════════════════════════════════════════
-const VERSION = '7.2';
+const VERSION = '7.3';
 const WORKER_URL = 'https://career-hub-api.andy-dao-91-aaf.workers.dev';
 
 // ═══════════════════════════════════════════════════════════════
@@ -2676,21 +2678,27 @@ function renderAdminSidebar() {
         ${Object.keys(CONFIG.candidates).map(c => {
           const cd = CONFIG.candidates[c];
           const isActive = cd.active !== false;
+          const jobCount = (cd.jobs||[]).filter(j=>!j.dismissed).length;
           return `
-          <div style="padding:9px 0;border-bottom:1px solid var(--border);">
-            <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
-              <div style="width:28px;height:28px;border-radius:50%;background:${cd.colorHex};color:white;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;flex-shrink:0;opacity:${isActive?1:.45}">${cd.name[0]}</div>
-              <div style="flex:1;">
-                <div style="font-size:13px;font-weight:700;color:${isActive?'var(--text)':'var(--muted)'};">${cd.name}</div>
-                <div style="font-size:10px;color:var(--muted);">${isActive?'Active':'Archived · data preserved'}</div>
-              </div>
+          <div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border);opacity:${isActive?1:.6}">
+            <div style="width:30px;height:30px;border-radius:50%;background:${cd.colorHex};color:white;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;flex-shrink:0;">${cd.name[0]}</div>
+            <div style="flex:1;min-width:0;">
+              <div style="font-size:13px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${cd.name}</div>
+              <div style="font-size:10px;color:var(--muted);">${isActive?jobCount+' jobs':'Archived'}</div>
             </div>
-            <div style="display:flex;gap:5px;padding-left:36px;">
-              <button onclick="editCandidate('${c}')" style="flex:1;font-size:10px;font-weight:700;padding:4px 6px;border-radius:5px;border:1.5px solid var(--border);background:white;color:var(--text2);cursor:pointer;">✏️ Edit</button>
-              <button onclick="openResumeModal('${c}')" style="flex:1;font-size:10px;font-weight:700;padding:4px 6px;border-radius:5px;border:1.5px solid var(--border);background:white;color:var(--text2);cursor:pointer;" title="Import resume to auto-fill skills & bio">📄 Resume</button>
-              <button onclick="switchPanel('${c}')" style="flex:1;font-size:10px;font-weight:700;padding:4px 6px;border-radius:5px;border:1.5px solid var(--border);background:white;color:var(--text2);cursor:pointer;" title="View this candidate's jobs">👁 View</button>
-              <button onclick="toggleCandidateActive('${c}')" style="flex:1;font-size:10px;font-weight:700;padding:4px 6px;border-radius:5px;border:1.5px solid ${isActive?'var(--red)':'var(--green)'};background:${isActive?'white':'var(--green-lt)'};color:${isActive?'var(--red)':'var(--green)'};cursor:pointer;" title="${isActive?'Archive this user — preserves all data':'Restore this user'}">
-                ${isActive?'📦 Archive':'↩ Restore'}
+            <input type="text" maxlength="4" value="${CONFIG.pins[c]||''}"
+              style="width:52px;padding:4px 6px;border:1.5px solid var(--border);border-radius:6px;font-family:Lora,serif;font-size:13px;font-weight:700;text-align:center;letter-spacing:.15em;flex-shrink:0;"
+              oninput="updatePin('${c}',this.value)" title="PIN for ${cd.name}">
+            <div style="display:flex;gap:4px;flex-shrink:0;">
+              <button onclick="openResumeModal('${c}')" title="Resume" style="width:28px;height:28px;border-radius:6px;border:1.5px solid var(--border);background:white;cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center;">📄</button>
+              <button onclick="switchPanel('${c}')" title="View jobs" style="width:28px;height:28px;border-radius:6px;border:1.5px solid var(--border);background:white;cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center;">👁</button>
+              <button onclick="toggleCandidateActive('${c}')" title="${isActive?'Archive':'Restore'}"
+                style="width:28px;height:28px;border-radius:6px;border:1.5px solid ${isActive?'var(--red)':'var(--green)'};background:${isActive?'white':'var(--green-lt)'};cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center;">
+                ${isActive?'📦':'↩'}
+              </button>
+              <button onclick="deleteCandidate('${c}')" title="Delete permanently"
+                style="width:28px;height:28px;border-radius:6px;border:1.5px solid var(--red);background:white;cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center;color:var(--red);">
+                🗑
               </button>
             </div>
           </div>`;
@@ -2698,20 +2706,23 @@ function renderAdminSidebar() {
         <button onclick="openWizard()" style="width:100%;margin-top:10px;padding:9px;border-radius:8px;border:1.5px dashed var(--border);background:white;color:var(--admin);font-size:12px;font-weight:700;cursor:pointer;">✨ Add New User</button>
       </div>
 
-      <div class="pin-manage" style="margin-bottom:14px;">
-        <h3>🔐 Change PINs</h3>
-        <div class="pin-grid">
-          ${Object.keys(CONFIG.candidates).filter(c=>CONFIG.candidates[c].active!==false).concat(['admin']).map(u => `
-            <div class="pin-item">
-              <label>${CONFIG.candidates[u]?.name || 'Admin'}</label>
-              <input type="text" maxlength="4" value="${CONFIG.pins[u]||''}" id="pin-${u}" style="letter-spacing:.2em" oninput="updatePin('${u}',this.value)">
-            </div>`).join('')}
-          <div class="pin-item">
-            <label style="color:var(--admin)">✨ Setup Code</label>
-            <input type="text" maxlength="4" value="${CONFIG.pins.setup||'9999'}" id="pin-setup" style="letter-spacing:.2em;border-color:#f6c96b;" oninput="updatePin('setup',this.value)">
+      <div style="background:var(--surface2);border-radius:8px;padding:10px 12px;margin-bottom:14px;">
+        <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:8px;">🔐 Special PINs</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <div style="display:flex;flex-direction:column;gap:3px;flex:1;min-width:80px;">
+            <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;">Admin</div>
+            <input type="text" maxlength="4" value="${CONFIG.pins.admin||'0000'}"
+              style="width:100%;padding:5px 8px;border:1.5px solid var(--border);border-radius:6px;font-family:Lora,serif;font-size:14px;font-weight:700;text-align:center;letter-spacing:.2em;"
+              oninput="updatePin('admin',this.value)">
+          </div>
+          <div style="display:flex;flex-direction:column;gap:3px;flex:1;min-width:80px;">
+            <div style="font-size:10px;font-weight:700;color:var(--admin);text-transform:uppercase;letter-spacing:.06em;">✨ Setup Code</div>
+            <input type="text" maxlength="4" value="${CONFIG.pins.setup||'9999'}"
+              style="width:100%;padding:5px 8px;border:1.5px solid #f6c96b;border-radius:6px;font-family:Lora,serif;font-size:14px;font-weight:700;text-align:center;letter-spacing:.2em;"
+              oninput="updatePin('setup',this.value)">
           </div>
         </div>
-        <div style="font-size:11px;color:var(--muted);margin-top:8px">Changes save automatically and take effect on next login.</div>
+        <div style="font-size:10px;color:var(--muted);margin-top:6px;">User PINs are managed inline above. Changes take effect on next login.</div>
       </div>
 
       <div style="background:var(--admin-lt);border:1.5px solid #f6c96b;border-radius:var(--radius);padding:14px 16px;margin-bottom:14px;">
@@ -2879,6 +2890,18 @@ function updateSiteTitle() {
 // ═══════════════════════════════════════════════════════════════
 //  CANDIDATE MANAGEMENT
 // ═══════════════════════════════════════════════════════════════
+function deleteCandidate(c) {
+  const cd = CONFIG.candidates[c];
+  if (!confirm(`Permanently delete ${cd.name}?\n\nThis removes ALL their data — jobs, notes, profile, and PIN. This cannot be undone.\n\nIf you just want to hide them temporarily, use Archive instead.`)) return;
+  delete CONFIG.candidates[c];
+  delete CONFIG.pins[c];
+  saveConfig(true);
+  updateLoginCounts();
+  renderLoginScreen();
+  renderOverview();
+  toast(`🗑 ${cd.name} permanently deleted`);
+}
+
 function toggleCandidateActive(c) {
   const cd = CONFIG.candidates[c];
   const wasActive = cd.active !== false;
@@ -3947,13 +3970,36 @@ async function aiSearch(c) {
 
   // Show loading state in the main panel
   container.innerHTML = `
-    <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:56px 20px;gap:16px;text-align:center;">
-      <div class="spinner" style="border-top-color:${cd.colorHex}"></div>
-      <div>
-        <div style="font-size:15px;font-weight:700;color:var(--text2);margin-bottom:4px">Finding jobs for ${cd.name}...</div>
-        <div style="font-size:13px;color:var(--muted)">Searching across job boards and company sites. This takes 10–20 seconds.</div>
+    <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:48px 24px;gap:20px;text-align:center;max-width:480px;margin:0 auto;">
+      <div id="search-progress-msg" style="font-size:15px;font-weight:700;color:var(--text2);">🔍 Searching job boards...</div>
+      <div style="width:100%;background:var(--border);border-radius:10px;height:8px;overflow:hidden;">
+        <div id="search-progress-bar" style="height:100%;width:0%;background:${cd.colorHex};border-radius:10px;transition:width .8s ease;"></div>
+      </div>
+      <div id="search-progress-pct" style="font-size:12px;color:var(--muted);font-weight:600;">0%</div>
+      <div style="font-size:12px;color:var(--muted);line-height:1.6;background:var(--surface2);border-radius:8px;padding:10px 14px;">
+        ⏳ This takes 10–20 seconds — please don't refresh or navigate away
       </div>
     </div>`;
+
+  // Animate progress bar with realistic milestones
+  const steps = [
+    { pct: 8,  msg: '🔍 Searching job boards...', delay: 500 },
+    { pct: 22, msg: '📋 Reading listings...', delay: 2500 },
+    { pct: 45, msg: '🤖 Analyzing matches...', delay: 5000 },
+    { pct: 65, msg: '✨ Tailoring to your profile...', delay: 8000 },
+    { pct: 80, msg: '📊 Ranking results...', delay: 12000 },
+    { pct: 92, msg: '🎯 Almost done...', delay: 16000 },
+  ];
+  steps.forEach(({ pct, msg, delay }) => {
+    setTimeout(() => {
+      const bar = document.getElementById('search-progress-bar');
+      const msgEl = document.getElementById('search-progress-msg');
+      const pctEl = document.getElementById('search-progress-pct');
+      if (bar) bar.style.width = pct + '%';
+      if (msgEl) msgEl.textContent = msg;
+      if (pctEl) pctEl.textContent = pct + '%';
+    }, delay);
+  });
 
   const isFirstSearch = !(cd.jobs || []).filter(j => !j.dismissed).length;
 
@@ -4041,9 +4087,21 @@ async function aiSearch(c) {
     if (!parsed.length) throw new Error('Could not read results — try again');
 
     // Deduplicate against existing — normalize to catch near-duplicates
-    const normalize = s => (s||'').toLowerCase().replace(/\b(of|the|a|an|&|and|-|\/|,|\.)/g,' ').replace(/\s+/g,' ').trim();
+    const normalize = s => (s||'').toLowerCase().replace(/(of|the|a|an|&|and|-|\/|,|\.)/g,' ').replace(/\s+/g,' ').trim();
     const existingKeys = new Set((cd.jobs||[]).map(j => `${normalize(j.title)}||${normalize(j.company)}`));
-    const newJobs = parsed.filter(j => j.title && j.company && !existingKeys.has(`${normalize(j.title)}||${normalize(j.company)}`));
+    let newJobs = parsed.filter(j => j.title && j.company && !existingKeys.has(`${normalize(j.title)}||${normalize(j.company)}`));
+
+    // Post-search location filter: remove hybrid/on-site jobs not near user's city
+    const userCity = (cd.prefs?.location||'').toLowerCase().split(',')[0].trim();
+    if (userCity && userCity !== 'any') {
+      newJobs = newJobs.filter(j => {
+        const wt = (j.workType||'').toLowerCase();
+        const isNonRemote = ['hybrid','on-site','onsite','on site','in-person'].includes(wt);
+        if (!isNonRemote) return true; // remote always passes
+        const jobLoc = (j.location||'').toLowerCase();
+        return jobLoc.includes(userCity) || jobLoc.includes('remote') || !jobLoc;
+      });
+    }
 
     newJobs.forEach(j => {
       j._id = `${c}-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
@@ -4067,6 +4125,13 @@ async function aiSearch(c) {
 
     renderJobCards(c);
     updateSidebarStats(c);
+
+    // Complete progress bar
+    const bar = document.getElementById('search-progress-bar');
+    const msgEl = document.getElementById('search-progress-msg');
+    if (bar) { bar.style.width = '100%'; bar.style.background = 'var(--green)'; }
+    if (msgEl) msgEl.textContent = '✅ Done!';
+    await new Promise(r => setTimeout(r, 400)); // brief flash of 100%
 
     // Dismiss the re-search nudge if present
     document.getElementById('research-nudge-'+c)?.remove();
@@ -4126,7 +4191,7 @@ WORK ARRANGEMENT: ${
   'Remote preferred; hybrid and on-site OK if strong match and good pay'
 }
 ${cd.prefs?.minSalary ? `MIN SALARY: $${Number(cd.prefs.minSalary).toLocaleString()} — do not return roles paying less than this` : ''}
-${cd.prefs?.location ? `LOCATION: ${cd.prefs.location} area` : ''}
+${cd.prefs?.location ? `LOCATION: ${cd.prefs.location} — hybrid and on-site roles MUST be located in or near this city. Remote roles can be anywhere in the US.` : ''}
 ${cd.prefs?.jobType && cd.prefs.jobType !== 'any' ? `JOB TYPE: ${cd.prefs.jobType} positions only` : ''}
 
 OUTPUT RULES — CRITICAL:
@@ -4456,15 +4521,26 @@ function renderJobCards(c, filter='all', page=0) {
   if (!jobs.length) {
     const hiddenCount = allUnfiltered.length - jobs.length;
     container.innerHTML = `
-      <div class="empty-state">
-        <div class="empty-icon">${filter==='starred'?'⭐':filter==='applied'?'✅':filter==='new'?'🆕':'🔍'}</div>
-        <div class="empty-title">No ${filter==='all'?'jobs':filter+' jobs'} yet</div>
-        <div class="empty-sub">${
-          filter==='all'
-            ? 'Click "Search for New Jobs" to find openings, or add one manually.'
-            : `No jobs match this filter.${hiddenCount?` ${hiddenCount} job${hiddenCount>1?'s':''} in other categories.`:''}`
-        }</div>
-        ${filter==='all' ? `<button class="sidebar-btn" style="background:${cd.colorHex};color:white;border:none;margin-top:16px;max-width:220px" onclick="aiSearch('${c}')">🔍 Search for New Jobs</button>` : ''}
+      <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 24px;text-align:center;min-height:320px;">
+        <div style="font-size:48px;margin-bottom:16px;">${filter==='starred'?'⭐':filter==='applied'?'✅':filter==='new'?'🆕':'💼'}</div>
+        <div style="font-size:17px;font-weight:700;color:var(--text2);margin-bottom:8px;">
+          ${filter==='all' ? "No jobs yet" : `No ${filter} jobs`}
+        </div>
+        <div style="font-size:14px;color:var(--muted);max-width:300px;line-height:1.6;margin-bottom:${filter==='all'?'24px':'0'};">
+          ${filter==='all'
+            ? 'Fill in your preferences on the left, then search for live job openings.'
+            : `No jobs match this filter.${hiddenCount ? ` ${hiddenCount} job${hiddenCount>1?'s':''} in other categories.` : ''}`
+          }
+        </div>
+        ${filter==='all' ? `
+          <button onclick="aiSearch('${c}')"
+            style="padding:13px 28px;border-radius:10px;border:none;background:${cd.colorHex};color:white;font-family:Nunito,sans-serif;font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:8px;box-shadow:0 4px 14px rgba(0,0,0,.15);transition:all .2s;"
+            onmouseover="this.style.transform='translateY(-1px)';this.style.boxShadow='0 6px 20px rgba(0,0,0,.2)'"
+            onmouseout="this.style.transform='';this.style.boxShadow='0 4px 14px rgba(0,0,0,.15)'">
+            🔍 Search for Jobs
+          </button>
+          <div style="font-size:11px;color:var(--muted);margin-top:10px;">Finds ~20 live openings · takes ~15 seconds</div>
+        ` : ''}
       </div>`;
     return;
   }
@@ -6066,11 +6142,37 @@ function showSettings() {
       </div>
     </div>
 
-    <div style="background:var(--surface2);border-radius:8px;padding:12px;font-size:12px;color:var(--muted);line-height:1.7">
+    <div style="background:var(--surface2);border-radius:8px;padding:12px;font-size:12px;color:var(--muted);line-height:1.7;margin-bottom:16px;">
       <strong style="color:var(--text2)">Storage:</strong> Jobs, notes, and profile edits save to this browser's local storage.
       ${at.enabled ? 'Airtable sync is active — data also syncs to cloud.' : 'Connect Airtable above to sync across devices.'}
-    </div>`;
+    </div>
+
+    ${!isAdmin ? `
+    <div style="border-top:1px solid var(--border);padding-top:16px;margin-top:4px;">
+      <div style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px;">Danger Zone</div>
+      <button onclick="requestSelfDelete()" style="width:100%;padding:10px;border-radius:8px;border:1.5px solid var(--red);background:white;color:var(--red);font-family:Nunito,sans-serif;font-size:13px;font-weight:700;cursor:pointer;">
+        🗑 Delete My Profile & All Data
+      </button>
+      <div style="font-size:11px;color:var(--muted);margin-top:6px;line-height:1.5;">Permanently removes your profile, all jobs, notes, and settings. Cannot be undone.</div>
+    </div>` : ''}`;
   openModal('settings-modal');
+}
+
+function requestSelfDelete() {
+  const cd = CONFIG.candidates[currentUser];
+  if (!cd) return;
+  const confirmed = confirm(`Delete your profile, ${cd.name}?\n\nThis permanently removes:\n• Your profile and bio\n• All ${(cd.jobs||[]).length} saved jobs and notes\n• Your PIN and preferences\n\nThis cannot be undone. Are you sure?`);
+  if (!confirmed) return;
+  // Double confirm
+  const reconfirmed = confirm(`Last chance — are you absolutely sure you want to delete everything for ${cd.name}? There is no recovery.`);
+  if (!reconfirmed) return;
+  const name = cd.name;
+  delete CONFIG.candidates[currentUser];
+  delete CONFIG.pins[currentUser];
+  saveConfig(true);
+  closeModal('settings-modal');
+  logout();
+  toast(`Profile deleted. Goodbye, ${name}.`);
 }
 
 function changeCandidatePin() {
