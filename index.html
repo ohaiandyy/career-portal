@@ -1467,25 +1467,16 @@ body.font-xl .card-title { font-size: calc(var(--base-font) + 1px); }
 .match-gauge-label { font-size:11px; font-weight:700; white-space:nowrap; }
 .match-tooltip {
   display: none;
-  position: absolute;
-  bottom: calc(100% + 8px);
-  left: 0;
+  position: fixed;
   background: #1c1c1c;
   color: white;
   border-radius: 10px;
   padding: 12px 14px;
-  width: 260px;
-  z-index: 500;
-  box-shadow: 0 8px 32px rgba(0,0,0,.25);
+  width: 240px;
+  z-index: 9999;
+  box-shadow: 0 8px 32px rgba(0,0,0,.3);
   pointer-events: none;
   line-height: 1.5;
-}
-.match-tooltip::after {
-  content: '';
-  position: absolute;
-  top: 100%; left: 20px;
-  border: 6px solid transparent;
-  border-top-color: #1c1c1c;
 }
 .match-gauge:hover .match-tooltip { display: block; }
 
@@ -2063,7 +2054,7 @@ body.font-xl .card-title { font-size: calc(var(--base-font) + 1px); }
 //  CLOUDFLARE WORKER — API proxy URL
 //  Update this if you ever redeploy your Worker
 // ═══════════════════════════════════════════════════════════════
-const VERSION = '6.4';
+const VERSION = '6.6';
 const WORKER_URL = 'https://career-hub-api.andy-dao-91-aaf.workers.dev';
 
 // ═══════════════════════════════════════════════════════════════
@@ -2436,6 +2427,8 @@ function setSidebarWidth(w) {
 
 function switchPanel(panel) {
   activePanel = panel;
+  // Reset industry filter on panel switch
+  if (window._industryFilter) window._industryFilter[panel] = '';
   renderAdminTabs();
   if (panel === 'overview') {
     renderOverview();
@@ -3121,17 +3114,20 @@ function buildSidebar(c, cd, isAdmin) {
         ${cd.name}
       </div>
 
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
-        <div class="profile-role" id="role-display-${c}" onclick="toggleRoleEdit('${c}')" title="Click to edit tagline" style="cursor:pointer;flex:1;font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;">${cd.role}</div>
-        <button onclick="suggestHeadlines('${c}')" id="headline-ai-btn-${c}"
-          style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:5px;border:1.5px solid ${colorHex};background:white;color:${colorHex};cursor:pointer;white-space:nowrap;flex-shrink:0;opacity:.7;">
-          ✨
-        </button>
+      <div style="margin-bottom:10px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:3px;">
+          <span style="font-size:10px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;">Tagline</span>
+          <button onclick="suggestHeadlines('${c}')" id="headline-ai-btn-${c}"
+            style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:5px;border:1.5px solid ${colorHex};background:white;color:${colorHex};cursor:pointer;">
+            ✨ Suggest
+          </button>
+        </div>
+        <div class="profile-role" id="role-display-${c}" onclick="toggleRoleEdit('${c}')" title="Click to edit" style="cursor:pointer;font-size:12px;font-weight:700;color:var(--text2);letter-spacing:.04em;text-transform:uppercase;">${cd.role} <span style="font-size:10px;opacity:.35;font-weight:400;text-transform:none;letter-spacing:0;">✏️</span></div>
+        <input spellcheck="true" class="skill-input" id="role-edit-${c}" value="${cd.role}"
+               style="display:none;width:100%;margin-top:4px;font-size:12px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;"
+               onblur="saveRole('${c}',this.value)" onkeydown="if(event.key==='Enter')this.blur()">
+        <div id="headline-suggestions-${c}" style="display:none;margin-top:8px;"></div>
       </div>
-      <input spellcheck="true" class="skill-input" id="role-edit-${c}" value="${cd.role}"
-             style="display:none;width:100%;margin-bottom:6px;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;"
-             onblur="saveRole('${c}',this.value)" onkeydown="if(event.key==='Enter')this.blur()">
-      <div id="headline-suggestions-${c}" style="display:none;margin-bottom:10px;"></div>
 
       <div style="font-size:10px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px;">Bio</div>
 
@@ -3203,14 +3199,16 @@ function buildSidebar(c, cd, isAdmin) {
       <div class="section-label" style="margin-top:4px;">Job Preferences</div>
       <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:14px;">
 
-        <!-- Location -->
+        <!-- Location — only shown when not remote-only -->
+        ${(cd.prefs?.workArrangement || 'open-to-both') !== 'remote-only' ? `
         <div>
-          <div style="font-size:10px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:5px;">📍 Location <span style="font-weight:500;text-transform:none;letter-spacing:0;">(leave blank = anywhere)</span></div>
+          <div style="font-size:10px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:5px;">📍 Location <span style="font-weight:500;text-transform:none;letter-spacing:0;">(for hybrid/on-site roles)</span></div>
           <input spellcheck="true" class="skill-input" list="location-suggestions-${c}"
             value="${cd.prefs?.location||''}" placeholder="e.g. Phoenix, AZ"
             style="width:100%;font-size:12px;"
             onblur="savePref('${c}','location',this.value)">
-          <datalist id="location-suggestions-${c}">
+          <datalist id="location-suggestions-${c}">` : ''}
+        ${(cd.prefs?.workArrangement || 'open-to-both') !== 'remote-only' ? `
             <option value="Phoenix, AZ"><option value="Scottsdale, AZ"><option value="Tempe, AZ">
             <option value="New York, NY"><option value="Los Angeles, CA"><option value="Chicago, IL">
             <option value="Houston, TX"><option value="Dallas, TX"><option value="Austin, TX">
@@ -3221,7 +3219,7 @@ function buildSidebar(c, cd, isAdmin) {
             <option value="Tampa, FL"><option value="Orlando, FL"><option value="Washington, DC">
             <option value="Philadelphia, PA"><option value="Detroit, MI"><option value="Columbus, OH">
           </datalist>
-        </div>
+        </div>` : ''}
 
         <!-- Min Pay -->
         <div>
@@ -3389,6 +3387,22 @@ function buildMainContent(c, cd, isAdmin) {
           <button class="fbt star-on" onclick="filterJobs('${c}','starred',this)" style="background:white;color:var(--text2);border-color:var(--border)">⭐ Starred${badge(counts.starred)}</button>
           <button class="fbt" onclick="filterJobs('${c}','applied',this)" style="background:white;color:var(--text2)">✅ Applied${badge(counts.applied)}</button>
         </div>
+        ${(() => {
+          // Build industry list from all job tags
+          const allTags = new Map();
+          (cd.jobs||[]).filter(j=>!j.dismissed).forEach(j => {
+            (j.tags||[]).forEach(t => {
+              if (t && t.length > 1) allTags.set(t, (allTags.get(t)||0)+1);
+            });
+          });
+          if (allTags.size < 2) return '';
+          const sorted = [...allTags.entries()].sort((a,b)=>b[1]-a[1]).slice(0,12);
+          return `<select id="industry-filter-${c}" onchange="filterByIndustry('${c}',this.value)"
+            style="padding:5px 10px;border-radius:20px;border:1.5px solid var(--border);font-family:'Nunito',sans-serif;font-size:12px;font-weight:600;cursor:pointer;background:white;color:var(--text2);height:30px;">
+            <option value="">🏷 All Industries</option>
+            ${sorted.map(([tag,n])=>`<option value="${tag}">${tag} (${n})</option>`).join('')}
+          </select>`;
+        })()}
       </div>
     </div>
 
@@ -4094,6 +4108,19 @@ Start your response with [ and end with ].`;
 // ═══════════════════════════════════════════════════════════════
 //  MATCH SCORING — client-side 0-100 score
 // ═══════════════════════════════════════════════════════════════
+function positionMatchTooltip(e, id) {
+  const tip = document.getElementById(id);
+  if (!tip) return;
+  const x = e.clientX + 12;
+  const y = e.clientY - 10;
+  const tipW = 240;
+  const tipH = tip.offsetHeight || 160;
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+  tip.style.left = (x + tipW > vw ? vw - tipW - 12 : x) + 'px';
+  tip.style.top = (y + tipH > vh ? y - tipH - 10 : y) + 'px';
+}
+
 function scoreJob(j, c, cd) {
   let score = 0;
   const reasons = { matched: [], warnings: [], missing: [] };
@@ -4251,6 +4278,14 @@ function renderJobCards(c, filter='all', page=0) {
 
   let jobs = (cd.jobs||[]).filter(j => !j.dismissed);
   const allUnfiltered = [...jobs];
+
+  // Apply industry filter if set
+  const industryTag = window._industryFilter?.[c];
+  if (industryTag) {
+    jobs = jobs.filter(j => (j.tags||[]).some(t => t === industryTag) ||
+      (j.description||'').toLowerCase().includes(industryTag.toLowerCase()) ||
+      (j.title||'').toLowerCase().includes(industryTag.toLowerCase()));
+  }
 
   // Apply filter
   if (filter === 'remote') jobs = jobs.filter(j => (j.workType||'').toLowerCase() === 'remote');
@@ -4486,12 +4521,14 @@ function buildCard(j, c, cd) {
   // Match gauge — client-side scoring
   const scored = scoreJob(j, c, cd);
   const matchGauge = `
-    <div class="match-gauge" style="position:relative;cursor:help;" title="Hover for match breakdown">
+    <div class="match-gauge" style="position:relative;cursor:help;" title="Hover for match breakdown"
+      onmouseenter="positionMatchTooltip(event,'mtip-${safeId}')"
+      onmousemove="positionMatchTooltip(event,'mtip-${safeId}')">
       <div class="match-gauge-track">
         <div class="match-gauge-bar" style="width:${scored.pct}%;background:${scored.color}"></div>
       </div>
       <span class="match-gauge-label" style="color:${scored.color}">${scored.label}</span>
-      <div class="match-tooltip">
+      <div class="match-tooltip" id="mtip-${safeId}">
         <div style="font-size:11px;font-weight:800;color:white;margin-bottom:8px;border-bottom:1px solid rgba(255,255,255,.2);padding-bottom:6px;">Match Breakdown · ${scored.score}/100</div>
         ${scored.reasons.matched.map(r => `<div style="display:flex;gap:6px;margin-bottom:4px;font-size:11px;"><span style="color:#4ade80;flex-shrink:0;">✓</span><span>${r}</span></div>`).join('')}
         ${scored.reasons.warnings.map(r => `<div style="display:flex;gap:6px;margin-bottom:4px;font-size:11px;"><span style="color:#fbbf24;flex-shrink:0;">⚠</span><span>${r}</span></div>`).join('')}
@@ -5530,14 +5567,17 @@ function sortJobs(c, flip=false) {
   const sort = sel?.value || 'default';
 
   if (!sortDir[c]) sortDir[c] = { asc: false };
-
-  // Flip direction if button clicked or same sort reselected
   if (flip) sortDir[c].asc = !sortDir[c].asc;
 
   const asc = sortDir[c].asc;
 
-  // Update direction button
-  if (dirBtn) dirBtn.textContent = sort === 'default' ? '↕' : (asc ? '↑' : '↓');
+  // Update direction button — highlight only when active sort selected
+  if (dirBtn) {
+    dirBtn.textContent = sort === 'default' ? '↕' : (asc ? '↑' : '↓');
+    dirBtn.style.background = sort !== 'default' ? 'var(--text)' : 'white';
+    dirBtn.style.color = sort !== 'default' ? 'white' : 'var(--text2)';
+    dirBtn.style.borderColor = sort !== 'default' ? 'var(--text)' : 'var(--border)';
+  }
 
   const cd = CONFIG.candidates[c];
   const jobs = cd.jobs;
@@ -5597,6 +5637,14 @@ function updateFilterCounts(c) {
       ? `${label} <span style="font-size:10px;font-weight:800;background:rgba(0,0,0,.1);border-radius:8px;padding:1px 6px;margin-left:2px;">${n}</span>`
       : label;
   });
+}
+
+function filterByIndustry(c, tag) {
+  // Store industry filter separately
+  if (!currentFilter) window.currentFilter = {};
+  window._industryFilter = window._industryFilter || {};
+  window._industryFilter[c] = tag;
+  renderJobCards(c, currentFilter[c]||'all', 0);
 }
 
 function filterJobs(c, type, btn) {
