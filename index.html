@@ -548,18 +548,9 @@ header {
    MAIN CONTENT AREA
 ═══════════════════════════════════════════════ */
 .content-header {
-  position: sticky;
-  top: 0;
-  z-index: 100;
-  padding: 10px 28px 0;
-  margin-top: -24px;
-  margin-left: -28px;
-  margin-right: -28px;
-  background: rgba(247,246,242,0.92);
-  backdrop-filter: saturate(180%) blur(16px);
-  -webkit-backdrop-filter: saturate(180%) blur(16px);
-  border-bottom: 1px solid rgba(224,221,213,0.8);
-  box-shadow: 0 1px 0 rgba(255,255,255,.6), 0 4px 24px rgba(0,0,0,.08);
+  padding: 0 0 12px;
+  margin-bottom: 4px;
+  border-bottom: 1.5px solid var(--border);
 }
 .content-header-top {
   display: flex;
@@ -567,16 +558,13 @@ header {
   justify-content: space-between;
   flex-wrap: wrap;
   gap: 10px;
-  padding-bottom: 8px;
+  padding-bottom: 10px;
 }
 .content-header-filters {
-  padding-bottom: 10px;
   display: flex;
   align-items: center;
   gap: 8px;
   flex-wrap: wrap;
-  border-top: 1px solid rgba(224,221,213,0.5);
-  padding-top: 8px;
   transition: all .2s ease;
 }
 .content-header-filters.collapsed {
@@ -2075,7 +2063,7 @@ body.font-xl .card-title { font-size: calc(var(--base-font) + 1px); }
 //  CLOUDFLARE WORKER — API proxy URL
 //  Update this if you ever redeploy your Worker
 // ═══════════════════════════════════════════════════════════════
-const VERSION = '6.3';
+const VERSION = '6.4';
 const WORKER_URL = 'https://career-hub-api.andy-dao-91-aaf.workers.dev';
 
 // ═══════════════════════════════════════════════════════════════
@@ -3133,20 +3121,17 @@ function buildSidebar(c, cd, isAdmin) {
         ${cd.name}
       </div>
 
-      <div style="margin-bottom:12px;">
-        <div style="font-size:10px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px;">Tagline</div>
-        <div style="display:flex;align-items:flex-start;gap:6px;">
-          <div class="profile-role" id="role-display-${c}" onclick="toggleRoleEdit('${c}')" title="Click to edit" style="cursor:pointer;flex:1;font-size:12px;font-weight:700;color:var(--text2);letter-spacing:.04em;text-transform:uppercase;">${cd.role} <span style="font-size:10px;opacity:.35;font-weight:400;text-transform:none;letter-spacing:0;">✏️</span></div>
-          <button onclick="suggestHeadlines('${c}')" id="headline-ai-btn-${c}"
-            style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:6px;border:1.5px solid ${colorHex};background:white;color:${colorHex};cursor:pointer;white-space:nowrap;flex-shrink:0;margin-top:1px;">
-            ✨ Suggest
-          </button>
-        </div>
-        <input spellcheck="true" class="skill-input" id="role-edit-${c}" value="${cd.role}"
-               style="display:none;width:100%;margin-top:4px;font-size:12px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;"
-               onblur="saveRole('${c}',this.value)" onkeydown="if(event.key==='Enter')this.blur()">
-        <div id="headline-suggestions-${c}" style="display:none;margin-top:8px;"></div>
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+        <div class="profile-role" id="role-display-${c}" onclick="toggleRoleEdit('${c}')" title="Click to edit tagline" style="cursor:pointer;flex:1;font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;">${cd.role}</div>
+        <button onclick="suggestHeadlines('${c}')" id="headline-ai-btn-${c}"
+          style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:5px;border:1.5px solid ${colorHex};background:white;color:${colorHex};cursor:pointer;white-space:nowrap;flex-shrink:0;opacity:.7;">
+          ✨
+        </button>
       </div>
+      <input spellcheck="true" class="skill-input" id="role-edit-${c}" value="${cd.role}"
+             style="display:none;width:100%;margin-bottom:6px;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;"
+             onblur="saveRole('${c}',this.value)" onkeydown="if(event.key==='Enter')this.blur()">
+      <div id="headline-suggestions-${c}" style="display:none;margin-bottom:10px;"></div>
 
       <div style="font-size:10px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px;">Bio</div>
 
