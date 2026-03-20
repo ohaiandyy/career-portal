@@ -2005,7 +2005,7 @@ body.font-xl .card-title { font-size: calc(var(--base-font) + 1px); }
 //  CLOUDFLARE WORKER — API proxy URL
 //  Update this if you ever redeploy your Worker
 // ═══════════════════════════════════════════════════════════════
-const VERSION = '5.6';
+const VERSION = '5.7';
 const WORKER_URL = 'https://career-hub-api.andy-dao-91-aaf.workers.dev';
 
 // ═══════════════════════════════════════════════════════════════
@@ -3015,17 +3015,17 @@ function buildSidebar(c, cd, isAdmin) {
 
     <div class="action-section">
 
-      <div class="section-label" style="margin-top:4px;">Job Preferences
-        <span class="tip">?<span class="tip-bubble">These feed directly into every AI search — fill these out before searching for best results.</span></span>
-      </div>
-      <div style="display:flex;flex-direction:column;gap:7px;margin-bottom:14px;">
-        <div style="display:flex;gap:6px;align-items:center;">
-          <span style="font-size:11px;color:var(--muted);width:72px;flex-shrink:0;">📍 Location</span>
-          <input spellcheck="true" class="skill-input" list="location-suggestions-${c}" value="${cd.prefs?.location||''}" placeholder="Any / Phoenix, AZ" style="flex:1;font-size:12px;"
+      <div class="section-label" style="margin-top:4px;">Job Preferences</div>
+      <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:14px;">
+
+        <!-- Location -->
+        <div>
+          <div style="font-size:10px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:5px;">📍 Location <span style="font-weight:500;text-transform:none;letter-spacing:0;">(leave blank = anywhere)</span></div>
+          <input spellcheck="true" class="skill-input" list="location-suggestions-${c}"
+            value="${cd.prefs?.location||''}" placeholder="e.g. Phoenix, AZ"
+            style="width:100%;font-size:12px;"
             onblur="savePref('${c}','location',this.value)">
           <datalist id="location-suggestions-${c}">
-            <option value="Any">
-            <option value="Remote (US)">
             <option value="Phoenix, AZ"><option value="Scottsdale, AZ"><option value="Tempe, AZ">
             <option value="New York, NY"><option value="Los Angeles, CA"><option value="Chicago, IL">
             <option value="Houston, TX"><option value="Dallas, TX"><option value="Austin, TX">
@@ -3035,24 +3035,49 @@ function buildSidebar(c, cd, isAdmin) {
             <option value="Portland, OR"><option value="Las Vegas, NV"><option value="San Diego, CA">
             <option value="Tampa, FL"><option value="Orlando, FL"><option value="Washington, DC">
             <option value="Philadelphia, PA"><option value="Detroit, MI"><option value="Columbus, OH">
-            <option value="Indianapolis, IN"><option value="Kansas City, MO"><option value="Salt Lake City, UT">
           </datalist>
         </div>
-        <div style="display:flex;gap:6px;align-items:center;">
-          <span style="font-size:11px;color:var(--muted);width:72px;flex-shrink:0;">💰 Min Pay</span>
-          <input spellcheck="false" class="skill-input" value="${cd.prefs?.minSalary ? '$'+Number(cd.prefs.minSalary).toLocaleString() : ''}" placeholder="Any / $80k" style="flex:1;font-size:12px;"
+
+        <!-- Min Pay -->
+        <div>
+          <div style="font-size:10px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:5px;">💰 Minimum Pay <span style="font-weight:500;text-transform:none;letter-spacing:0;">(leave blank = any)</span></div>
+          <input spellcheck="false" class="skill-input"
+            value="${cd.prefs?.minSalary ? '$'+Number(cd.prefs.minSalary).toLocaleString() : ''}"
+            placeholder="e.g. $80k or $80,000"
+            style="width:100%;font-size:12px;"
             onblur="savePref('${c}','minSalary',this.value)">
         </div>
-        <div style="display:flex;gap:6px;align-items:center;">
-          <span style="font-size:11px;color:var(--muted);width:72px;flex-shrink:0;">💼 Job Type</span>
-          <select class="skill-input" style="flex:1;font-size:12px;background:white;"
-            onchange="savePref('${c}','jobType',this.value)">
-            <option value="any" ${(cd.prefs?.jobType||'any')==='any'?'selected':''}>Any</option>
-            <option value="full-time" ${cd.prefs?.jobType==='full-time'?'selected':''}>Full-time</option>
-            <option value="contract" ${cd.prefs?.jobType==='contract'?'selected':''}>Contract</option>
-            <option value="part-time" ${cd.prefs?.jobType==='part-time'?'selected':''}>Part-time</option>
-          </select>
+
+        <!-- Work Arrangement -->
+        <div>
+          <div style="font-size:10px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px;">🏠 Work Arrangement</div>
+          <div style="display:flex;gap:5px;">
+            ${['remote-only','open-to-both','onsite-ok'].map(opt => {
+              const labels = { 'remote-only':'🌐 Remote Only', 'open-to-both':'🔀 Open to Both', 'onsite-ok':'🏢 On-site OK' };
+              const active = (cd.prefs?.workArrangement || 'open-to-both') === opt;
+              return `<button onclick="savePref('${c}','workArrangement','${opt}')" 
+                style="flex:1;padding:6px 4px;border-radius:8px;border:1.5px solid ${active ? colorHex : 'var(--border)'};background:${active ? colorHex : 'white'};color:${active ? 'white' : 'var(--text2)'};font-size:10px;font-weight:700;cursor:pointer;transition:all .15s;line-height:1.3;text-align:center;">
+                ${labels[opt]}
+              </button>`;
+            }).join('')}
+          </div>
         </div>
+
+        <!-- Job Type -->
+        <div>
+          <div style="font-size:10px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px;">💼 Job Type</div>
+          <div style="display:flex;gap:5px;">
+            ${['full-time','contract','any'].map(opt => {
+              const labels = { 'full-time':'💼 Full-time', 'contract':'📋 Contract', 'any':'🔄 Any' };
+              const active = (cd.prefs?.jobType || 'any') === opt;
+              return `<button onclick="savePref('${c}','jobType','${opt}')" 
+                style="flex:1;padding:6px 4px;border-radius:8px;border:1.5px solid ${active ? colorHex : 'var(--border)'};background:${active ? colorHex : 'white'};color:${active ? 'white' : 'var(--text2)'};font-size:10px;font-weight:700;cursor:pointer;transition:all .15s;line-height:1.3;text-align:center;">
+                ${labels[opt]}
+              </button>`;
+            }).join('')}
+          </div>
+        </div>
+
       </div>
 
       <button class="sidebar-btn" style="background:${colorHex};color:white;border:none" id="ai-search-btn-${c}" onclick="aiSearch('${c}')">
@@ -3303,7 +3328,6 @@ function toggleRoleEdit(c) {
 function savePref(c, key, val) {
   if (!CONFIG.candidates[c].prefs) CONFIG.candidates[c].prefs = {};
   if (key === 'minSalary') {
-    // Accept blank, "Any", "$130k", "130000" etc.
     const stripped = (val||'').trim().toLowerCase();
     if (!stripped || stripped === 'any') {
       val = 0;
@@ -3318,7 +3342,11 @@ function savePref(c, key, val) {
   }
   CONFIG.candidates[c].prefs[key] = val;
   saveConfig();
-  const labels = { minSalary: 'Min salary', jobType: 'Job type', location: 'Location' };
+  // Re-render sidebar to reflect button toggle state change
+  if (key === 'workArrangement' || key === 'jobType') {
+    renderCandidatePanel(c);
+  }
+  const labels = { minSalary: 'Min salary', jobType: 'Job type', location: 'Location', workArrangement: 'Work arrangement' };
   toast(`✓ ${labels[key]||key} updated`);
 }
 
@@ -3733,10 +3761,15 @@ function buildSystemPrompt(c, cd) {
 CANDIDATE: ${cd.name} | ${cd.prefs?.location || 'Phoenix, AZ'}
 SKILLS: ${skills}
 TARGETS: ${cd.searchAreas}
-REMOTE RULE: ${c === 'm' ? 'Remote preferred; hybrid OK at $130K+; on-site OK if $150K+' : c === 'l' ? 'Remote only — no on-site' : 'Remote preferred; open to travel or on-site for right pay'}
-${cd.prefs?.minSalary ? `MIN SALARY: $${Number(cd.prefs.minSalary).toLocaleString()} — do not return roles that pay less than this` : ''}
-${cd.prefs?.location ? `LOCATION: ${cd.prefs.location}` : ''}
-${cd.prefs?.jobType && cd.prefs.jobType !== 'any' ? `JOB TYPE: ${cd.prefs.jobType} only` : ''}
+WORK ARRANGEMENT: ${
+  cd.prefs?.workArrangement === 'remote-only' ? 'Remote only — do not return on-site or hybrid roles' :
+  cd.prefs?.workArrangement === 'onsite-ok' ? 'Any work arrangement — remote, hybrid, and on-site all acceptable' :
+  c === 'l' ? 'Remote only — no on-site or hybrid' :
+  'Remote preferred; hybrid and on-site OK if strong match and good pay'
+}
+${cd.prefs?.minSalary ? `MIN SALARY: $${Number(cd.prefs.minSalary).toLocaleString()} — do not return roles paying less than this` : ''}
+${cd.prefs?.location ? `LOCATION: ${cd.prefs.location} area` : ''}
+${cd.prefs?.jobType && cd.prefs.jobType !== 'any' ? `JOB TYPE: ${cd.prefs.jobType} positions only` : ''}
 
 OUTPUT RULES — CRITICAL:
 1. Return ONLY a JSON array. No markdown. No backticks. No text before or after. Start with [ end with ]
