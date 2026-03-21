@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <!-- ============================================================
      The Job Hunts — Career Portal
-     Version: 10.1
+     Version: 10.2
      Updated: 2026-03-20
      Changes: Match scoring (0-100 client-side), hover breakdown tooltip,
               industry multi-select filter, work arrangement toggles,
@@ -2118,7 +2118,7 @@ body.font-xl .card-title { font-size: calc(var(--base-font) + 1px); }
 //  CLOUDFLARE WORKER — API proxy URL
 //  Update this if you ever redeploy your Worker
 // ═══════════════════════════════════════════════════════════════
-const VERSION = '10.1';
+const VERSION = '10.2';
 const WORKER_URL = 'https://career-hub-api.andy-dao-91-aaf.workers.dev';
 
 // ═══════════════════════════════════════════════════════════════
@@ -4576,18 +4576,28 @@ function scoreJob(j, c, cd) {
   else if (bestMatch > 0) { score += 5; reasons.warnings.push('Title loosely related to your targets'); }
   else { reasons.missing.push('Title does not match your target roles'); }
 
-  // 2. Work arrangement (20pts)
+  // 2. Work arrangement + location proximity (20pts)
   const wt = (j.workType||'').toLowerCase();
   const pref = cd.prefs?.workArrangement || 'open-to-both';
+  const _userCity = (cd.prefs?.location||'').toLowerCase().split(',')[0].trim();
+  const _jobCity = (j.location||'').toLowerCase().split(',')[0].trim();
+  const _metros = { 'phoenix': ['phoenix','scottsdale','tempe','mesa','glendale','chandler','gilbert','peoria','avondale'], 'los angeles': ['los angeles','santa monica','burbank','glendale','pasadena'], 'new york': ['new york','nyc','brooklyn','queens','manhattan','bronx'], 'chicago': ['chicago','evanston','naperville','aurora'], 'dallas': ['dallas','fort worth','plano','irving','arlington','frisco'], 'houston': ['houston','sugar land','katy','pearland'], 'denver': ['denver','aurora','boulder','westminster','lakewood'], 'seattle': ['seattle','bellevue','redmond','kirkland','tacoma'], 'miami': ['miami','fort lauderdale','boca raton','west palm beach'], 'atlanta': ['atlanta','marietta','alpharetta','roswell','sandy springs'] };
+  const _metro = _metros[_userCity] || [_userCity];
+  const _cityOK = !_userCity || !_jobCity || _jobCity === 'remote' || wt === 'remote' || _metro.some(m => _jobCity.includes(m) || m.includes(_jobCity));
+
   if (pref === 'remote-only') {
     if (wt === 'remote') { score += 20; reasons.matched.push('Remote ✓'); }
     else { score -= 10; reasons.missing.push('Not remote — conflicts with your preference'); }
   } else if (pref === 'open-to-both') {
-    if (['remote','hybrid'].includes(wt)) { score += 20; reasons.matched.push(`${j.workType} ✓`); }
-    else if (wt === 'on-site' || wt === 'onsite') { score += 8; reasons.warnings.push('On-site — you prefer remote/hybrid'); }
+    if (wt === 'remote') { score += 20; reasons.matched.push('Remote ✓'); }
+    else if (wt === 'hybrid' && _cityOK) { score += 18; reasons.matched.push('Hybrid near your location'); }
+    else if ((wt === 'on-site' || wt === 'onsite') && _cityOK) { score += 12; reasons.matched.push('On-site near ' + (cd.prefs?.location||'your city')); }
+    else if (!_cityOK) { score += 0; reasons.missing.push('On-site in ' + j.location + ' — not near ' + cd.prefs?.location); }
     else { score += 15; }
-  } else {
-    score += 20; reasons.matched.push(`${j.workType||'Any'} arrangement OK`);
+  } else { // onsite-ok
+    if (wt === 'remote') { score += 15; reasons.matched.push('Remote arrangement OK'); }
+    else if (_cityOK) { score += 20; reasons.matched.push((j.workType||'On-site') + ' near ' + (cd.prefs?.location||'your city')); }
+    else { score += 0; reasons.missing.push('On-site in ' + j.location + ' — not near ' + (cd.prefs?.location||'your city')); }
   }
 
   // 3. Salary vs minimum (20pts)
@@ -4774,10 +4784,45 @@ function renderJobCards(c, filter='all', page=0) {
     );
   }
 
-  // Apply work arrangement pref filter to existing list
+  // Apply work arrangement pref filter AFTER normalizing workType
   const workArrangement = cd.prefs?.workArrangement || 'open-to-both';
   if (workArrangement === 'remote-only') {
-    jobs = jobs.filter(j => (j.workType||'').toLowerCase() === 'remote');
+    jobs = jobs.filter(j => {
+      const wt = (j.workType||'').toLowerCase();
+      const loc = (j.location||'').toLowerCase();
+      const title = (j.title||'').toLowerCase();
+      return wt === 'remote' || wt === 'hybrid' ||
+             loc.includes('remote') || title.includes('remote');
+    });
+  }
+
+  // Apply location filter for on-site/hybrid jobs when user has a location set
+  const userLocation = (cd.prefs?.location||'').toLowerCase();
+  const userCity = userLocation.split(',')[0].trim();
+  if (userCity && userCity !== 'any' && workArrangement !== 'remote-only') {
+    jobs = jobs.filter(j => {
+      const wt = (j.workType||'').toLowerCase();
+      const isRemote = wt === 'remote';
+      if (isRemote) return true; // remote jobs always pass location filter
+      const jobCity = (j.location||'').toLowerCase().split(',')[0].trim();
+      // Allow if same city/metro area OR if location is empty/unknown
+      if (!jobCity || jobCity === 'remote') return true;
+      // Check if city matches (allow broader metro — e.g. "glendale" near "phoenix")
+      const metroMap = {
+        'phoenix': ['phoenix','scottsdale','tempe','mesa','glendale','chandler','gilbert','peoria','avondale','goodyear','surprise'],
+        'los angeles': ['los angeles','la','santa monica','burbank','pasadena','long beach','glendale','anaheim'],
+        'new york': ['new york','nyc','brooklyn','queens','bronx','manhattan','jersey city','hoboken'],
+        'chicago': ['chicago','evanston','naperville','aurora','joliet'],
+        'dallas': ['dallas','fort worth','plano','irving','arlington','frisco','mckinney'],
+        'houston': ['houston','sugar land','pearland','katy','woodlands'],
+        'atlanta': ['atlanta','marietta','alpharetta','roswell','sandy springs'],
+        'seattle': ['seattle','bellevue','redmond','kirkland','tacoma'],
+        'denver': ['denver','aurora','lakewood','boulder','westminster'],
+        'miami': ['miami','fort lauderdale','boca raton','west palm beach'],
+      };
+      const metro = metroMap[userCity] || [userCity];
+      return metro.some(m => jobCity.includes(m) || m.includes(jobCity));
+    });
   }
 
   // Apply min salary filter to existing list
