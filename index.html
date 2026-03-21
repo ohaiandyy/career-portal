@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <!-- ============================================================
      The Job Hunts — Career Portal
-     Version: 9.9
+     Version: 10.0
      Updated: 2026-03-20
      Changes: Match scoring (0-100 client-side), hover breakdown tooltip,
               industry multi-select filter, work arrangement toggles,
@@ -2118,7 +2118,7 @@ body.font-xl .card-title { font-size: calc(var(--base-font) + 1px); }
 //  CLOUDFLARE WORKER — API proxy URL
 //  Update this if you ever redeploy your Worker
 // ═══════════════════════════════════════════════════════════════
-const VERSION = '9.9';
+const VERSION = '10.0';
 const WORKER_URL = 'https://career-hub-api.andy-dao-91-aaf.workers.dev';
 
 // ═══════════════════════════════════════════════════════════════
@@ -4727,12 +4727,25 @@ function normalizeWorkType(j) {
   const wt = (j.workType||'').toLowerCase();
   const loc = (j.location||'').toLowerCase();
   const desc = (j.description||'').toLowerCase();
-  if (['remote','hybrid','on-site','onsite'].includes(wt)) return;
-  if (loc.includes('remote') || desc.includes('remote work') || desc.includes('work remotely') || desc.includes('fully remote')) { j.workType = 'Remote'; return; }
-  if (loc.includes('hybrid') || desc.includes('hybrid')) { j.workType = 'Hybrid'; return; }
+  const title = (j.title||'').toLowerCase();
+  const allText = title + ' ' + loc + ' ' + desc;
+  if (['remote','hybrid','on-site','onsite'].includes(wt)) {
+    // Even if already set, double-check "On-site" with remote title
+    if (wt === 'on-site' && (title.includes('remote') || loc === 'remote')) {
+      j.workType = 'Remote'; return;
+    }
+    return;
+  }
+  // Check all fields including title
+  if (title.includes('remote') || loc === 'remote' ||
+      allText.includes('fully remote') || allText.includes('100% remote') ||
+      allText.includes('work from home') || allText.includes('work remotely') ||
+      allText.includes('remote-first') || allText.includes('remote role')) {
+    j.workType = 'Remote'; return;
+  }
+  if (allText.includes('hybrid')) { j.workType = 'Hybrid'; return; }
   if (wt === 'full-time' || wt === 'part-time' || wt === 'contract') {
-    // Has a real city → On-site; otherwise unknown → leave as Remote (better UX than showing nothing)
-    j.workType = loc.match(/[a-zA-Z]+,\s*[A-Z]{2}/) ? 'On-site' : 'Remote';
+    j.workType = loc.match(/[a-zA-Z]+,\s*[A-Z]{2}/) && !title.includes('remote') ? 'On-site' : 'Remote';
   }
 }
 
