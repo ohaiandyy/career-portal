@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <!-- ============================================================
      The Job Hunts — Career Portal
-     Version: 9.5
+     Version: 9.8
      Updated: 2026-03-20
      Changes: Match scoring (0-100 client-side), hover breakdown tooltip,
               industry multi-select filter, work arrangement toggles,
@@ -2118,7 +2118,7 @@ body.font-xl .card-title { font-size: calc(var(--base-font) + 1px); }
 //  CLOUDFLARE WORKER — API proxy URL
 //  Update this if you ever redeploy your Worker
 // ═══════════════════════════════════════════════════════════════
-const VERSION = '9.5';
+const VERSION = '9.8';
 const WORKER_URL = 'https://career-hub-api.andy-dao-91-aaf.workers.dev';
 
 // ═══════════════════════════════════════════════════════════════
@@ -3580,7 +3580,8 @@ function buildMainContent(c, cd, isAdmin) {
         </div>
         ${(() => {
           // Build industry list from all job tags
-          const skipTags = new Set(['remote','hybrid','on-site','onsite','on site','travel','full-time','part-time','contract','any','added by admin']);
+          const skipTags = new Set(['remote','hybrid','on-site','onsite','on site','travel','full-time','part-time','contract','any','added by admin',
+            'strong match','good match','possible fit','weak match','mismatch','partial match','great match','excellent match']);
           const allTags = new Map();
           (cd.jobs||[]).filter(j=>!j.dismissed).forEach(j => {
             (j.tags||[]).forEach(t => {
@@ -3727,6 +3728,8 @@ function toggleBioEdit(c) {
 
 function saveBio(c, val) {
   CONFIG.candidates[c].bio = val;
+  const _hasJobs1 = (CONFIG.candidates[c].jobs||[]).filter(j=>!j.dismissed).length > 0;
+  if (_hasJobs1) showReSearchNudge(c);
   document.getElementById('bio-display-'+c).textContent = val;
   document.getElementById('bio-edit-'+c).classList.remove('visible');
   document.getElementById('bio-display-'+c).style.display = '';
@@ -3787,6 +3790,8 @@ function saveRole(c, val) {
   document.getElementById('role-edit-'+c).style.display = 'none';
   saveConfig();
   toast('Subtitle updated');
+  const _hasJobs2 = (CONFIG.candidates[c].jobs||[]).filter(j=>!j.dismissed).length > 0;
+  if (_hasJobs2) showReSearchNudge(c);
 }
 
 async function suggestHeadlines(c) {
@@ -3983,6 +3988,8 @@ function toggleTargetEdit(c) {
 
 function saveTargets(c, val) {
   CONFIG.candidates[c].searchAreas = val;
+  const _hasJobs4 = (CONFIG.candidates[c].jobs||[]).filter(j=>!j.dismissed).length > 0;
+  if (_hasJobs4) showReSearchNudge(c);
   document.getElementById('targets-display-'+c).textContent = val;
   document.getElementById('targets-edit-'+c).classList.remove('visible');
   document.getElementById('targets-display-'+c).style.display = '';
@@ -3997,6 +4004,8 @@ function addSkill(c, val) {
   if (CONFIG.candidates[c].skills.includes(val)) { toast('Skill already added'); return; }
   CONFIG.candidates[c].skills.push(val);
   saveConfig();
+  const _hasJobs3 = (CONFIG.candidates[c].jobs||[]).filter(j=>!j.dismissed).length > 0;
+  if (_hasJobs3) showReSearchNudge(c);
   document.getElementById('skill-new-'+c).value = '';
   const container = document.getElementById('skills-'+c);
   const colorHex = CONFIG.candidates[c].colorHex;
@@ -4250,7 +4259,7 @@ async function aiSearch(c) {
     saveConfig(true);
     updateSidebarStats(c);
 
-    toast('Found ' + newJobs.length + ' real jobs from Adzuna, Remotive, Jobicy and RemoteOK');
+    toast('Found ' + newJobs.length + ' real jobs across 9 job boards');
     renderCandidatePanel(c);
 
   } catch (err) {
@@ -4642,55 +4651,63 @@ const _logoCache = {};
 
 async function loadCompanyLogos() {
   const wraps = document.querySelectorAll('.company-logo-wrap[data-company]');
-
-  // Batch: first try autocomplete for all uncached companies
   const uncached = [...wraps].filter(w => w.dataset.company && _logoCache[w.dataset.company] === undefined);
 
-  // Fire all autocomplete requests in parallel
+  // Step 1: Get domains from Clearbit autocomplete (still works)
   await Promise.allSettled(uncached.map(async wrap => {
     const company = wrap.dataset.company;
     try {
       const res = await fetch(
         `https://autocomplete.clearbit.com/v1/companies/suggest?query=${encodeURIComponent(company)}`,
-        { signal: AbortSignal.timeout(4000) }
+        { signal: AbortSignal.timeout(3000) }
       );
       if (!res.ok) throw new Error('no result');
       const data = await res.json();
-      _logoCache[company] = (data && data[0]?.domain)
-        ? `https://logo.clearbit.com/${data[0].domain}`
-        : null;
+      const domain = data?.[0]?.domain;
+      if (domain) {
+        // Try multiple free logo sources in order
+        _logoCache[company] = { domain, tried: 0, sources: [
+          `https://img.logo.dev/${domain}?token=pk_X79PJAKxQBqBHLWM0tqdng`,  // logo.dev free tier
+          `https://www.google.com/s2/favicons?domain=${domain}&sz=64`,          // Google favicons (always works)
+        ]};
+      } else {
+        _logoCache[company] = null;
+      }
     } catch(_) {
-      // Fallback: try guessing domain from company name
-      const guess = company.toLowerCase()
-        .replace(/[^a-z0-9\s]/g, '')
-        .trim()
-        .split(/\s+/)[0]; // first word
-      _logoCache[company] = guess.length > 2 ? `https://logo.clearbit.com/${guess}.com` : null;
+      // Guess domain from first word of company name
+      const guess = company.toLowerCase().replace(/[^a-z0-9]/g, '').substring(0, 20);
+      if (guess.length > 2) {
+        _logoCache[company] = { domain: guess + '.com', tried: 0, sources: [
+          `https://www.google.com/s2/favicons?domain=${guess}.com&sz=64`,
+        ]};
+      } else {
+        _logoCache[company] = null;
+      }
     }
   }));
 
-  // Now apply logos to all wraps
+  // Step 2: Apply logos using first working source
   for (const wrap of wraps) {
     const company = wrap.dataset.company;
-    const color = wrap.dataset.color || '#888';
-    const initial = (company||'?')[0].toUpperCase();
-    const logoUrl = _logoCache[company];
+    const entry = _logoCache[company];
+    if (!entry || !entry.sources?.length) continue;
 
-    if (!logoUrl) continue; // keep fallback avatar
-
-    const img = document.createElement('img');
-    img.className = 'company-logo';
-    img.alt = '';
-    img.style.cssText = 'display:none;';
-    img.onload = () => {
-      if (wrap.isConnected) {
-        wrap.innerHTML = '';
-        wrap.appendChild(img);
-        img.style.display = '';
-      }
+    const tryNext = (idx) => {
+      if (idx >= entry.sources.length) return; // all failed
+      const img = document.createElement('img');
+      img.className = 'company-logo';
+      img.alt = company;
+      img.style.cssText = 'width:100%;height:100%;object-fit:contain;border-radius:6px;';
+      img.onload = () => {
+        if (wrap.isConnected) {
+          wrap.innerHTML = '';
+          wrap.appendChild(img);
+        }
+      };
+      img.onerror = () => tryNext(idx + 1);
+      img.src = entry.sources[idx];
     };
-    img.onerror = () => { _logoCache[company] = null; };
-    img.src = logoUrl;
+    tryNext(0);
   }
 }
 
