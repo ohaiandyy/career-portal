@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <!-- ============================================================
      The Job Hunts — Career Portal
-     Version: 9.8
+     Version: 9.9
      Updated: 2026-03-20
      Changes: Match scoring (0-100 client-side), hover breakdown tooltip,
               industry multi-select filter, work arrangement toggles,
@@ -2118,7 +2118,7 @@ body.font-xl .card-title { font-size: calc(var(--base-font) + 1px); }
 //  CLOUDFLARE WORKER — API proxy URL
 //  Update this if you ever redeploy your Worker
 // ═══════════════════════════════════════════════════════════════
-const VERSION = '9.8';
+const VERSION = '9.9';
 const WORKER_URL = 'https://career-hub-api.andy-dao-91-aaf.workers.dev';
 
 // ═══════════════════════════════════════════════════════════════
@@ -2732,30 +2732,34 @@ function renderAdminSidebar() {
           const isActive = cd.active !== false;
           const jobCount = (cd.jobs||[]).filter(j=>!j.dismissed).length;
           return `
-          <div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border);opacity:${isActive?1:.6}">
-            <div style="width:30px;height:30px;border-radius:50%;background:${cd.colorHex};color:white;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;flex-shrink:0;">${cd.name[0]}</div>
-            <div style="flex:1;min-width:0;">
-              <div style="font-size:13px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${cd.name}</div>
-              <div style="font-size:10px;color:var(--muted);">${isActive?jobCount+' jobs':'Archived'}</div>
+          <div style="padding:10px 0;border-bottom:1px solid var(--border);opacity:${isActive?1:.6}">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:7px;">
+              <div style="width:32px;height:32px;border-radius:50%;background:${cd.colorHex};color:white;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;flex-shrink:0;">${cd.name[0]}</div>
+              <div style="flex:1;">
+                <div style="font-size:14px;font-weight:700;color:var(--text);">${cd.name}</div>
+                <div style="font-size:10px;color:var(--muted);">${isActive ? jobCount+' jobs saved' : 'Archived — data preserved'}</div>
+              </div>
+              <div style="display:flex;flex-direction:column;align-items:flex-end;gap:2px;">
+                <div style="font-size:9px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;">PIN</div>
+                <input type="text" maxlength="4" value="${CONFIG.pins[c]||''}"
+                  style="width:56px;padding:3px 6px;border:1.5px solid var(--border);border-radius:6px;font-family:Lora,serif;font-size:14px;font-weight:700;text-align:center;letter-spacing:.2em;"
+                  oninput="updatePin('${c}',this.value)" title="PIN for ${cd.name}">
+              </div>
             </div>
-            <input type="text" maxlength="4" value="${CONFIG.pins[c]||''}"
-              style="width:52px;padding:4px 6px;border:1.5px solid var(--border);border-radius:6px;font-family:Lora,serif;font-size:13px;font-weight:700;text-align:center;letter-spacing:.15em;flex-shrink:0;"
-              oninput="updatePin('${c}',this.value)" title="PIN for ${cd.name}">
-            <div style="display:flex;gap:4px;flex-shrink:0;">
-              <button onclick="openResumeModal('${c}')" title="Import resume" style="width:28px;height:28px;border-radius:6px;border:1.5px solid var(--border);background:white;cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center;">📄</button>
-              <button onclick="switchPanel('${c}')" title="View jobs" style="width:28px;height:28px;border-radius:6px;border:1.5px solid var(--border);background:white;cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center;">👁</button>
-              <button onclick="clearJobs('${c}')" title="Clear all jobs" style="width:28px;height:28px;border-radius:6px;border:1.5px solid var(--border);background:white;cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center;"
-                onmouseover="this.style.borderColor='var(--admin)';this.style.background='#fffbef';"
-                onmouseout="this.style.borderColor='var(--border)';this.style.background='white';">🧹</button>
-              <button onclick="toggleCandidateActive('${c}')" title="${isActive?'Archive (hides from login, keeps data)':'Restore'}"
-                style="width:28px;height:28px;border-radius:6px;border:1.5px solid ${isActive?'var(--border)':'var(--green)'};background:${isActive?'white':'var(--green-lt)'};cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center;">
-                ${isActive?'📦':'↩'}
+            <div style="display:flex;gap:5px;padding-left:40px;">
+              <button onclick="openResumeModal('${c}')" title="Import resume" style="flex:1;padding:5px 4px;border-radius:6px;border:1.5px solid var(--border);background:white;cursor:pointer;font-size:11px;font-weight:700;color:var(--text2);">📄 Resume</button>
+              <button onclick="switchPanel('${c}')" title="View jobs" style="flex:1;padding:5px 4px;border-radius:6px;border:1.5px solid var(--border);background:white;cursor:pointer;font-size:11px;font-weight:700;color:var(--text2);">👁 View</button>
+              <button onclick="clearJobs('${c}')" title="Clear all jobs" style="flex:1;padding:5px 4px;border-radius:6px;border:1.5px solid var(--border);background:white;cursor:pointer;font-size:11px;font-weight:700;color:var(--text2);"
+                onmouseover="this.style.borderColor='#b45309';this.style.color='#b45309';"
+                onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text2)';">🧹 Clear</button>
+              <button onclick="toggleCandidateActive('${c}')" title="${isActive?'Archive — hides from login, keeps all data':'Restore to login screen'}"
+                style="flex:1;padding:5px 4px;border-radius:6px;border:1.5px solid ${isActive?'var(--border)':'var(--green)'};background:${isActive?'white':'var(--green-lt)'};cursor:pointer;font-size:11px;font-weight:700;color:${isActive?'var(--text2)':'var(--green)'};">
+                ${isActive?'📦 Archive':'↩ Restore'}
               </button>
-              <div style="width:1px;background:var(--border);height:20px;margin:0 2px;"></div>
-              <button onclick="deleteCandidate('${c}')" title="Delete user permanently"
-                style="width:28px;height:28px;border-radius:6px;border:1.5px solid var(--border);background:white;cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center;opacity:.4;"
-                onmouseover="this.style.borderColor='var(--red)';this.style.opacity='1';"
-                onmouseout="this.style.borderColor='var(--border)';this.style.opacity='.4';">
+              <button onclick="deleteCandidate('${c}')" title="Permanently delete this user and all their data"
+                style="padding:5px 8px;border-radius:6px;border:1.5px solid var(--border);background:white;cursor:pointer;font-size:11px;font-weight:700;color:var(--muted);opacity:.5;"
+                onmouseover="this.style.borderColor='var(--red)';this.style.color='var(--red)';this.style.opacity='1';"
+                onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)';this.style.opacity='.5';">
                 🗑
               </button>
             </div>
@@ -4717,6 +4721,21 @@ async function loadCompanyLogos() {
 // Track pagination state per candidate+filter
 const pageState = {};
 
+// Normalize workType — fixes "Full-time" stored as arrangement
+function normalizeWorkType(j) {
+  if (!j) return;
+  const wt = (j.workType||'').toLowerCase();
+  const loc = (j.location||'').toLowerCase();
+  const desc = (j.description||'').toLowerCase();
+  if (['remote','hybrid','on-site','onsite'].includes(wt)) return;
+  if (loc.includes('remote') || desc.includes('remote work') || desc.includes('work remotely') || desc.includes('fully remote')) { j.workType = 'Remote'; return; }
+  if (loc.includes('hybrid') || desc.includes('hybrid')) { j.workType = 'Hybrid'; return; }
+  if (wt === 'full-time' || wt === 'part-time' || wt === 'contract') {
+    // Has a real city → On-site; otherwise unknown → leave as Remote (better UX than showing nothing)
+    j.workType = loc.match(/[a-zA-Z]+,\s*[A-Z]{2}/) ? 'On-site' : 'Remote';
+  }
+}
+
 function renderJobCards(c, filter='all', page=0) {
   const cd = CONFIG.candidates[c];
   const container = document.getElementById('cards-container-'+c);
@@ -4726,6 +4745,8 @@ function renderJobCards(c, filter='all', page=0) {
   const PAGE_SIZE = 20;
 
   let jobs = (cd.jobs||[]).filter(j => !j.dismissed);
+  // Normalize workType so Remote/Hybrid/On-site filters work correctly
+  jobs.forEach(normalizeWorkType);
   const allUnfiltered = [...jobs];
 
   // Apply industry multi-tag filter
@@ -5055,7 +5076,7 @@ function buildCard(j, c, cd) {
   const co = encodeURIComponent(j.company||'');
   const companyLinks = j.company ? `
     <div style="padding:6px 0 8px;border-top:1px solid var(--border);margin-top:4px;display:flex;align-items:center;gap:8px;">
-      <button class="co-link" onclick="toggleResearch('research-${safeId}')" style="cursor:pointer;background:var(--surface2);border:1.5px solid var(--border);border-radius:6px;padding:3px 10px;font-size:11px;font-weight:700;color:var(--text2);">🔍 Research ${j.company}</button>
+      <button class="co-link" id="research-btn-${safeId}" onclick="toggleResearch('research-${safeId}','research-btn-${safeId}')" style="cursor:pointer;background:var(--surface2);border:1.5px solid var(--border);border-radius:6px;padding:3px 10px;font-size:11px;font-weight:700;color:var(--text2);">🔍 Research ${j.company} <span style="opacity:.6;">▾</span></button>
       <div id="research-${safeId}" style="display:none;gap:5px;align-items:center;" class="research-links-row">
         ${j.companyUrl ? `<a href="${j.companyUrl}" target="_blank" rel="noopener" class="co-link">🌐 Site</a>` : `<a href="https://www.google.com/search?q=${co}+official+site" target="_blank" rel="noopener" class="co-link">🌐 Site</a>`}
         <a href="https://www.glassdoor.com/Search/Results.htm?keyword=${co}" target="_blank" rel="noopener" class="co-link">⭐ Glassdoor</a>
@@ -5151,6 +5172,19 @@ function buildCard(j, c, cd) {
     </div>
   </div>
   <div class="card-detail" id="cdetail-${safeId}">
+    <div style="display:flex;gap:6px;margin-bottom:10px;">
+      <button onclick="generateCoverLetter('${c}','${safeId}')" style="flex:1;padding:6px 8px;border-radius:7px;border:1.5px solid var(--border);background:white;font-family:Nunito,sans-serif;font-size:11px;font-weight:700;cursor:pointer;color:var(--text2);"
+        onmouseover="this.style.borderColor='${cd.colorHex}';this.style.color='${cd.colorHex}';"
+        onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text2)';">
+        ✍️ Cover Letter
+      </button>
+      <button onclick="generateInterviewPrep('${c}','${safeId}')" style="flex:1;padding:6px 8px;border-radius:7px;border:1.5px solid var(--border);background:white;font-family:Nunito,sans-serif;font-size:11px;font-weight:700;cursor:pointer;color:var(--text2);"
+        onmouseover="this.style.borderColor='${cd.colorHex}';this.style.color='${cd.colorHex}';"
+        onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text2)';">
+        🎤 Interview Prep
+      </button>
+    </div>
+    <div id="ai-output-${safeId}" style="display:none;background:var(--surface2);border-radius:8px;padding:12px;margin-bottom:10px;font-size:12px;line-height:1.7;color:var(--text2);white-space:pre-wrap;max-height:300px;overflow-y:auto;border:1px solid var(--border);"></div>
     <div class="detail-grid">
       <div class="detail-box">
         <div class="detail-box-label">Qualifications</div>
@@ -5353,11 +5387,80 @@ function collapseDesc(safeId) {
   document.getElementById('desc-expand-'+safeId).style.display = 'none';
 }
 
-function toggleResearch(id) {
+function toggleResearch(id, btnId) {
   const el = document.getElementById(id);
+  const btn = document.getElementById(btnId);
   if (!el) return;
-  const open = el.style.display !== 'none';
+  const open = el.style.display === 'flex';
   el.style.display = open ? 'none' : 'flex';
+  if (btn) {
+    const chevron = btn.querySelector('span');
+    if (chevron) chevron.textContent = open ? '▾' : '▴';
+  }
+}
+
+async function generateCoverLetter(c, safeId) {
+  const cd = CONFIG.candidates[c];
+  const j = (cd.jobs||[]).find(job => {
+    const id = (job.title||'').toLowerCase().replace(/[^a-z0-9]/g,'').substring(0,20) +
+               (job.company||'').toLowerCase().replace(/[^a-z0-9]/g,'').substring(0,15);
+    return id === safeId;
+  });
+  if (!j || !cd) return;
+  const out = document.getElementById('ai-output-'+safeId);
+  if (!out) return;
+  out.style.display = 'block';
+  out.textContent = '✍️ Drafting cover letter...';
+  try {
+    const prompt = 'Write a concise, professional cover letter (3 short paragraphs) for this candidate applying to this job.\n\n' +
+      'CANDIDATE: ' + cd.name + '\nBIO: ' + (cd.bio||'').substring(0,400) + '\n' +
+      'SKILLS: ' + (cd.skills||[]).slice(0,10).join(', ') + '\n\n' +
+      'JOB: ' + j.title + ' at ' + j.company + '\n' +
+      'DESCRIPTION: ' + (j.description||'').substring(0,300) + '\n\n' +
+      'Tone: confident, direct, human — no AI clichés. Address why they specifically are a strong fit. Keep it under 200 words.';
+    const res = await fetch(WORKER_URL, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ model:'claude-haiku-4-5-20251001', max_tokens:600, messages:[{role:'user',content:prompt}] })
+    });
+    const data = await res.json();
+    const text = (data.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('');
+    out.textContent = text || 'Could not generate cover letter.';
+  } catch(e) {
+    out.textContent = 'Error: ' + e.message;
+  }
+}
+
+async function generateInterviewPrep(c, safeId) {
+  const cd = CONFIG.candidates[c];
+  const j = (cd.jobs||[]).find(job => {
+    const id = (job.title||'').toLowerCase().replace(/[^a-z0-9]/g,'').substring(0,20) +
+               (job.company||'').toLowerCase().replace(/[^a-z0-9]/g,'').substring(0,15);
+    return id === safeId;
+  });
+  if (!j || !cd) return;
+  const out = document.getElementById('ai-output-'+safeId);
+  if (!out) return;
+  out.style.display = 'block';
+  out.textContent = '🎤 Preparing interview questions...';
+  try {
+    const prompt = 'Generate 5 likely interview questions for this role + brief talking point for each based on the candidate profile.\n\n' +
+      'CANDIDATE: ' + cd.name + '\nBIO: ' + (cd.bio||'').substring(0,300) + '\n' +
+      'SKILLS: ' + (cd.skills||[]).slice(0,8).join(', ') + '\n\n' +
+      'JOB: ' + j.title + ' at ' + j.company + '\n' +
+      'DESCRIPTION: ' + (j.description||'').substring(0,300) + '\n\n' +
+      'Format: Q: [question]\nA: [1-2 sentence talking point using their actual background]. Keep each answer concise and specific.';
+    const res = await fetch(WORKER_URL, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ model:'claude-haiku-4-5-20251001', max_tokens:800, messages:[{role:'user',content:prompt}] })
+    });
+    const data = await res.json();
+    const text = (data.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('');
+    out.textContent = text || 'Could not generate interview prep.';
+  } catch(e) {
+    out.textContent = 'Error: ' + e.message;
+  }
 }
 
 function toggleCardDetail(safeId) {
